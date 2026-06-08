@@ -24,7 +24,7 @@ export const C = {
   guard: "rgba(58,122,189,0.2)",
   ring: "#121a24",
   aton: "#8a7a30",
-};
+} as const;
 
 export const FONT_MONO = "'IBM Plex Mono',monospace";
 export const FONT_SANS = "'IBM Plex Sans',-apple-system,sans-serif";

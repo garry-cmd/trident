@@ -1,19 +1,19 @@
 // Web Audio helpers. The AudioContext is a lazily-created singleton that must
 // be first touched inside a user gesture (browser autoplay policy). Until then
 // getAudioCtx() returns null and tones are silently skipped.
-let ctx = null;
+let ctx: AudioContext | null = null;
 
-export function getAudioCtx() {
+export function getAudioCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (!ctx) {
-    const AC = window.AudioContext || window.webkitAudioContext;
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (AC) ctx = new AC();
   }
   if (ctx && ctx.state === "suspended") ctx.resume();
   return ctx;
 }
 
-export function playAlarm() {
+export function playAlarm(): void {
   const c = getAudioCtx();
   if (!c) return;
   const o = c.createOscillator();
@@ -29,7 +29,7 @@ export function playAlarm() {
   o.stop(c.currentTime + 0.5);
 }
 
-export function playTimerBeep() {
+export function playTimerBeep(): void {
   const c = getAudioCtx();
   if (!c) return;
   for (let i = 0; i < 3; i++) {
