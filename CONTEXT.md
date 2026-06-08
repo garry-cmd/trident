@@ -5,8 +5,10 @@ Raspberry Pi–based marine navigation, AIS watch, and power management platform
 
 Hardware companion to Keeply.boats — the Signal K → Supabase pipeline feeds instrument-grade automated voyage logging into Keeply's logbook. Long-term commercial product vision, but building for one boat first.
 
-Live prototype: `https://trident.keeply.boats` (Vercel)
-Repo: `https://github.com/garry-cmd/trident`
+Live prototype: `https://trident.keeply.boats` (Vercel, auto-deploys on push to `main`)
+Repo: `https://github.com/garry-cmd/trident` (public)
+
+> **Workflow note:** For this project Garry deploys from a **Mac (zsh/bash)** — not Windows/PowerShell. Deploys are `cp` + `git add/commit/push`. Vercel auto-deploys from `main`. Docs (this file) are updated **once at session end**, never mid-session.
 
 ## UI/UX Design Philosophy — "Garry at 2am"
 
@@ -28,109 +30,118 @@ Every design decision passes one test: would a solo sailor, cold, tired, half-as
 - **Solar:** 2× Victron MPPT charge controllers
 - **Battery monitor:** Victron BMV-712 (owned, NOT yet installed — Phase 1 priority)
 - **DC-DC charger:** Victron Orion-Tr Smart (Bluetooth only, excluded from integration)
-- **Internet:** Starlink (intermittent, hourly for weather/comms)
+- **Internet:** Starlink (intermittent, hourly for weather/comms) — **no internet at sea; the app must run fully offline**
 
 ## Current State
-- **Phase:** Design complete. Next.js app scaffolded. Radar prototype v4 deployed to Vercel.
+- **Phase:** Production build underway. Radar view is real and modular. Data is still simulated (no live Signal K yet).
 - **Target:** Deploy on Irene by August 24, 2026
 - **Prototype live at:** `trident.keeply.boats`
+- **Shipped this session (all deployed):**
+  - Decomposed the monolithic radar prototype into the modular architecture below
+  - URL structure: Radar is the root `/` (no redirect); `/chart`, `/dash`, `/settings` are named routes with honest "Phase 2 — not built" stubs
+  - `lib/` migrated to **TypeScript** (strict); rest of app stays `.jsx`/`.js` via `allowJs`
+  - **Relative-velocity CPA fix** — targets now carry absolute COG/SOG (as real AIS does); relative velocity is derived (target − own) in `lib/ais.ts`
+  - Design tokens (colours, fonts, radar palette) moved to **CSS custom properties** in `app/globals.css` as the single source of truth
 - **Amazon hardware ordered:** June 7, 2026 — $322.71 — arriving June 12
-  - Raspberry Pi 5 8GB ($182.39 — at retail due to RAM crisis)
-  - Official Active Cooler ($9.95)
-  - 3-Channel Relay HAT, opto-isolated ($18.90)
-  - PlusRoc 12V→5V 25W USB-C converter ($9.99)
-  - SanDisk High Endurance 256GB microSD ($59.99)
-  - Argon NEO 5 M.2 case ($41.49 — base only, top removed for relay HAT)
+  - Raspberry Pi 5 8GB, Official Active Cooler, 3-Channel Relay HAT (opto-isolated), PlusRoc 12V→5V 25W USB-C converter, SanDisk High Endurance 256GB microSD, Argon NEO 5 M.2 case
 - **Still to order (closer to Mexico trip):**
-  - Actisense NGX-1-USB (~$250, Defender)
-  - Victron Cerbo GX MK2 (~$248, Defender)
-  - 3× VE.Direct cables (~$54, Defender)
-  - N2K T-connector + drop cable (~$45, Defender)
-  - Peplink BR1 Mini LTE-A + WiFi (~$450, Amazon, "-W" variant)
-  - 12V marine alarm horn (~$35, Fisheries Supply)
-  - Wire, fuses, terminals (~$43, Fisheries Supply)
-  - Blue Latitude O-Charts (~$80, o-charts.org)
+  - Actisense NGX-1-USB (~$250), Victron Cerbo GX MK2 (~$248), 3× VE.Direct cables (~$54), N2K T-connector + drop (~$45), Peplink BR1 Mini LTE-A "-W" (~$450), 12V marine alarm horn (~$35), wire/fuses/terminals (~$43), Blue Latitude O-Charts (~$80)
 - **Total hardware estimate:** ~$1,538
 
-## App Architecture (Locked)
+## App Architecture (Built)
 
-Modular, not monolithic. No file over ~150 lines. Each view is a route.
+Modular. Each view is a route. Components are dumb (props in, render out). Hooks own data. `lib/` is pure logic with no React.
 
 ```
 trident/
   app/
-    layout.js            ← Shell + shared TopBar + providers
-    page.js              ← Redirects to /radar
-    radar/page.js        ← Radar view (assembles components)
-    chart/page.js        ← Chart view
-    dash/page.js         ← Dashboard view
-    settings/page.js     ← Settings view
+    globals.css          <- Design tokens (CSS custom properties) — SINGLE SOURCE OF TRUTH
+    layout.js            <- Server: metadata + viewport, imports globals.css, renders <AppShell>
+    page.js              <- Radar view (root "/") — assembles the radar from components/hooks
+    chart/page.js        <- Phase 2 stub
+    dash/page.js         <- Phase 2 stub
+    settings/page.js     <- Phase 2 stub
 
   components/
-    TopBar.jsx           ← Nav tabs, timer, alert badge (shared)
-    AlertModal.jsx       ← Full-screen CPA warning
-    HeadingKPI.jsx       ← Heading overlay (shared radar + chart)
+    AppShell.jsx         <- Client shell: context providers + persistent TopBar + AlertModal + audio unlock
+    TopBar.jsx           <- Nav tabs, display mode, range filter, timer, alert badge (persistent across routes)
+    Timer.jsx            <- Watch timer with alarm beep
+    AlertModal.jsx       <- Full-screen CPA warning (reads useAlerts)
+    HeadingKPI.jsx       <- Heading overlay + CLOSING/OPENING (shared radar + future chart)
     radar/
-      RadarSVG.jsx       ← SVG radar display only
-      TargetCard.jsx     ← Single target row
-      TargetDetail.jsx   ← Expanded selected target panel
-      TargetList.jsx     ← Sorted/filtered list container
-    chart/               ← Phase 2
-    dash/                ← Phase 2
+      RadarSVG.jsx       <- SVG radar display only. Colours via style={{}} (NOT fill=/stroke=
+                            attributes) so CSS var() resolves inside SVG.
+      TargetCard.jsx     <- Single target row
+      TargetDetail.jsx   <- Expanded selected-target panel
+      TargetList.jsx     <- Right-panel container: header + detail + sorted cards
 
-  lib/
-    ais.js               ← CPA/TCPA math, threat classification
-    signalk.js           ← Signal K WebSocket client
-    simulate.js          ← Fake data for dev (swappable)
-    audio.js             ← Alarm tones, timer beeps
-    settings.js          ← Display mode, thresholds, guard zones
-    types.js             ← Shared data shapes
+  hooks/  (React, context-backed)
+    useSettings.js       <- Global context: displayMode, filterRange, viewRange, paused
+    useAlerts.js         <- Global context: danger registration, ack, escalation, alarm loop
+    useTargets.js        <- Consumes simulate source, enriches with CPA (memoized), respects pause
 
-  hooks/
-    useTargets.js        ← Consumes signalk or simulate, enriches with CPA
-    useSettings.js       ← Global settings (cookie-backed per crew)
-    useAlerts.js         ← Alert state, acknowledgment, escalation
+  lib/  (TypeScript, pure logic, no React)
+    theme.ts             <- Token map onto CSS vars (C.danger === "var(--danger)"); FONT_MONO/SANS
+    ais.ts               <- cpaTcpa, threat, tColor, relativeVelocity, enrichTarget/enrichTargets
+    simulate.ts          <- Simulated AIS source: initTargets (absolute COG/SOG), advanceTargets, OWN
+    audio.ts             <- Alarm tones, timer beeps, singleton AudioContext (unlocked on first gesture)
+    settings.ts          <- DEFAULT_RANGE, display modes, filter/timer options, DEFAULT_SETTINGS
+    types.ts             <- Target, EnrichedTarget, OwnVessel, ThreatLevel, DisplayMode
+
+  Not yet built: lib/signalk.ts (live WS source), components/chart/*, components/dash/*, tests.
 ```
 
-Rules:
-- **Each view is a route.** `/radar`, `/chart`, `/dash`, `/settings`
-- **Components are dumb.** They receive props and render. No data fetching.
-- **Hooks own the data.** `useTargets()` works against simulated or live Signal K.
-- **`lib/` is pure logic.** No React. Testable functions.
-- **TopBar lives in `layout.js`** — persists across route changes.
-- **Display mode is global** — shared between Chart and Radar via `useSettings()`.
+### Architecture rules
+- **One responsibility per file.** A component renders; a hook owns data/state; `lib/` is pure logic with no React. If a file does more than one of those jobs, split it. **File length is a smell, not a hard limit** — past ~200 lines, ask "is this doing two things?" Sometimes the honest answer is no (a single cohesive view, a large SVG, a config table), and that's fine. Never split a file just to hit a number. *(This replaces the old "no file over 150 lines" rule, which was an arbitrary proxy that can force worse design.)*
+- **Each view is a route.** Radar = `/`, plus `/chart`, `/dash`, `/settings`. No conditional rendering of whole views.
+- **Hooks own the data.** `useTargets()` returns enriched targets whether the source is simulated or live Signal K. Swap the source, UI doesn't change.
+- **Shared/global state lives in context** (`useSettings`, `useAlerts`), provided once in `AppShell` so the persistent TopBar and any view read the same state without prop-drilling.
+- **Design tokens live in `globals.css`.** Edit colours/fonts there; JS reads them through `lib/theme.ts`. No hardcoded hex in components.
+- **Avoid server-only Next features.** Everything is client-side over (eventually) a Signal K WebSocket — no SSR benefit. This keeps a static export (`output: 'export'`) a one-line switch for the Pi later.
 
 ## Trident App — Four Views
-1. **Radar** — Head-up situational awareness, guard zones, CPA/TCPA, auto-zoom on target select
-2. **Chart** — Web-based nav chart with AIS overlay, pan/zoom, offline tiles
-3. **Dash** — KPI cards: system status (GPS/AIS/connected clients), battery, solar
-4. **Settings** — Per-crew notification profiles with configurable thresholds
+1. **Radar** — Head-up situational awareness, guard zones, CPA/TCPA, auto-zoom on target select *(built)*
+2. **Chart** — Web-based nav chart with AIS overlay, pan/zoom, offline tiles *(Phase 2)*
+3. **Dash** — KPI cards: system status (GPS/AIS/connected clients), battery, solar *(Phase 2)*
+4. **Settings** — Per-crew notification profiles with configurable thresholds *(Phase 2)*
 
-## Radar View — Design Decisions (v4)
-- Large heading KPI top center — just the number, nothing else
-- CLOSING/OPENING indicator appears below heading when target selected
+## Radar View — Design Decisions (v4, now built)
+- Large heading KPI top center — just the number; CLOSING/OPENING below it when a target is selected
 - No bottom instrument bar — heading is the only always-visible metric
 - Alert modal shows ONLY vessel name and TCPA ("minutes to act")
-- Nav bar buttons minimum 44px touch targets
-- One line per target: unselected = short heading tick, selected = extended predicted track
-- Safe targets at 50% opacity with no labels unless selected
-- Click target → auto-zoom, show predicted track + CPA point
-- Click radar background → reset zoom, deselect, show all
+- Nav/controls minimum 44px touch targets
+- Unselected target = short heading tick; selected = extended predicted track + CPA point
+- Safe targets dim (50% opacity), no labels unless selected; threats labelled
+- Click target -> auto-zoom + predicted track; click background -> reset/deselect
 - Target cards sorted by CPA (closest first), AtoN sorted to bottom
 - Display mode (head-up/course-up/north-up) rotates all radar elements
-- Filter range visually drops targets from both radar and list
-- Watch timer with selectable duration and alarm beep
-- Nav Aid (AtoN) targets as yellow diamonds
-- DSC Call button on target detail card (pending GX1850 verification)
+- Range filter visually drops targets from both radar and list
+- Watch timer with selectable duration + alarm beep
+- AtoN (Nav Aid) targets as yellow diamonds
+- DSC Call button on target detail card — NOT built yet (pending GX1850 verification, Phase 3)
+
+## CPA / Collision Math (important)
+`lib/ais.ts` is the one place where a bug means a *missed collision warning*. It is pure and isolated.
+- Real AIS gives each vessel an **absolute** COG/SOG. Relative velocity = target vector − own vector, computed in `relativeVelocity()` and shared by both display enrichment and the simulator so they model identical physics.
+- Output `rx,ry,vx,vy` are in the **screen frame** (x = East, y = −North) the radar renderer expects.
+- **No tests yet** — adding vitest coverage here (head-on, crossing, opening, parallel geometries) is the top anti-tech-debt task.
+
+## Design Tokens / Theming
+- `app/globals.css` `:root` holds all colour/font tokens + the radar palette (gradient, ring labels, compass) that used to be hardcoded hex inside RadarSVG.
+- `lib/theme.ts` maps token names to `var(--x)` so components stay typo-safe (`C.danger`) while values live in CSS.
+- **Night-vision red mode** is now ~10 lines: a `:root[data-theme="night"]{ ... }` block + set `document.documentElement.dataset.theme = "night"`. Not built; documented in `globals.css`.
+- Fonts currently load via Google Fonts `@import` — **won't work offline at sea**. Self-host via `next/font` or local files in the Pi phase.
 
 ## Alert Architecture (Layered)
 1. **Physical horn** (GPIO relay) — safety floor, no WiFi/phone/internet dependency
-2. **Browser audio** — any open Trident tab plays alarm tone
+2. **Browser audio** — any open Trident tab plays alarm tone (current: `useAlerts` plays the tone as a side-effect)
 3. **Push notifications** (PWA) — requires internet, convenience layer
 4. **Visual** — alert modal takes over screen, requires ACKNOWLEDGE tap
 
+> When building layers 1/3, separate **alert state** (in `useAlerts`) from **alert output** (a single effect that fans out to horn/audio/push). Multi-client ACK sync (ACK on iPad clearing the phone) is parked — the physical horn makes independent per-client browser alarms acceptable for now.
+
 ## DSC Calling (Pending Verification)
-GX1850 is on N2K. CALL button on target detail cards. Flow: tap Call → confirm MMSI → Trident sends PGN 129808 → NGX-1 → N2K → GX1850. If radio doesn't accept the command, button degrades to showing MMSI for manual dialing. Verify Phase 3.
+GX1850 is on N2K. CALL button on target detail cards. Flow: tap Call -> confirm MMSI -> Trident sends PGN 129808 -> NGX-1 -> N2K -> GX1850. If the radio doesn't accept the command, button degrades to showing MMSI for manual dialing. Verify Phase 3.
 
 ## Pi Stack (Physical Assembly)
 1. Argon NEO 5 base (screw-mounted to panel)
@@ -142,22 +153,35 @@ Top cover stays in spares drawer.
 ## Software Stack
 - **OS:** OpenPlotter (or clean Pi OS + Signal K)
 - **N2K tap:** Actisense NGX-1-USB
-- **Victron data:** Cerbo GX MK2 → N2K + MQTT over LAN
-- **Trident app:** Next.js / React / JavaScript PWA
-- **Chart engine:** Leaflet or MapLibre GL with pre-cached marine tiles
+- **Victron data:** Cerbo GX MK2 -> N2K + MQTT over LAN
+- **Trident app:** Next.js 14 (App Router) / React 18 / **TypeScript in `lib/`** PWA
+- **On the Pi:** plan to serve as a **static export** (`output: 'export'`) via nginx/caddy — lighter and more robust on an always-on box than a `next start` Node process
+- **Chart engine:** Leaflet or MapLibre GL with pre-cached marine tiles (MBTiles)
 - **Charts for Mexico:** O-Charts Blue Latitude, SEMAR, Chart Locker MBTiles
-- **Keeply sync:** SQLite buffer on Pi → Supabase when Starlink up
+- **Keeply sync:** SQLite buffer on Pi -> Supabase when Starlink up
+
+## Low-Power Notes
+- The realistic power lever is the iPad backlight, not our JS. The data path is naturally low-power: live AIS arrives every 5–30s over the Signal K WS, so `useTargets` will be **event-driven** — the 1s `setInterval` in the code today is a *simulator artifact* that disappears with real data.
+- Habits adopted: enrichment is memoized (CPA trig only on data change); never use `setInterval`-based polling.
+- Not yet done: pause rendering/animations when the tab is hidden (Page Visibility API).
 
 ## Key Documents (in repo /docs)
 - `trident-requirements-v2.html` — Full requirements & build spec
 - `trident-roadmap.html` — OKR roadmap targeting Aug 24
 - `trident-shopping-list.html` — Hardware with vendor links and pricing
-- `trident-radar-prototype.jsx` — Radar v4 prototype (design spec)
+- `trident-radar-prototype.jsx` — Original Radar v4 prototype (design reference; superseded by the built modular radar)
 - `trident-full-mockup.html` — All 4 views interactive mockup
 
 ## What's Next
-1. Decompose monolithic radar.jsx into modular components per architecture
-2. Build production Radar view as first route
-3. Pi hardware arrives June 12 — begin OpenPlotter / Signal K setup
-4. Responsive pass for phone/portrait layout
-5. Order remaining hardware closer to August
+1. **Tests on `lib/`** (vitest) — `cpaTcpa`, `threat`, `relativeVelocity` with known geometries. Highest-leverage anti-tech-debt move; pure functions make it cheap.
+2. **Pi hardware arrives June 12** — begin OpenPlotter / Signal K setup.
+3. **`lib/signalk.ts`** — Signal K WebSocket client to replace `simulate` as the `useTargets` source (UI unchanged).
+4. **Static export config** (`output: 'export'`) for Pi serving; keep avoiding server-only Next features.
+5. **Offline/PWA:** service worker for true offline; self-host fonts (`next/font`) to drop the Google Fonts `@import`.
+6. **Low power:** pause rendering when the tab is hidden (Page Visibility API).
+7. **Build Chart view** (Leaflet/MapLibre + MBTiles), then Dash, then Settings.
+8. **Night-vision red mode** (`data-theme` swap) — now a small addition.
+9. **Responsive pass** for phone/portrait layout.
+
+## Session Log
+- **2026-06-08:** Decomposed monolithic `app/radar.jsx` (425 lines) into the modular architecture above (23 files). Cleaned URL structure (radar at root, named routes + honest Phase-2 stubs). Migrated `lib/` to strict TypeScript with real types. Fixed CPA to derive relative velocity from absolute COG/SOG (was using hand-authored relative vectors); re-tuned the sim for a sensible threat spread. Memoized enrichment. Moved all design tokens to CSS custom properties in `globals.css` (single source of truth); converted RadarSVG colours to `style`-based so `var()` resolves; pulled previously-hardcoded radar hexes into tokens. Revised the file-size rule from a hard 150-line cap to a one-responsibility principle. All changes built clean (tsc + next build) and deployed.
