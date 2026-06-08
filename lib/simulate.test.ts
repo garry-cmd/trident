@@ -3,9 +3,9 @@
 // put, off-screen contacts respawn on-screen, and the derived radar geometry
 // matches the seeds.
 import { describe, it, expect } from "vitest";
-import { initState, advanceState } from "./simulate";
+import { initState, advanceState, nmPerTick } from "./simulate";
 import { deriveTargets } from "./state";
-import { project } from "./geo";
+import { distanceNm, project } from "./geo";
 import { DEFAULT_RANGE } from "./settings";
 
 describe("initState", () => {
@@ -55,6 +55,19 @@ describe("advanceState", () => {
     const { targets } = deriveTargets(after);
     expect(targets[0].dist).toBeLessThan(DEFAULT_RANGE * 2);
     expect(c.name).toBe("MARIA ELENA"); // re-seeded from seed id "1"
+  });
+
+  it("moves each vessel exactly nmPerTick(sog) per tick (guards the knots->nm unit)", () => {
+    const before = initState();
+    const after = advanceState(before);
+    for (const c of before.contacts) {
+      if (c.aton) continue;
+      const a = after.contacts.find((x) => x.id === c.id)!;
+      // skip any that respawned (huge jump); seeds are all on-screen so none do
+      expect(distanceNm(c.position, a.position)).toBeCloseTo(nmPerTick(c.sog), 6);
+    }
+    // sanity: a 10kt boat travels well under 0.05nm/tick, not the 1.3nm of the bug
+    expect(nmPerTick(10)).toBeLessThan(0.05);
   });
 
   it("keeps derived bearings normalised to [0,360) over many ticks", () => {

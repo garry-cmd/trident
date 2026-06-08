@@ -12,6 +12,11 @@ const SPEED_X = 8; // sim speed multiplier
 const RESPAWN_NM = DEFAULT_RANGE * 2; // off-screen bound -> respawn
 const STEP_MIN = (SPEED_X * TICK_MS) / 60000; // sim minutes advanced per tick
 
+// Distance a vessel travels in one tick. sog is knots (nm/hour); STEP_MIN is
+// minutes — hence the /60. Exported so tests can assert the cadence and catch
+// unit regressions (this is exactly where a 60x speed bug hid once).
+export const nmPerTick = (sogKt: number): number => (sogKt * STEP_MIN) / 60;
+
 // Own vessel start. In production this comes from Signal K (navigation.*).
 const SELF_START: LatLon = { lat: 48.05, lon: -122.95 }; // Admiralty Inlet
 const SELF = { cog: 185, sog: 6.2, heading: 185, depth: 142 };
@@ -47,10 +52,10 @@ export function initState(): BoatState {
 // A contact that drifts past the off-screen bound (or passes through own)
 // respawns at its seed bearing/range from the CURRENT own position.
 export function advanceState(prev: BoatState): BoatState {
-  const self = { ...prev.self, position: project(prev.self.position, prev.self.cog, prev.self.sog * STEP_MIN) };
+  const self = { ...prev.self, position: project(prev.self.position, prev.self.cog, nmPerTick(prev.self.sog)) };
   const contacts = prev.contacts.map((c) => {
     if (c.aton) return c;
-    const next = project(c.position, c.cog, c.sog * STEP_MIN);
+    const next = project(c.position, c.cog, nmPerTick(c.sog));
     const d = distanceNm(self.position, next);
     if (d > RESPAWN_NM || d < 0.03) {
       const seed = SEEDS.find((s) => s.id === c.id);
