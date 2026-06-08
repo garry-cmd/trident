@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trident — Requirements &amp; Build Spec v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap');
+  :root{--bg:#0c1117;--surface:#151d27;--surface-raised:#1a2433;--border:#243042;--border-accent:#2d6a4f;--text:#d4dce8;--text-muted:#7b8fa3;--text-bright:#edf2f7;--accent:#40916c;--accent-light:#52b788;--accent-dim:#2d6a4f;--warn:#e09f3e;--warn-dim:#665025;--red:#c1574c;--red-dim:#5c2a25;--blue:#4a90d9;--blue-dim:#1e3a5f;--critical:#d43d6f;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px;}
+  .page-header{background:linear-gradient(135deg,#0f1923 0%,#162233 50%,#0f2818 100%);border-bottom:1px solid var(--border);padding:3rem 2rem 2.5rem;}
+  .page-header .container{max-width:960px;margin:0 auto;}
+  .page-header h1{font-family:'Fraunces',serif;font-size:2.2rem;font-weight:700;color:var(--text-bright);letter-spacing:-0.02em;margin-bottom:0.5rem;}
+  .page-header .subtitle{color:var(--text-muted);font-size:0.95rem;}
+  .page-header .meta{display:flex;gap:2rem;margin-top:1.25rem;font-size:0.82rem;color:var(--text-muted);}
+  .meta-item{display:flex;align-items:center;gap:0.4rem;}
+  .meta-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  main{max-width:960px;margin:0 auto;padding:2rem;}
+  section{margin-bottom:3rem;}
+  h2{font-family:'Fraunces',serif;font-size:1.45rem;font-weight:600;color:var(--text-bright);margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);}
+  h3{font-size:1.05rem;font-weight:600;color:var(--accent-light);margin-top:1.5rem;margin-bottom:0.6rem;}
+  p{margin-bottom:0.85rem;}
+  .problem-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.75rem;}
+  @media(max-width:700px){.problem-grid,.decision-grid{grid-template-columns:1fr;}}
+  .problem-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;}
+  .problem-card .label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--red);margin-bottom:.4rem;}
+  .problem-card h4{font-size:.95rem;font-weight:600;color:var(--text-bright);margin-bottom:.4rem;}
+  .problem-card p{font-size:.85rem;color:var(--text-muted);margin-bottom:0;}
+  .solution-tag{display:inline-block;margin-top:.6rem;font-size:.72rem;font-weight:500;color:var(--accent-light);background:rgba(64,145,108,.12);border:1px solid rgba(64,145,108,.25);padding:.15rem .5rem;border-radius:4px;}
+  .arch-diagram{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin:1rem 0;overflow-x:auto;}
+  .arch-diagram pre{font-family:'IBM Plex Mono',monospace;font-size:.78rem;line-height:1.6;color:var(--text);white-space:pre;}
+  .bom-table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.88rem;}
+  .bom-table thead th{text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:.6rem .75rem;border-bottom:1px solid var(--border);background:var(--surface);}
+  .bom-table tbody td{padding:.65rem .75rem;border-bottom:1px solid var(--border);vertical-align:top;}
+  .bom-table tbody tr:hover{background:rgba(64,145,108,.04);}
+  .status-own{color:var(--accent-light);font-weight:500;}
+  .status-buy{color:var(--warn);font-weight:500;}
+  .status-excluded{color:var(--text-muted);font-style:italic;}
+  .status-install{color:var(--blue);font-weight:500;}
+  .status-locked{color:var(--accent-light);font-weight:600;}
+  .conn-table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.85rem;}
+  .conn-table th{text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:.6rem .75rem;border-bottom:1px solid var(--border);background:var(--surface);}
+  .conn-table td{padding:.6rem .75rem;border-bottom:1px solid var(--border);}
+  .conn-table code{font-family:'IBM Plex Mono',monospace;font-size:.8rem;background:var(--surface-raised);padding:.1rem .35rem;border-radius:3px;color:var(--accent-light);}
+  .feature-block{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:1.25rem;margin:.75rem 0;}
+  .feature-block h4{font-size:.95rem;font-weight:600;color:var(--text-bright);margin-bottom:.5rem;}
+  .feature-block p,.feature-block li{font-size:.88rem;color:var(--text);}
+  .feature-block ul{list-style:none;padding:0;}
+  .feature-block li{padding:.2rem 0;padding-left:1.2rem;position:relative;}
+  .feature-block li::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700;}
+  .callout{background:var(--surface);border-radius:8px;padding:1rem 1.25rem;margin:1rem 0;font-size:.88rem;}
+  .callout-warn{border:1px solid var(--warn-dim);border-left:3px solid var(--warn);}
+  .callout-warn .callout-label{color:var(--warn);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem;}
+  .callout-info{border:1px solid var(--blue-dim);border-left:3px solid var(--blue);}
+  .callout-info .callout-label{color:var(--blue);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem;}
+  .callout-keeply{border:1px solid var(--accent-dim);border-left:3px solid var(--accent-light);}
+  .callout-keeply .callout-label{color:var(--accent-light);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem;}
+  .phase-list{list-style:none;padding:0;margin:.75rem 0;}
+  .phase-item{display:flex;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--border);}
+  .phase-item:last-child{border-bottom:none;}
+  .phase-number{flex-shrink:0;width:32px;height:32px;background:var(--accent-dim);color:var(--accent-light);font-family:'IBM Plex Mono',monospace;font-size:.8rem;font-weight:600;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:.1rem;}
+  .phase-content h4{font-size:.95rem;font-weight:600;color:var(--text-bright);margin-bottom:.25rem;}
+  .phase-content p{font-size:.85rem;color:var(--text-muted);margin-bottom:0;}
+  footer{max-width:960px;margin:0 auto;padding:2rem;border-top:1px solid var(--border);font-size:.8rem;color:var(--text-muted);}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="container">
+    <h1>Trident — Marine Navigation &amp; Monitoring System</h1>
+    <p class="subtitle">Raspberry Pi–based navigation, AIS watch, and power management platform. Hardware companion to Keeply.boats.</p>
+    <div class="meta">
+      <div class="meta-item"><span class="meta-dot"></span> Requirements &amp; Build Spec</div>
+      <div class="meta-item"><span class="meta-dot"></span> v2 — June 2026</div>
+      <div class="meta-item"><span class="meta-dot"></span> Status: Review</div>
+      <div class="meta-item"><span class="meta-dot"></span> Hardware decisions locked — premium</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section>
+  <h2>1. Vision</h2>
+  <p>Trident is a Raspberry Pi–based marine instrumentation platform that replaces an iPad/Navionics chartplotter, the Vesper WatchMate AIS app, and Victron Bluetooth monitoring with a single, always-on system accessible from any device on the boat's WiFi.</p>
+  <p>The immediate goal is to build Trident for a single boat — the builder's — and cruise to Mexico with it. The long-term vision is that Trident becomes the hardware companion to Keeply.boats: any Trident installation feeds instrument-grade voyage data into Keeply's logbook automatically, creating a level of automated logging that manual-entry apps can never match. That positions Keeply uniquely in the cruising software market.</p>
+  <p>The path from personal build to commercial product is real but distant. Build for one boat first. Get it right. The product opportunity follows from the data pipeline, not the other way around.</p>
+</section>
+
+<section>
+  <h2>2. Problems to Solve</h2>
+  <div class="problem-grid">
+    <div class="problem-card"><div class="label">Problem 1</div><h4>iPad/Navionics Power Drain</h4><p>iPad running Navionics as primary chartplotter drew power faster than it could charge, leaving no iPad for other use.</p><span class="solution-tag">Fix: Pi as always-on 12V appliance, display decoupled</span></div>
+    <div class="problem-card"><div class="label">Problem 2</div><h4>WatchMate App Unreliable</h4><p>Vesper WatchMate lacked robust CPA/TCPA alerting, configurable guard zones, and escalating alarm severity. Warnings inadequate for offshore.</p><span class="solution-tag">Fix: Trident AIS watch with proper alerting + physical alarm</span></div>
+    <div class="problem-card"><div class="label">Problem 3</div><h4>AIS WiFi Saturates at 2 Devices</h4><p>XB-8000's 10mW 802.11b/g AP choked when a second device connected. AIS targets visibly disappeared.</p><span class="solution-tag">Fix: Pi as sole data consumer via N2K, fans out to unlimited clients</span></div>
+    <div class="problem-card"><div class="label">Problem 4</div><h4>Starlink Kills AIS WiFi</h4><p>Devices can only sit on one WiFi network. Firing up Starlink for weather meant dropping AIS data.</p><span class="solution-tag">Fix: Single boat LAN with Starlink as WAN uplink</span></div>
+    <div class="problem-card"><div class="label">Problem 5</div><h4>Victron Bluetooth Contention</h4><p>Battery/solar monitoring requires Victron app over Bluetooth, which fights with BT speaker and only supports one connection.</p><span class="solution-tag">Fix: Cerbo GX puts Victron data on N2K + LAN</span></div>
+    <div class="problem-card"><div class="label">Problem 6</div><h4>No True Battery SOC</h4><p>The BMV-712 (coulomb counter) is purchased but not installed. SOC guessed from voltage — unreliable.</p><span class="solution-tag">Fix: Install BMV-712, wire to Cerbo via VE.Direct</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>3. Design Principles</h2>
+  <p><strong>Every device does one job.</strong> The XB-8000 is a sensor, not a data server. The router routes. The Pi concentrates data. Overloading a device with infrastructure duties is the root cause of every problem above.</p>
+  <p><strong>Wired over wireless for critical data paths.</strong> N2K backbone and USB carry instrument and AIS data. WiFi is for consumption, never for infrastructure transport.</p>
+  <p><strong>Internet is an uplink, not a network.</strong> Starlink feeds the router's WAN port. The boat LAN stays up whether the dish is powered or not. All navigation, AIS, and power data works fully offline.</p>
+  <p><strong>Display is decoupled from compute.</strong> The Pi runs headless at 3–5W. Crew use their own devices (iPad, phone, laptop) as displays via the browser.</p>
+  <p><strong>Don't build what's already built.</strong> OpenCPN handles passage planning on a laptop. Signal K concentrates data. The custom build is the web-based chart view, AIS alerting, dashboard, and Keeply data pipeline — the parts where existing software fails.</p>
+  <p><strong>Physical alarm is the safety floor.</strong> Push notifications depend on internet, PWA state, and phone OS behavior. The GPIO-driven horn depends on 12V power and a relay. The horn is the wake-the-boat alarm. Everything else is convenience layered on top.</p>
+</section>
+
+<section>
+  <h2>4. System Architecture</h2>
+  <div class="arch-diagram">
+<pre>
+                  Starlink dish
+                       │  (WAN uplink — transient)
+                       ▼
+           Peplink router  ◄── single SSID, always up
+                       │
+         ┌─────────────┼──────────────┬───────────────┐
+         ▼             ▼              ▼               ▼
+    Raspberry Pi   crew phones     laptops      any browser
+    (Signal K)     / tablets                    on the LAN
+    │    ▲ ▲
+    │    │ └── LAN (MQTT): deep Victron data ──┐
+    │    │ Actisense NGX-1 (USB)               │
+    │ ═══╧═══════════ NMEA 2000 backbone ══════╪══════════
+    │  │       │     │       │         │   │    │
+    │ XB-8000 depth VHF   barometer AP  Triton2 Cerbo GX
+    │  (AIS)                            (inst.)   │
+    │                                     VE.Direct (×3)
+    │                                    ┌────┼────┐
+    │                                 MPPT₁  MPPT₂  BMV-712
+    │
+    ├── GPIO relay ──► 12V physical alarm horn
+    │
+    └── Keeply sync (when Starlink up) ──► Supabase
+</pre>
+  </div>
+</section>
+
+<section>
+  <h2>5. Hardware — Locked Decisions (Premium)</h2>
+
+  <table class="bom-table">
+    <thead><tr><th>Device</th><th>Role</th><th>Notes</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Vesper XB-8000</td><td>AIS transponder + GPS</td><td>Already on N2K backbone. WiFi AP disabled post-build.</td><td class="status-own">Installed</td></tr>
+      <tr><td>B&amp;G Triton 2</td><td>Helm instrument display (not a chartplotter — no cartography)</td><td>Shows depth, wind, speed, SOC from N2K.</td><td class="status-own">Installed</td></tr>
+      <tr><td>Depth, barometer, VHF, autopilot</td><td>N2K instruments</td><td>Already on backbone.</td><td class="status-own">Installed</td></tr>
+      <tr><td>Simrad Tillerpilot</td><td>Autopilot</td><td>Read-only monitoring in Trident Phase 1. Control deferred to Phase 2 with safety gates.</td><td class="status-own">Installed</td></tr>
+      <tr><td>Starlink</td><td>Satellite internet</td><td>Ethernet to Peplink WAN port. Starlink's own WiFi bypassed.</td><td class="status-own">Installed</td></tr>
+      <tr><td>2× Victron MPPT charge controllers</td><td>Solar regulation</td><td>VE.Direct to Cerbo GX.</td><td class="status-own">Installed</td></tr>
+      <tr><td>1× Victron Orion-Tr Smart (DC-DC)</td><td>Alternator charging</td><td>Bluetooth only — no VE.Direct. Excluded unless replaced with Orion XS.</td><td class="status-excluded">Excluded</td></tr>
+      <tr><td>Victron BMV-712</td><td>Battery monitor (true SOC)</td><td>VE.Direct to Cerbo. Most important single addition.</td><td class="status-install">Owned — needs install</td></tr>
+      <tr><td colspan="4" style="padding-top:1rem;font-weight:600;color:var(--text-bright);">New Purchases — Premium</td></tr>
+      <tr><td>Raspberry Pi 5 (8GB)</td><td>Signal K server, Trident host</td><td>Always-on at ~5W headless. 12V powered via buck converter.</td><td class="status-locked">Locked</td></tr>
+      <tr><td>Actisense NGX-1</td><td>N2K → USB gateway</td><td>Type-approved, galvanically isolated, exceptional vendor support. If the Pi dies, plug it into any laptop.</td><td class="status-locked">Locked</td></tr>
+      <tr><td>Peplink BR1 Mini (or MAX Transit)</td><td>Marine router + WiFi AP</td><td>Proper Starlink integration, cellular failover option, single SSID.</td><td class="status-locked">Locked</td></tr>
+      <tr><td>Victron Cerbo GX</td><td>Victron aggregator → N2K + MQTT</td><td>3 native VE.Direct ports (exact fit: 2 MPPTs + BMV-712).</td><td class="status-locked">Locked</td></tr>
+      <tr><td>3× VE.Direct cables</td><td>MPPTs + BMV to Cerbo</td><td>Length per install location.</td><td class="status-locked">Locked</td></tr>
+      <tr><td>12V → 5V buck converter (USB-C)</td><td>Pi power from house bank</td><td>Marine-grade, fused at 3A.</td><td class="status-locked">Locked</td></tr>
+      <tr><td>Samsung PRO Endurance 256GB microSD</td><td>Pi boot + chart storage</td><td>Endurance-rated for always-on use.</td><td class="status-locked">Locked</td></tr>
+      <tr><td>Aluminum passive-cooled Pi case</td><td>Salt air protection</td><td>Below-decks mounting, no direct spray.</td><td class="status-locked">Locked</td></tr>
+      <tr><td>12V relay module + marine horn/buzzer</td><td>Physical alarm via Pi GPIO</td><td>Safety-critical alert path. Independent of WiFi, phones, internet.</td><td class="status-locked">Locked</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>6. Wiring &amp; Connections</h2>
+  <table class="conn-table">
+    <thead><tr><th>From</th><th>To</th><th>Cable</th><th>Data</th></tr></thead>
+    <tbody>
+      <tr><td>N2K backbone</td><td>Pi (via Actisense NGX-1)</td><td>USB</td><td>All instruments: AIS, GPS, depth, heading, speed, wind, baro, autopilot, Victron summary</td></tr>
+      <tr><td>Cerbo GX</td><td>N2K backbone</td><td>NMEA 2000 Micro-C drop</td><td>Battery SOC, voltage, current, solar yield</td></tr>
+      <tr><td>Cerbo GX</td><td>Pi (via router)</td><td>Ethernet → MQTT</td><td>Detailed per-MPPT data, shunt history, charge states</td></tr>
+      <tr><td>MPPT #1, MPPT #2, BMV-712</td><td>Cerbo GX</td><td>VE.Direct (×3)</td><td>Solar + battery data</td></tr>
+      <tr><td>Starlink</td><td>Peplink WAN port</td><td>Ethernet</td><td>Internet uplink (transient)</td></tr>
+      <tr><td>Pi</td><td>Peplink LAN port</td><td>Ethernet</td><td>Wired LAN — Pi never depends on WiFi</td></tr>
+      <tr><td>Cerbo GX</td><td>Peplink LAN port</td><td>Ethernet</td><td>MQTT + Cerbo web UI</td></tr>
+      <tr><td>Pi GPIO</td><td>Relay → 12V horn</td><td>GPIO wire + relay module</td><td>Physical alarm trigger</td></tr>
+      <tr><td>Peplink</td><td>All client devices</td><td>WiFi (single SSID)</td><td>Trident web app, Signal K, internet</td></tr>
+      <tr><td>12V house bank</td><td>Pi (via buck converter)</td><td>12V DC, fused 3A</td><td>Power</td></tr>
+    </tbody>
+  </table>
+  <div class="callout callout-info">
+    <div class="callout-label">XB-8000 WiFi: permanently disabled</div>
+    <p>All AIS data rides the N2K backbone. The XB's weak 2.4GHz radio is switched off entirely, eliminating the multi-device saturation problem and clearing interference. Configuration via USB if ever needed.</p>
+  </div>
+</section>
+
+<section>
+  <h2>7. Software Stack</h2>
+
+  <h3>Base OS &amp; Data Layer</h3>
+  <div class="feature-block">
+    <h4>OpenPlotter (Raspberry Pi OS + marine packages)</h4>
+    <p>Pre-configured Pi distribution bundling Signal K, OpenCPN, and CAN bus drivers. Alternative: clean Pi OS with Signal K installed manually.</p>
+  </div>
+  <div class="feature-block">
+    <h4>Signal K Server</h4>
+    <p>Data backbone. Ingests NMEA 2000 (Actisense NGX-1), Victron MQTT (Cerbo GX). Normalizes into JSON over WebSocket and REST. All Trident views consume Signal K — never talk to hardware directly.</p>
+    <ul>
+      <li>N2K plugin: reads Actisense NGX-1 USB gateway</li>
+      <li>Victron Venus plugin: Cerbo GX over MQTT for detailed data</li>
+      <li>Derived data plugin: CPA/TCPA calculation from AIS position reports</li>
+      <li>Anchor alarm plugin (built-in, configurable)</li>
+    </ul>
+  </div>
+
+  <h3>Passage Planning (Desktop)</h3>
+  <div class="feature-block">
+    <h4>OpenCPN</h4>
+    <p>Battle-tested chartplotter for route planning, waypoint management, and GRIB weather overlays. Runs on the Pi's HDMI or on a laptop. Not browser-based — serves a different moment than Trident's chart view.</p>
+    <ul>
+      <li>Chart sourcing for Mexico: O-Charts Blue Latitude (Sea of Cortez + Pacific Mexico, ~€72 total), SEMAR hydrographic charts, Chart Locker satellite MBTiles for Baja's outer coast</li>
+    </ul>
+  </div>
+
+  <h3>Trident Web Application (Custom Build)</h3>
+  <p>Next.js / React / TypeScript PWA served from the Pi at <code>http://trident.local</code>. Accessible from any browser on the boat's WiFi. Add to home screen for full-screen PWA experience and push notification eligibility on iOS.</p>
+
+  <div class="feature-block">
+    <h4>Chart View</h4>
+    <p>Real-time navigation chart with AIS overlay. Uses Leaflet or MapLibre GL for pan/zoom/pinch with marine chart tiles (pre-downloaded for offline use). Not a replacement for OpenCPN's passage planning — this is the always-available "where am I and what's around me" view on any device.</p>
+    <ul>
+      <li>Pan, pinch-zoom, rotate on touch devices — standard map library behavior</li>
+      <li>AIS targets overlaid with same danger/caution/safe color coding</li>
+      <li>CPA intercept geometry drawn for threat targets</li>
+      <li>Own vessel with heading vector and track trail</li>
+      <li>Auto-recenter on vessel after pan timeout (configurable)</li>
+      <li>Floating instrument bar and target list card overlay</li>
+      <li>Tile source: ENC charts via tile server on Pi, or OpenSeaMap, pre-cached before departure</li>
+      <li>Night mode (red-on-black)</li>
+    </ul>
+  </div>
+
+  <div class="feature-block">
+    <h4>Radar View (Situational Awareness)</h4>
+    <p>Head-up relative-motion display. No cartography — purely spatial. Range rings, guard zone ring, all targets plotted with heading vectors and CPA lines. Full target list in right panel with CPA/TCPA sorted by threat.</p>
+    <ul>
+      <li>Range rings (1nm, 2nm, 3nm — adjustable)</li>
+      <li>Configurable guard zone radius per crew profile</li>
+      <li>Escalating color coding: red (&lt;0.5nm CPA), amber (&lt;1nm), green (safe)</li>
+      <li>Target trails, heading vectors, CPA intercept geometry</li>
+      <li>Compact instrument strip at bottom</li>
+    </ul>
+  </div>
+
+  <div class="feature-block">
+    <h4>Dash View (Power &amp; System)</h4>
+    <p>Large KPI cards for battery management and system health. Three sections: system status, battery/power, and solar production.</p>
+    <ul>
+      <li>System status row: GPS fix quality (satellites, HDOP, WAAS), AIS transponder state (targets, TX interval, last RX), connected clients (device names/count)</li>
+      <li>Hero SOC card with 12-hour sparkline trend</li>
+      <li>Battery voltage, current flow, time remaining</li>
+      <li>Per-MPPT solar yield, panel voltage, charge state, daily peak</li>
+      <li>7-day solar harvest bar chart for weather/cloud pattern</li>
+      <li>Net energy balance (solar in vs load out)</li>
+      <li>Consumed today vs yesterday for pattern comparison</li>
+      <li>Autopilot monitoring widget (read-only): heading, mode, set course, rudder angle</li>
+    </ul>
+  </div>
+
+  <div class="feature-block">
+    <h4>Settings View (Per-Crew Notifications)</h4>
+    <p>Every crew member gets their own alert profile with individually configurable thresholds. Profiles are tied to device via cookie — no accounts, no passwords. Crew opens <code>trident.local</code>, enters their name, gets their profile.</p>
+    <ul>
+      <li>Per-crew threshold configuration for all alert rules</li>
+      <li>Four severity tiers: Info (visual badge), Warn (push + optional audio), Alarm (push + audio + persistent), Critical (all + physical horn)</li>
+      <li>Two notification toggles per rule: push notification and audio independently</li>
+      <li>AIS alerts: CPA proximity, CPA critical, TCPA urgency, guard zone breach</li>
+      <li>Power alerts: low SOC, critical SOC, low voltage, high current draw, solar underperform</li>
+      <li>Navigation alerts: shallow depth, barometric pressure drop, SOG low (stalled/dragging)</li>
+      <li>Boat-level physical horn thresholds: skipper-only, fires regardless of individual profiles</li>
+      <li>Crew can make their devices more sensitive but cannot disable boat-level alarms</li>
+    </ul>
+  </div>
+
+  <h3>DSC Calling (Pending Hardware Verification)</h3>
+  <div class="feature-block">
+    <h4>One-Tap DSC Individual Call</h4>
+    <p>The Standard Horizon GX1850 VHF is on the N2K backbone. Trident adds a CALL button to the target detail card. Tap Call → confirm MMSI → Trident sends PGN 129808 via Signal K → NGX-1 → N2K → GX1850 initiates DSC individual call. If testing reveals the GX1850 doesn't accept the PGN command, the button degrades gracefully to displaying the MMSI in large digits for manual dialing. Verify during Phase 3.</p>
+  </div>
+
+  <h3>Alert Escalation Architecture</h3>
+  <div class="feature-block">
+    <h4>Layered Alert System</h4>
+    <p>All alert logic runs on the Pi server-side. No alert depends on a specific client device being open or awake.</p>
+    <ul>
+      <li>Layer 1 — Physical horn (GPIO relay): fires at boat-level critical thresholds. No WiFi, no phone, no internet in the path. Wakes the whole boat.</li>
+      <li>Layer 2 — Active browser audio: any device with Trident open plays audio through its speaker. Reliable on Android; iOS may kill background audio.</li>
+      <li>Layer 3 — Push notifications (PWA): delivered to crew phones via Apple/Google push servers. Requires internet (Starlink up). Nice convenience layer, never the safety-critical path.</li>
+      <li>Layer 4 — Visual badge: always works. The Trident UI shows the alert in the top bar, highlights the target, changes the color coding. If anyone is looking at any screen, they see it.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>8. Keeply.boats Integration</h2>
+
+  <div class="callout callout-keeply">
+    <div class="callout-label">Long-term product vision</div>
+    <p>Trident is the hardware arm of Keeply. The Signal K → Supabase pipeline bridges boat instruments to the Keeply logbook. Build for one boat first; the commercial opportunity follows from proving the data pipeline, not from premature productization.</p>
+  </div>
+
+  <div class="feature-block">
+    <h4>Voyage Data Sync Service</h4>
+    <p>A background service on the Pi buffers structured voyage data locally (SQLite) and pushes it to Keeply's Supabase backend whenever Starlink is available. The sync is opportunistic and resilient — data accumulates during passages and flushes when internet appears.</p>
+    <ul>
+      <li>GPS track (position, SOG, COG) at configurable interval (e.g., every 30 seconds underway)</li>
+      <li>Daily summary: distance run, hours underway, max/avg speed</li>
+      <li>Anchorage detection: arrival/departure times, position, duration</li>
+      <li>Weather conditions: barometric pressure, wind speed/direction, temperature</li>
+      <li>AIS encounter log: notable close approaches (CPA below threshold), vessel names/MMSI</li>
+      <li>Battery/solar patterns: daily consumption, solar harvest, SOC curve</li>
+      <li>Depth profile along track</li>
+      <li>Alert history: what fired, when, what triggered it</li>
+    </ul>
+  </div>
+
+  <div class="feature-block">
+    <h4>Keeply Logbook — Automatic Entries</h4>
+    <p>The cruiser opens Keeply at a cafe in La Paz and their entire passage log is already there, richer than anything they'd write by hand. The logbook gets entries no one had to type.</p>
+    <ul>
+      <li>GPS track plotted on a chart for each passage</li>
+      <li>Anchorages with positions, arrival/departure, duration</li>
+      <li>Weather conditions from onboard instruments (not forecast data — actual)</li>
+      <li>Notable AIS encounters: "cargo ship passed at 0.3nm at 02:47"</li>
+      <li>Battery/solar performance over the passage</li>
+      <li>Manual notes added by crew from Trident's UI sync to the same timeline</li>
+    </ul>
+  </div>
+
+  <div class="feature-block">
+    <h4>Future: Open Signal K Integration</h4>
+    <p>The sync doesn't need to be Trident-specific. Any Signal K server can push to Keeply via API. Trident is the most polished path, but the Keeply endpoint accepts data from any source. Potential Keeply premium feature: "Connect your Signal K server for automatic voyage logging." The open-source cruising community would adopt this.</p>
+  </div>
+</section>
+
+<section>
+  <h2>9. Build Phases</h2>
+  <p>Ordered by standalone value. Each phase works on its own. Later phases don't rework earlier ones.</p>
+  <ol class="phase-list">
+    <li class="phase-item"><span class="phase-number">1</span><div class="phase-content"><h4>Install BMV-712</h4><p>Wire the shunt to the battery bank's negative lead. Immediate standalone value: true SOC via Bluetooth, even before the Cerbo. No new purchases. Highest impact, lowest effort.</p></div></li>
+    <li class="phase-item"><span class="phase-number">2</span><div class="phase-content"><h4>Peplink Router + Unified WiFi</h4><p>Install router, Starlink to WAN port, single boat SSID. Fixes "Starlink kills AIS" immediately. Creates the LAN everything else will use.</p></div></li>
+    <li class="phase-item"><span class="phase-number">3</span><div class="phase-content"><h4>Raspberry Pi + Signal K + Actisense NGX-1</h4><p>Set up Pi with OpenPlotter, connect NGX-1 to N2K backbone. Verify Signal K ingests all instruments + AIS. Disable XB-8000 WiFi. Signal K's built-in web UI gives basic instrument display to all devices — no custom code yet.</p></div></li>
+    <li class="phase-item"><span class="phase-number">4</span><div class="phase-content"><h4>Victron Cerbo GX</h4><p>Install Cerbo, wire 2 MPPTs + BMV-712 via VE.Direct. Connect to N2K + router Ethernet. Verify Triton 2 shows SOC, Signal K ingests Victron MQTT. Battery and solar data flows through the same system as navigation.</p></div></li>
+    <li class="phase-item"><span class="phase-number">5</span><div class="phase-content"><h4>Physical Alarm System</h4><p>Wire Pi GPIO → relay → 12V horn. Write the server-side alert engine that evaluates Signal K data against thresholds and triggers the relay. This is the safety floor — ship it before the pretty UI.</p></div></li>
+    <li class="phase-item"><span class="phase-number">6</span><div class="phase-content"><h4>Trident Web App — Radar + Dash + Settings</h4><p>Build the Next.js/React/TypeScript PWA. Radar view with CPA/TCPA. Dash view with KPI cards. Settings with per-crew profiles. Served at trident.local. This is the core custom development effort.</p></div></li>
+    <li class="phase-item"><span class="phase-number">7</span><div class="phase-content"><h4>Trident Chart View</h4><p>Add the web-based chart with AIS overlay. Tile server on Pi for offline marine charts. Pre-download chart tiles for cruising grounds before departure. More complex than the other views due to tile infrastructure.</p></div></li>
+    <li class="phase-item"><span class="phase-number">8</span><div class="phase-content"><h4>OpenCPN + Chart Sourcing</h4><p>Install OpenCPN on Pi/laptop. Purchase Blue Latitude charts via O-Charts, download SEMAR and Chart Locker tiles. Configure for Mexico passage. The iPad continues as a fallback chartplotter until this is ready.</p></div></li>
+    <li class="phase-item"><span class="phase-number">9</span><div class="phase-content"><h4>Keeply Voyage Sync</h4><p>Build the SQLite buffer + Supabase sync service. Define the data model for voyage logs, anchorages, and encounters. Wire into Keeply's logbook. This phase bridges Trident to Keeply and is the foundation of the long-term product vision.</p></div></li>
+    <li class="phase-item"><span class="phase-number">10</span><div class="phase-content"><h4>Autopilot Control (Phase 2 — deferred)</h4><p>Add write commands to the tillerpilot via Signal K PUT. Requires safety gates: confirmation dialogs, auto-standby on device disconnect, physical controller always overrides. Only build this if read-only monitoring proves insufficient.</p></div></li>
+  </ol>
+  <div class="callout callout-info">
+    <div class="callout-label">Phasing rationale</div>
+    <p>Each phase delivers standalone value. Phases 1–4 are hardware installation with proven software. Phase 5 is the safety floor. Phases 6–8 are the custom and open-source UI. Phase 9 bridges to Keeply. Phase 10 is deferred until proven necessary. If the project stalls at any point, what's built so far still works.</p>
+  </div>
+</section>
+
+<section>
+  <h2>10. Offline Behavior</h2>
+  <p>Everything that matters runs on the local network with zero internet. The Pi serves Trident over the LAN. Signal K feeds all data over the LAN. The Peplink keeps WiFi up whether Starlink is powered or not. Chart tiles are pre-cached on the Pi. The physical alarm fires from GPIO.</p>
+  <p>The one exception: push notifications to a sleeping crew member's locked phone route through Apple/Google push servers, so they require internet. This is why the physical horn is Layer 1 and push notifications are Layer 3. When Starlink is up, push works as a convenience. When it's down, the system doesn't degrade in any safety-critical way.</p>
+</section>
+
+<section>
+  <h2>11. Out of Scope (Explicit)</h2>
+  <div class="feature-block">
+    <ul>
+      <li>Orion-Tr Smart DC-DC integration (Bluetooth-only hardware; excluded unless replaced with Orion XS)</li>
+      <li>Building a custom chart rendering engine (Leaflet/MapLibre handles map rendering; OpenCPN handles passage planning)</li>
+      <li>Autopilot write commands in Phase 1 (read-only monitoring only; control deferred to Phase 10 with safety gates)</li>
+      <li>Radar integration (not in current instrument set; future N2K addition if radar is added)</li>
+      <li>Remote monitoring from shore (requires always-on internet; future Starlink add-on)</li>
+      <li>Commercial productization of Trident hardware (long-term vision; build for one boat first)</li>
+      <li>Multi-vessel fleet management (Keeply may want this eventually; not in scope for personal build)</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+<footer>Trident — Requirements v2 — June 2026. Hardware companion to Keeply.boats. Build for one boat, prove the data pipeline, then consider the product.</footer>
+</body>
+</html>

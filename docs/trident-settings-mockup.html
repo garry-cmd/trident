@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trident — Settings &amp; Notifications Mockup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #060a0e;
+    --surface: #0d1319;
+    --surface-raised: #111923;
+    --card: #0f1720;
+    --border: #1a2536;
+    --border-light: #243040;
+    --text: #8899aa;
+    --text-bright: #c8d6e0;
+    --text-dim: #4a5a6a;
+    --value: #d0dce6;
+    --label: #556677;
+    --safe: #2d8a56;
+    --safe-bright: #3aad6e;
+    --caution: #c49230;
+    --caution-bright: #daa840;
+    --danger: #c44040;
+    --danger-bright: #e04848;
+    --danger-dim: rgba(196, 64, 64, 0.12);
+    --blue: #3a7abd;
+    --blue-bright: #5a9ae0;
+    --blue-dim: rgba(58, 122, 189, 0.12);
+    --critical: #d43d6f;
+    --critical-dim: rgba(212, 61, 111, 0.12);
+    --own-vessel: #4a9ade;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .dashboard {
+    display: grid;
+    grid-template-rows: 40px 1fr;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ─── TOP BAR ─── */
+  .top-bar {
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    color: var(--text-bright);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .logo svg { width: 16px; height: 16px; }
+
+  .view-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface-raised);
+    border-radius: 5px;
+    padding: 2px;
+  }
+
+  .view-tab {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 12px;
+    border-radius: 3px;
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+
+  .view-tab.active {
+    background: var(--border-light);
+    color: var(--text-bright);
+  }
+
+  .top-spacer { flex: 1; }
+
+  .time-display {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* ─── MAIN LAYOUT ─── */
+  .settings-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* ─── LEFT SIDEBAR ─── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-section-label {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--label);
+    margin-bottom: 10px;
+  }
+
+  .crew-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .crew-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  .crew-item:hover {
+    background: var(--surface-raised);
+  }
+
+  .crew-item.active {
+    background: var(--surface-raised);
+    border-color: var(--border-light);
+  }
+
+  .crew-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .crew-avatar.garry { background: rgba(58, 122, 189, 0.2); color: var(--blue-bright); }
+  .crew-avatar.felipe { background: rgba(196, 146, 48, 0.2); color: var(--caution-bright); }
+  .crew-avatar.boat { background: rgba(196, 64, 64, 0.15); color: var(--danger-bright); }
+
+  .crew-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .crew-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-bright);
+  }
+
+  .crew-role {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .crew-device {
+    font-size: 9px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* Nav sections */
+  .nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .nav-item:hover { background: var(--surface-raised); }
+  .nav-item.active { background: var(--surface-raised); color: var(--text-bright); }
+
+  .nav-item svg { width: 14px; height: 14px; opacity: 0.5; }
+  .nav-item.active svg { opacity: 0.8; }
+
+  .nav-badge {
+    margin-left: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--surface-raised);
+    color: var(--text-dim);
+  }
+
+  .nav-badge.active-count {
+    background: rgba(45, 138, 86, 0.15);
+    color: var(--safe-bright);
+  }
+
+  /* ─── RIGHT CONTENT ─── */
+  .content {
+    padding: 20px 24px;
+    overflow-y: auto;
+  }
+
+  .content-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .content-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-bright);
+  }
+
+  .content-subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+
+  .profile-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: rgba(58, 122, 189, 0.12);
+    color: var(--blue-bright);
+    border: 1px solid rgba(58, 122, 189, 0.25);
+  }
+
+  /* ─── ALERT RULE CATEGORY ─── */
+  .rule-category {
+    margin-bottom: 24px;
+  }
+
+  .category-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .category-icon {
+    width: 18px;
+    height: 18px;
+    opacity: 0.5;
+  }
+
+  .category-name {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--label);
+  }
+
+  .category-count {
+    margin-left: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  /* ─── ALERT RULE ROW ─── */
+  .rule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .rule-row {
+    display: grid;
+    grid-template-columns: 1fr 200px 100px 80px 50px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .rule-row:hover {
+    border-color: var(--border-light);
+  }
+
+  .rule-name-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .rule-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-bright);
+  }
+
+  .rule-desc {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .rule-condition {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .rule-operator {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    background: var(--surface);
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+
+  .rule-threshold {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-bright);
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 5px;
+    padding: 4px 10px;
+    width: 80px;
+    text-align: center;
+  }
+
+  .rule-unit {
+    font-size: 10px;
+    color: var(--label);
+  }
+
+  .severity-badge {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .severity-info {
+    background: var(--blue-dim);
+    color: var(--blue-bright);
+    border: 1px solid rgba(58, 122, 189, 0.25);
+  }
+
+  .severity-warn {
+    background: rgba(196, 146, 48, 0.1);
+    color: var(--caution-bright);
+    border: 1px solid rgba(196, 146, 48, 0.25);
+  }
+
+  .severity-alarm {
+    background: var(--danger-dim);
+    color: var(--danger-bright);
+    border: 1px solid rgba(196, 64, 64, 0.25);
+  }
+
+  .severity-critical {
+    background: var(--critical-dim);
+    color: var(--critical);
+    border: 1px solid rgba(212, 61, 111, 0.25);
+  }
+
+  /* Notify method icons */
+  .notify-methods {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .notify-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+  }
+
+  .notify-icon.on {
+    border-color: var(--safe);
+    background: rgba(45, 138, 86, 0.1);
+  }
+
+  .notify-icon svg {
+    width: 12px;
+    height: 12px;
+    stroke: var(--text-dim);
+  }
+
+  .notify-icon.on svg {
+    stroke: var(--safe-bright);
+  }
+
+  /* Toggle */
+  .toggle-track {
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--border);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .toggle-track.on {
+    background: var(--safe);
+  }
+
+  .toggle-knob {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: left 0.15s;
+  }
+
+  .toggle-track.on .toggle-knob {
+    left: 18px;
+    background: white;
+  }
+
+  /* ─── BOAT-LEVEL BANNER ─── */
+  .boat-banner {
+    background: rgba(196, 64, 64, 0.06);
+    border: 1px solid rgba(196, 64, 64, 0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .boat-banner-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(196, 64, 64, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .boat-banner-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--danger-bright);
+  }
+
+  .boat-banner-text {
+    flex: 1;
+  }
+
+  .boat-banner-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 2px;
+  }
+
+  .boat-banner-desc {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .boat-banner-link {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--danger-bright);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  /* ─── COLUMN HEADER ─── */
+  .rule-col-headers {
+    display: grid;
+    grid-template-columns: 1fr 200px 100px 80px 50px;
+    gap: 12px;
+    padding: 0 14px 6px;
+    font-size: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  .col-right {
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <path d="M12 2 L12 18 M8 6 L12 2 L16 6 M6 10 L12 6 L18 10 M4 14 L12 10 L20 14"/>
+      </svg>
+      TRIDENT
+    </div>
+
+    <div class="view-tabs">
+      <div class="view-tab">Chart</div>
+      <div class="view-tab">Radar</div>
+      <div class="view-tab">Dash</div>
+      <div class="view-tab active">Settings</div>
+    </div>
+
+    <div class="top-spacer"></div>
+
+    <div class="time-display">02:47 UTC</div>
+  </div>
+
+  <!-- SETTINGS LAYOUT -->
+  <div class="settings-layout">
+
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Crew Profiles</div>
+        <div class="crew-list">
+          <div class="crew-item active">
+            <div class="crew-avatar garry">G</div>
+            <div class="crew-info">
+              <span class="crew-name">Garry</span>
+              <span class="crew-role">Skipper</span>
+              <span class="crew-device">iPad Pro</span>
+            </div>
+          </div>
+          <div class="crew-item">
+            <div class="crew-avatar felipe">F</div>
+            <div class="crew-info">
+              <span class="crew-name">Felipe</span>
+              <span class="crew-role">Crew</span>
+              <span class="crew-device">iPhone 15</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Alert Categories</div>
+        <div class="nav-list">
+          <div class="nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            AIS Watch
+            <span class="nav-badge active-count">4</span>
+          </div>
+          <div class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/>
+            </svg>
+            Power
+            <span class="nav-badge active-count">5</span>
+          </div>
+          <div class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+            </svg>
+            Navigation
+            <span class="nav-badge active-count">3</span>
+          </div>
+          <div class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+            System
+            <span class="nav-badge">2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Boat-Level Alarms</div>
+        <div class="nav-list">
+          <div class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+            </svg>
+            Physical Horn
+            <span class="nav-badge">3</span>
+          </div>
+          <div class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Anchor Watch
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT CONTENT -->
+    <div class="content">
+
+      <div class="content-header">
+        <span class="content-title">Garry's Alert Settings</span>
+        <span class="profile-badge">Skipper — iPad Pro</span>
+      </div>
+      <div class="content-subtitle">These thresholds apply only to your device. Boat-level physical alarms are configured separately.</div>
+
+      <!-- Boat-level banner -->
+      <div class="boat-banner">
+        <div class="boat-banner-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          </svg>
+        </div>
+        <div class="boat-banner-text">
+          <div class="boat-banner-title">Physical horn fires at CPA &lt; 0.5nm, Depth &lt; 6ft, SOC &lt; 20%</div>
+          <div class="boat-banner-desc">These are boat-level alarms that wake the whole crew. Only the skipper can change them.</div>
+        </div>
+        <span class="boat-banner-link">Edit boat alarms</span>
+      </div>
+
+      <!-- Column headers -->
+      <div class="rule-col-headers">
+        <span>Rule</span>
+        <span>Condition</span>
+        <span class="col-right">Severity</span>
+        <span class="col-right">Notify</span>
+        <span class="col-right">On</span>
+      </div>
+
+      <!-- AIS WATCH -->
+      <div class="rule-category">
+        <div class="category-header">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <span class="category-name">AIS Watch</span>
+          <span class="category-count">4 active</span>
+        </div>
+
+        <div class="rule-list">
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">CPA Proximity Warning</span>
+              <span class="rule-desc">Alert when any target's closest point of approach is within threshold</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">CPA &lt;</span>
+              <input type="text" class="rule-threshold" value="1.0">
+              <span class="rule-unit">nm</span>
+            </div>
+            <span class="severity-badge severity-warn">Warn</span>
+            <div class="notify-methods">
+              <div class="notify-icon on" title="Push notification">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+              </div>
+              <div class="notify-icon on" title="Audio">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+              </div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">CPA Critical</span>
+              <span class="rule-desc">Escalated alarm when CPA is dangerously close</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">CPA &lt;</span>
+              <input type="text" class="rule-threshold" value="0.5">
+              <span class="rule-unit">nm</span>
+            </div>
+            <span class="severity-badge severity-alarm">Alarm</span>
+            <div class="notify-methods">
+              <div class="notify-icon on" title="Push notification">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+              </div>
+              <div class="notify-icon on" title="Audio">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+              </div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">TCPA Urgency</span>
+              <span class="rule-desc">Alert when a target will reach CPA within time threshold</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">TCPA &lt;</span>
+              <input type="text" class="rule-threshold" value="10">
+              <span class="rule-unit">min</span>
+            </div>
+            <span class="severity-badge severity-warn">Warn</span>
+            <div class="notify-methods">
+              <div class="notify-icon on" title="Push notification">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+              </div>
+              <div class="notify-icon" title="Audio">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+              </div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">Guard Zone Breach</span>
+              <span class="rule-desc">Alert when any target enters the guard zone radius</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">Dist &lt;</span>
+              <input type="text" class="rule-threshold" value="2.0">
+              <span class="rule-unit">nm</span>
+            </div>
+            <span class="severity-badge severity-info">Info</span>
+            <div class="notify-methods">
+              <div class="notify-icon on" title="Push notification">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+              </div>
+              <div class="notify-icon" title="Audio">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+              </div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POWER -->
+      <div class="rule-category">
+        <div class="category-header">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/>
+          </svg>
+          <span class="category-name">Power Management</span>
+          <span class="category-count">5 active</span>
+        </div>
+
+        <div class="rule-list">
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">Low State of Charge</span>
+              <span class="rule-desc">Warning when battery bank SOC drops below threshold</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">SOC &lt;</span>
+              <input type="text" class="rule-threshold" value="40">
+              <span class="rule-unit">%</span>
+            </div>
+            <span class="severity-badge severity-warn">Warn</span>
+            <div class="notify-methods">
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">Critical SOC</span>
+              <span class="rule-desc">Critical alarm — begin load shedding immediately</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">SOC &lt;</span>
+              <input type="text" class="rule-threshold" value="20">
+              <span class="rule-unit">%</span>
+            </div>
+            <span class="severity-badge severity-critical">Critical</span>
+            <div class="notify-methods">
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">Low Voltage</span>
+              <span class="rule-desc">Battery voltage below safe threshold under load</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">Volts &lt;</span>
+              <input type="text" class="rule-threshold" value="24.0">
+              <span class="rule-unit">V</span>
+            </div>
+            <span class="severity-badge severity-alarm">Alarm</span>
+            <div class="notify-methods">
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">High Current Draw</span>
+              <span class="rule-desc">Unexpected load spike — possible short or equipment fault</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">Amps &gt;</span>
+              <input type="text" class="rule-threshold" value="10">
+              <span class="rule-unit">A</span>
+            </div>
+            <span class="severity-badge severity-warn">Warn</span>
+            <div class="notify-methods">
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+              <div class="notify-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">Solar Underperform</span>
+              <span class="rule-desc">Midday solar output below expected — panel issue or shading</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">Watts &lt;</span>
+              <input type="text" class="rule-threshold" value="100">
+              <span class="rule-unit">W</span>
+            </div>
+            <span class="severity-badge severity-info">Info</span>
+            <div class="notify-methods">
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+              <div class="notify-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NAVIGATION -->
+      <div class="rule-category">
+        <div class="category-header">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+          </svg>
+          <span class="category-name">Navigation</span>
+          <span class="category-count">3 active</span>
+        </div>
+
+        <div class="rule-list">
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">Shallow Depth Warning</span>
+              <span class="rule-desc">Alert when depth sounder reads below safe threshold</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">Depth &lt;</span>
+              <input type="text" class="rule-threshold" value="10">
+              <span class="rule-unit">ft</span>
+            </div>
+            <span class="severity-badge severity-alarm">Alarm</span>
+            <div class="notify-methods">
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">Barometric Pressure Drop</span>
+              <span class="rule-desc">Rapid pressure fall indicating approaching weather system</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">Fall &gt;</span>
+              <input type="text" class="rule-threshold" value="3">
+              <span class="rule-unit">mb/3hr</span>
+            </div>
+            <span class="severity-badge severity-warn">Warn</span>
+            <div class="notify-methods">
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+              <div class="notify-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-name-col">
+              <span class="rule-name">Speed Over Ground</span>
+              <span class="rule-desc">Alert when SOG exceeds hull speed or drops to near-zero unexpectedly</span>
+            </div>
+            <div class="rule-condition">
+              <span class="rule-operator">SOG &lt;</span>
+              <input type="text" class="rule-threshold" value="1.0">
+              <span class="rule-unit">kt</span>
+            </div>
+            <span class="severity-badge severity-info">Info</span>
+            <div class="notify-methods">
+              <div class="notify-icon on"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+              <div class="notify-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div>
+            </div>
+            <div class="toggle-track on"><div class="toggle-knob"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

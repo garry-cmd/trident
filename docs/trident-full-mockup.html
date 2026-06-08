@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trident</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #060a0e;
+    --surface: #0d1319;
+    --surface-raised: #111923;
+    --card: #0f1720;
+    --border: #1a2536;
+    --border-light: #243040;
+    --text: #8899aa;
+    --text-bright: #c8d6e0;
+    --text-dim: #4a5a6a;
+    --value: #d0dce6;
+    --label: #556677;
+    --safe: #2d8a56;
+    --safe-bright: #3aad6e;
+    --safe-glow: rgba(58,173,110,0.08);
+    --caution: #c49230;
+    --caution-bright: #daa840;
+    --danger: #c44040;
+    --danger-bright: #e04848;
+    --danger-dim: rgba(196,64,64,0.15);
+    --blue: #3a7abd;
+    --blue-bright: #5a9ae0;
+    --blue-dim: rgba(58,122,189,0.12);
+    --critical: #d43d6f;
+    --critical-dim: rgba(212,61,111,0.12);
+    --own-vessel: #4a9ade;
+    --water-deep: #070d14;
+    --water-shallow: #0e1e2e;
+    --water-very-shallow: #162a3a;
+    --coast: #3a4a58;
+    --depth-contour: #0f1a26;
+    --nav-aid-green: #1a6a3a;
+    --nav-aid-red: #8a2a2a;
+    --track: rgba(74,154,222,0.3);
+    --guard-zone-stroke: rgba(58,122,189,0.25);
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  body{font-family:'IBM Plex Sans',-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh;width:100vw;}
+
+  .app{display:grid;grid-template-rows:40px 1fr;height:100vh;width:100vw;}
+
+  /* ═══ TOP BAR ═══ */
+  .top-bar{background:var(--surface);display:flex;align-items:center;padding:0 14px;gap:16px;border-bottom:1px solid var(--border);z-index:100;}
+  .logo{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;letter-spacing:.15em;color:var(--text-bright);text-transform:uppercase;display:flex;align-items:center;gap:7px;flex-shrink:0;}
+  .logo svg{width:16px;height:16px;}
+  .view-tabs{display:flex;gap:2px;background:var(--surface-raised);border-radius:5px;padding:2px;flex-shrink:0;}
+  .view-tab{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:4px 12px;border-radius:3px;color:var(--text-dim);cursor:pointer;transition:all .15s;user-select:none;}
+  .view-tab:hover{color:var(--text);}
+  .view-tab.active{background:var(--border-light);color:var(--text-bright);}
+  .top-stat{display:flex;align-items:baseline;gap:5px;flex-shrink:0;}
+  .top-stat .tl{font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--label);}
+  .top-stat .tv{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;color:var(--value);}
+  .top-spacer{flex:1;}
+  .alert-badge{display:flex;align-items:center;gap:5px;background:var(--danger-dim);border:1px solid var(--danger);border-radius:4px;padding:2px 9px;font-size:10px;font-weight:600;color:var(--danger-bright);text-transform:uppercase;letter-spacing:.04em;animation:pulse 2s ease-in-out infinite;flex-shrink:0;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.65;}}
+  .alert-dot{width:5px;height:5px;border-radius:50%;background:var(--danger-bright);animation:blink 1s step-end infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+  .time-display{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);flex-shrink:0;}
+
+  /* ═══ VIEW PANELS ═══ */
+  .view-panel{display:none;height:100%;overflow:hidden;}
+  .view-panel.active{display:block;}
+
+  /* ═══════════════════════════════════════════════════════ */
+  /* RADAR VIEW                                             */
+  /* ═══════════════════════════════════════════════════════ */
+  .radar-layout{display:grid;grid-template-columns:1fr 320px;height:100%;overflow:hidden;}
+  .radar-map{position:relative;background:var(--water-deep);overflow:hidden;}
+  .radar-map svg{width:100%;height:100%;}
+  .radar-right{background:var(--surface);display:flex;flex-direction:column;overflow:hidden;border-left:1px solid var(--border);}
+
+  /* Legend */
+  .legend{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:3px;font-size:9px;color:var(--text-dim);background:rgba(8,12,16,.85);padding:5px 8px;border-radius:4px;z-index:5;}
+  .legend-item{display:flex;align-items:center;gap:5px;}
+  .legend-dot{width:7px;height:7px;border-radius:50%;}
+  .rlabel{position:absolute;font-size:9px;color:var(--text-dim);background:rgba(8,12,16,.7);padding:2px 6px;border-radius:2px;z-index:3;}
+  .rlabel.bl{bottom:10px;left:10px;}
+  .rlabel.br{bottom:10px;right:10px;font-family:'IBM Plex Mono',monospace;}
+
+  /* Panel header + target items (shared) */
+  .ph{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .ph-title{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--label);}
+  .ph-count{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);}
+  .tlist{flex:1;overflow-y:auto;}
+  .tlist::-webkit-scrollbar{width:4px;} .tlist::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:2px;}
+  .ti{padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+  .ti:hover{background:var(--surface-raised);}
+  .ti.danger{background:var(--danger-dim);border-left:3px solid var(--danger);}
+  .ti.caution{border-left:3px solid var(--caution);}
+  .ti.safe{border-left:3px solid var(--border-light);}
+  .tr1{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;}
+  .tname{font-size:11px;font-weight:600;color:var(--text-bright);}
+  .ttype{font-size:9px;color:var(--text-dim);text-transform:uppercase;}
+  .tr2{display:flex;gap:14px;}
+  .tm{display:flex;align-items:baseline;gap:3px;}
+  .tm .ml{font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--label);}
+  .tm .mv{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;}
+  .tm .mu{font-size:8px;color:var(--label);}
+  .mv.danger{color:var(--danger-bright);} .mv.caution{color:var(--caution-bright);} .mv.safe{color:var(--safe-bright);} .mv.neutral{color:var(--value);}
+  .tr3{display:flex;gap:10px;margin-top:3px;font-size:9px;color:var(--text-dim);}
+  .tr3 span{color:var(--text);}
+
+  /* Instrument bar (shared) */
+  .ibar{display:flex;align-items:center;border-top:1px solid var(--border);flex-shrink:0;height:62px;}
+  .ibar.floating{position:absolute;bottom:0;left:0;right:0;background:rgba(13,19,25,.92);backdrop-filter:blur(8px);z-index:5;border-top:1px solid var(--border);}
+  .inst{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid rgba(26,37,54,.5);}
+  .inst:last-child{border-right:none;}
+  .inst .il{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--label);margin-bottom:1px;}
+  .inst .iv{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--value);line-height:1;}
+  .inst .iu{font-size:8px;color:var(--text-dim);margin-top:1px;}
+  .inst.power{background:rgba(17,25,35,.6);}
+  .iv.soc{color:var(--safe-bright);}
+
+  /* Full-width instrument bar */
+  .ibar-full{grid-column:1/-1;}
+
+  /* ═══════════════════════════════════════════════════════ */
+  /* CHART VIEW                                             */
+  /* ═══════════════════════════════════════════════════════ */
+  .chart-layout{position:relative;height:100%;overflow:hidden;background:var(--water-deep);}
+  .chart-layout svg{width:100%;height:100%;}
+
+  /* Floating target card */
+  .ftc{position:absolute;top:10px;right:10px;width:250px;background:rgba(13,19,25,.92);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;overflow:hidden;z-index:5;}
+  .ftc .ti{padding:7px 10px;border-bottom:1px solid rgba(26,37,54,.5);}
+  .ftc .ti:last-child{border-bottom:none;}
+
+  .zoom-ctrl{position:absolute;bottom:74px;right:12px;display:flex;flex-direction:column;gap:2px;z-index:5;}
+  .zbtn{width:30px;height:30px;background:rgba(13,19,25,.9);border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--text);cursor:pointer;}
+  .scale-bar{position:absolute;bottom:74px;left:12px;display:flex;align-items:center;gap:5px;z-index:5;}
+  .scale-line{width:70px;height:0;border-top:1px solid var(--text-dim);position:relative;}
+  .scale-line::before,.scale-line::after{content:'';position:absolute;top:-4px;width:1px;height:7px;background:var(--text-dim);}
+  .scale-line::before{left:0;} .scale-line::after{right:0;}
+  .scale-text{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-dim);}
+
+  /* ═══════════════════════════════════════════════════════ */
+  /* DASH VIEW                                              */
+  /* ═══════════════════════════════════════════════════════ */
+  .dash-layout{padding:14px;overflow-y:auto;height:100%;display:flex;flex-direction:column;gap:12px;}
+  .kpi-row{display:grid;gap:12px;}
+  .row-hero{grid-template-columns:1.6fr 1fr 1fr;}
+  .row-three{grid-template-columns:1fr 1fr 1fr;}
+  .row-solar{grid-template-columns:1fr 1fr 1.2fr;}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;position:relative;overflow:hidden;}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:10px 10px 0 0;}
+  .kpi.ag::before{background:var(--safe);} .kpi.aa::before{background:var(--caution);} .kpi.ab::before{background:var(--blue);} .kpi.ad::before{background:var(--border-light);}
+  .kpi.hero{padding:18px 22px;background:linear-gradient(135deg,var(--card) 0%,rgba(45,138,86,.04) 100%);}
+  .kl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--label);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+  .kl svg{width:13px;height:13px;opacity:.5;}
+  .kvr{display:flex;align-items:baseline;gap:5px;}
+  .kv{font-family:'IBM Plex Mono',monospace;font-weight:700;line-height:1;color:var(--value);}
+  .kv.xl{font-size:52px;} .kv.lg{font-size:38px;} .kv.md{font-size:32px;}
+  .ku{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--label);}
+  .ku.lg{font-size:16px;}
+  .ks{font-size:11px;color:var(--text-dim);margin-top:5px;} .ks span{color:var(--text);}
+  .kv.green{color:var(--safe-bright);} .kv.amber{color:var(--caution-bright);} .kv.dim{color:var(--text-dim);} .kv.blue{color:var(--blue-bright);} .kv.discharge{color:#8a9aaa;}
+  .section-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--text-dim);margin-top:2px;}
+  .row-status{grid-template-columns:1fr 1fr 1fr;}
+  .status-kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;}
+  .status-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .status-icon svg{width:20px;height:20px;}
+  .status-icon.ok{background:rgba(45,138,86,.1);border:1px solid rgba(45,138,86,.2);}
+  .status-icon.ok svg{stroke:var(--safe-bright);}
+  .status-icon.info{background:var(--blue-dim);border:1px solid rgba(58,122,189,.2);}
+  .status-icon.info svg{stroke:var(--blue-bright);}
+  .status-body{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .status-title{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--label);}
+  .status-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;line-height:1;color:var(--safe-bright);}
+  .status-val.blue{color:var(--blue-bright);}
+  .status-detail{font-size:10px;color:var(--text-dim);margin-top:1px;}
+  .status-detail span{color:var(--text);}
+  .status-pills{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;}
+  .status-pill{font-size:8px;font-weight:500;padding:2px 7px;border-radius:3px;background:var(--surface-raised);border:1px solid var(--border);color:var(--text-dim);}
+  .status-pill.active{border-color:rgba(58,122,189,.3);color:var(--blue-bright);background:rgba(58,122,189,.08);}
+
+  /* SOC bar */
+  .soc-bar-c{margin-top:10px;width:100%;}
+  .soc-bg{width:100%;height:9px;background:var(--surface-raised);border-radius:5px;overflow:hidden;}
+  .soc-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--safe) 0%,var(--safe-bright) 100%);}
+  .soc-labels{display:flex;justify-content:space-between;margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--text-dim);}
+
+  /* Sparkline */
+  .spark-c{margin-top:8px;} .spark-lbl{font-size:8px;color:var(--text-dim);margin-bottom:3px;} .spark-c svg{width:100%;height:44px;}
+
+  /* MPPT stats */
+  .mppt-stats{display:flex;gap:14px;margin-top:6px;flex-wrap:wrap;}
+  .ms{display:flex;align-items:baseline;gap:3px;}
+  .ms .msl{font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--label);}
+  .ms .msv{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--text);}
+  .ms .msu{font-size:8px;color:var(--label);}
+
+  /* Daily bars */
+  .daily-bars{display:flex;align-items:flex-end;gap:3px;height:45px;margin-top:8px;}
+  .dbar{flex:1;background:var(--caution);border-radius:2px 2px 0 0;opacity:.5;min-width:0;}
+  .dbar.hl{opacity:.8;} .dbar.today{opacity:.2;border:1px dashed var(--caution);background:transparent;}
+  .daily-labels{display:flex;gap:3px;margin-top:2px;}
+  .dlbl{flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--text-dim);}
+
+  /* Alert strip */
+  .astrip{display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--card);border:1px solid var(--border);border-radius:7px;font-size:10px;color:var(--text);}
+  .astrip .asd{width:7px;height:7px;border-radius:50%;background:var(--safe);flex-shrink:0;}
+  .astrip .asl{font-weight:600;color:var(--text-bright);font-size:9px;text-transform:uppercase;letter-spacing:.04em;}
+  .astrip .asx{flex:1;} .astrip .asv{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);}
+
+  /* ═══════════════════════════════════════════════════════ */
+  /* SETTINGS VIEW                                          */
+  /* ═══════════════════════════════════════════════════════ */
+  .settings-layout{display:grid;grid-template-columns:210px 1fr;height:100%;overflow:hidden;}
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+  .sb-sec{padding:12px;border-bottom:1px solid var(--border);}
+  .sb-lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--label);margin-bottom:8px;}
+  .crew-list{display:flex;flex-direction:column;gap:3px;}
+  .crew-item{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:5px;cursor:pointer;border:1px solid transparent;}
+  .crew-item:hover{background:var(--surface-raised);}
+  .crew-item.active{background:var(--surface-raised);border-color:var(--border-light);}
+  .crew-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;flex-shrink:0;}
+  .crew-av.g{background:rgba(58,122,189,.2);color:var(--blue-bright);}
+  .crew-av.f{background:rgba(196,146,48,.2);color:var(--caution-bright);}
+  .crew-info{display:flex;flex-direction:column;}
+  .crew-n{font-size:11px;font-weight:600;color:var(--text-bright);}
+  .crew-r{font-size:9px;color:var(--text-dim);}
+  .crew-d{font-size:8px;color:var(--text-dim);font-style:italic;}
+  .nav-list{display:flex;flex-direction:column;gap:2px;}
+  .nav-item{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:4px;font-size:11px;color:var(--text);cursor:pointer;}
+  .nav-item:hover{background:var(--surface-raised);} .nav-item.active{background:var(--surface-raised);color:var(--text-bright);}
+  .nav-item svg{width:13px;height:13px;opacity:.5;} .nav-item.active svg{opacity:.8;}
+  .nav-badge{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(45,138,86,.15);color:var(--safe-bright);}
+
+  .s-content{padding:18px 22px;overflow-y:auto;}
+  .s-content::-webkit-scrollbar{width:4px;} .s-content::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:2px;}
+  .s-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;}
+  .s-title{font-size:15px;font-weight:600;color:var(--text-bright);}
+  .s-subtitle{font-size:10px;color:var(--text-dim);margin-bottom:16px;}
+  .profile-badge{font-size:9px;font-weight:500;padding:3px 9px;border-radius:4px;background:var(--blue-dim);color:var(--blue-bright);border:1px solid rgba(58,122,189,.25);}
+
+  /* Boat banner */
+  .boat-banner{background:rgba(196,64,64,.06);border:1px solid rgba(196,64,64,.2);border-radius:7px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+  .bb-icon{width:28px;height:28px;border-radius:50%;background:rgba(196,64,64,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .bb-icon svg{width:14px;height:14px;stroke:var(--danger-bright);}
+  .bb-text{flex:1;} .bb-t{font-size:11px;font-weight:600;color:var(--text-bright);margin-bottom:1px;} .bb-d{font-size:9px;color:var(--text-dim);}
+  .bb-link{font-size:9px;font-weight:600;color:var(--danger-bright);text-decoration:underline;cursor:pointer;}
+
+  /* Rule category */
+  .rcat{margin-bottom:20px;}
+  .cat-h{display:flex;align-items:center;gap:7px;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+  .cat-icon{width:16px;height:16px;opacity:.5;}
+  .cat-n{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--label);}
+  .cat-c{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-dim);}
+  .rlist{display:flex;flex-direction:column;gap:5px;}
+
+  /* Column headers */
+  .rcol-h{display:grid;grid-template-columns:1fr 190px 90px 70px 44px;gap:10px;padding:0 12px 5px;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);}
+  .col-c{text-align:center;}
+
+  /* Rule row */
+  .rr{display:grid;grid-template-columns:1fr 190px 90px 70px 44px;align-items:center;gap:10px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:7px;}
+  .rr:hover{border-color:var(--border-light);}
+  .rn-col{display:flex;flex-direction:column;gap:1px;}
+  .rn{font-size:12px;font-weight:500;color:var(--text-bright);}
+  .rd{font-size:9px;color:var(--text-dim);}
+  .rcond{display:flex;align-items:center;gap:5px;}
+  .rop{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-dim);background:var(--surface);padding:2px 7px;border-radius:3px;border:1px solid var(--border);}
+  .rth{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--text-bright);background:var(--surface);border:1px solid var(--border-light);border-radius:4px;padding:3px 8px;width:70px;text-align:center;}
+  .runit{font-size:9px;color:var(--label);}
+  .sev{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:4px;text-align:center;}
+  .sev.info{background:var(--blue-dim);color:var(--blue-bright);border:1px solid rgba(58,122,189,.25);}
+  .sev.warn{background:rgba(196,146,48,.1);color:var(--caution-bright);border:1px solid rgba(196,146,48,.25);}
+  .sev.alarm{background:var(--danger-dim);color:var(--danger-bright);border:1px solid rgba(196,64,64,.25);}
+  .sev.crit{background:var(--critical-dim);color:var(--critical);border:1px solid rgba(212,61,111,.25);}
+  .nmethods{display:flex;gap:5px;align-items:center;}
+  .ni{width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);cursor:pointer;}
+  .ni.on{border-color:var(--safe);background:rgba(45,138,86,.1);}
+  .ni svg{width:11px;height:11px;stroke:var(--text-dim);fill:none;stroke-width:2;stroke-linecap:round;}
+  .ni.on svg{stroke:var(--safe-bright);}
+  .tog{width:34px;height:18px;border-radius:9px;background:var(--border);position:relative;cursor:pointer;flex-shrink:0;}
+  .tog.on{background:var(--safe);}
+  .tog-k{width:14px;height:14px;border-radius:50%;background:var(--text-dim);position:absolute;top:2px;left:2px;transition:left .15s;}
+  .tog.on .tog-k{left:18px;background:white;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ═══ TOP BAR ═══ -->
+  <div class="top-bar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2 L12 18 M8 6 L12 2 L16 6 M6 10 L12 6 L18 10 M4 14 L12 10 L20 14"/></svg>
+      TRIDENT
+    </div>
+    <div class="view-tabs" id="tabs">
+      <div class="view-tab active" data-view="chart">Chart</div>
+      <div class="view-tab" data-view="radar">Radar</div>
+      <div class="view-tab" data-view="dash">Dash</div>
+      <div class="view-tab" data-view="settings">Settings</div>
+    </div>
+    <div class="top-stat"><span class="tl">Pos</span><span class="tv">24°38.2'N 110°22.8'W</span></div>
+    <div class="top-stat"><span class="tl">HDG</span><span class="tv">185°M</span></div>
+    <div class="top-spacer"></div>
+    <div class="alert-badge"><span class="alert-dot"></span>CPA Alert — Maria Elena</div>
+    <div class="time-display">02:47 UTC</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- CHART VIEW                              -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="view-panel active" id="view-chart">
+    <div class="chart-layout">
+      <svg viewBox="0 0 1100 700" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#161d24"/><stop offset="100%" stop-color="#111820"/></linearGradient>
+          <filter id="g1"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="dg1"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="sg1"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <rect width="1100" height="700" fill="var(--water-deep)"/>
+        <!-- Depth contours -->
+        <path d="M720,0 Q730,120 750,200 Q780,320 760,420 Q740,520 750,600L750,700" fill="none" stroke="var(--depth-contour)" stroke-width=".5" stroke-dasharray="8 4"/>
+        <text x="755" y="310" font-family="IBM Plex Mono" font-size="8" fill="#1a2a3a" transform="rotate(-5,755,310)">100 fm</text>
+        <path d="M790,0 Q800,100 820,200 Q850,340 830,440 Q810,540 820,650L820,700" fill="none" stroke="var(--depth-contour)" stroke-width=".5" stroke-dasharray="6 3"/>
+        <text x="825" y="260" font-family="IBM Plex Mono" font-size="8" fill="#1a2a3a">50 fm</text>
+        <path d="M860,0 Q870,80 880,180 Q900,320 885,420 Q870,520 878,640L880,700" fill="none" stroke="rgba(22,42,58,.6)" stroke-width=".7"/>
+        <path d="M860,0 Q870,80 880,180 Q900,320 885,420 Q870,520 878,640L880,700L1100,700L1100,0Z" fill="var(--water-shallow)" opacity=".5"/>
+        <path d="M920,0 Q928,100 935,200 Q945,340 938,440 Q930,540 935,660L938,700L1100,700L1100,0Z" fill="var(--water-very-shallow)" opacity=".4"/>
+        <!-- Soundings -->
+        <text x="650" y="180" font-family="IBM Plex Mono" font-size="7" fill="#1a2a3a">486</text>
+        <text x="580" y="350" font-family="IBM Plex Mono" font-size="7" fill="#1a2a3a">512</text>
+        <text x="770" y="180" font-family="IBM Plex Mono" font-size="7" fill="#1a2a3a">142</text>
+        <text x="850" y="300" font-family="IBM Plex Mono" font-size="7" fill="#1e3040">52</text>
+        <text x="910" y="480" font-family="IBM Plex Mono" font-size="7" fill="#1e3040">24</text>
+        <!-- Lat/lon grid -->
+        <line x1="0" y1="175" x2="1100" y2="175" stroke="rgba(20,30,42,.3)" stroke-width=".5" stroke-dasharray="1 6"/>
+        <line x1="0" y1="350" x2="1100" y2="350" stroke="rgba(20,30,42,.3)" stroke-width=".5" stroke-dasharray="1 6"/>
+        <line x1="0" y1="525" x2="1100" y2="525" stroke="rgba(20,30,42,.3)" stroke-width=".5" stroke-dasharray="1 6"/>
+        <line x1="275" y1="0" x2="275" y2="700" stroke="rgba(20,30,42,.3)" stroke-width=".5" stroke-dasharray="1 6"/>
+        <line x1="550" y1="0" x2="550" y2="700" stroke="rgba(20,30,42,.3)" stroke-width=".5" stroke-dasharray="1 6"/>
+        <line x1="825" y1="0" x2="825" y2="700" stroke="rgba(20,30,42,.3)" stroke-width=".5" stroke-dasharray="1 6"/>
+        <text x="272" y="12" font-family="IBM Plex Mono" font-size="7" fill="#1a2536" text-anchor="middle">110°40'W</text>
+        <text x="547" y="12" font-family="IBM Plex Mono" font-size="7" fill="#1a2536" text-anchor="middle">110°25'W</text>
+        <text x="822" y="12" font-family="IBM Plex Mono" font-size="7" fill="#1a2536" text-anchor="middle">110°10'W</text>
+        <text x="4" y="178" font-family="IBM Plex Mono" font-size="7" fill="#1a2536">24°45'N</text>
+        <text x="4" y="353" font-family="IBM Plex Mono" font-size="7" fill="#1a2536">24°35'N</text>
+        <!-- Land -->
+        <path d="M970,0 Q975,40 980,80 Q990,140 985,200 Q978,260 982,320 Q995,380 988,440 Q975,500 980,560 Q990,620 985,680L988,700L1100,700L1100,0Z" fill="url(#lg1)" stroke="var(--coast)" stroke-width="1"/>
+        <path d="M982,318 Q1000,330 1005,340 Q998,355 988,360" fill="url(#lg1)" stroke="var(--coast)" stroke-width=".7"/>
+        <text x="1010" y="150" font-family="IBM Plex Sans" font-size="10" font-weight="500" fill="#2a3a4a" letter-spacing=".1em">BAJA</text>
+        <text x="1005" y="163" font-family="IBM Plex Sans" font-size="10" font-weight="500" fill="#2a3a4a" letter-spacing=".1em">CALIFORNIA SUR</text>
+        <!-- Nav aids -->
+        <g transform="translate(920,280)"><polygon points="0,-6 -4,4 4,4" fill="var(--nav-aid-green)" filter="url(#sg1)"/><text x="7" y="2" font-family="IBM Plex Mono" font-size="7" fill="#1a4a2a">Fl G 4s</text></g>
+        <g transform="translate(935,390)"><circle r="4" fill="var(--nav-aid-red)" filter="url(#sg1)"/><text x="7" y="2" font-family="IBM Plex Mono" font-size="7" fill="#5a2a2a">Fl R 6s</text></g>
+        <g transform="translate(998,330)"><circle r="3" fill="#8a7a30" filter="url(#sg1)"/><line x1="0" y1="0" x2="-40" y2="-25" stroke="rgba(138,122,48,.15)" stroke-width=".5"/><line x1="0" y1="0" x2="-45" y2="15" stroke="rgba(138,122,48,.15)" stroke-width=".5"/><text x="-35" y="-8" font-family="IBM Plex Mono" font-size="7" fill="#5a5020">Fl(2) W 10s</text></g>
+        <!-- Track -->
+        <path d="M555,100 Q558,140 560,180 Q563,220 565,260 Q568,300 570,340" fill="none" stroke="var(--track)" stroke-width="1.5" stroke-dasharray="4 6"/>
+        <!-- Own vessel -->
+        <g transform="translate(570,340)" filter="url(#g1)"><line x1="0" y1="0" x2="2" y2="60" stroke="var(--own-vessel)" stroke-width="1" stroke-dasharray="4 3" opacity=".4"/><polygon points="0,-16 -8,10 0,5 8,10" fill="var(--own-vessel)" opacity=".9"/><circle r="3" fill="#70b8f0"/></g>
+        <!-- Maria Elena -->
+        <g transform="translate(640,430)"><line x1="0" y1="0" x2="-70" y2="-90" stroke="var(--danger)" stroke-width=".7" stroke-dasharray="4 4" opacity=".35"/><line x1="18" y1="30" x2="30" y2="55" stroke="var(--danger)" stroke-width=".8" opacity=".15"/><line x1="0" y1="0" x2="-14" y2="-22" stroke="var(--danger-bright)" stroke-width="1.5" opacity=".7"/><polygon points="0,-8 -5,5 0,2 5,5" fill="var(--danger-bright)" transform="rotate(-35)" filter="url(#dg1)"/><rect x="10" y="-20" width="112" height="30" rx="3" fill="rgba(196,64,64,.18)" stroke="var(--danger)" stroke-width=".5"/><text x="16" y="-6" font-family="IBM Plex Sans" font-size="9" font-weight="600" fill="var(--danger-bright)">MARIA ELENA</text><text x="16" y="5" font-family="IBM Plex Mono" font-size="8" fill="var(--danger-bright)">CPA 0.3nm  8min</text></g>
+        <!-- Maersk -->
+        <g transform="translate(720,180)"><line x1="0" y1="0" x2="-150" y2="160" stroke="var(--caution)" stroke-width=".5" stroke-dasharray="5 4" opacity=".2"/><rect x="-5" y="-12" width="10" height="24" rx="2" fill="var(--caution)" transform="rotate(-210)" opacity=".8"/><line x1="0" y1="0" x2="-10" y2="18" stroke="var(--caution)" stroke-width="1.5" opacity=".5"/><rect x="14" y="-18" width="118" height="28" rx="3" fill="rgba(196,146,48,.1)" stroke="var(--caution)" stroke-width=".5"/><text x="20" y="-4" font-family="IBM Plex Sans" font-size="9" font-weight="600" fill="var(--caution-bright)">MAERSK DURBAN</text><text x="20" y="6" font-family="IBM Plex Mono" font-size="8" fill="var(--caution)">CPA 0.8nm  18min</text></g>
+        <!-- Ocean Pearl -->
+        <g transform="translate(340,160)"><rect x="-4" y="-10" width="8" height="20" rx="2" fill="var(--safe)" transform="rotate(-150)" opacity=".6"/><text x="12" y="-2" font-family="IBM Plex Sans" font-size="9" font-weight="500" fill="var(--safe)">OCEAN PEARL</text><text x="12" y="8" font-family="IBM Plex Mono" font-size="8" fill="#2a5a3a">2.1nm</text></g>
+        <!-- Bahia Sport -->
+        <g transform="translate(380,480)"><polygon points="0,-7 -4,5 0,2 4,5" fill="var(--safe)" transform="rotate(45)" opacity=".4"/><text x="8" y="0" font-family="IBM Plex Sans" font-size="8" fill="#2a4a3a">BAHIA SPORT</text></g>
+      </svg>
+      <!-- Floating target card -->
+      <div class="ftc">
+        <div class="ph"><span class="ph-title">Nearby Targets</span><span class="ph-count">5 tracked</span></div>
+        <div class="ti danger"><div class="tr1"><span class="tname">MARIA ELENA</span><span class="ttype">Fishing</span></div><div class="tr2"><div class="tm"><span class="ml">CPA</span><span class="mv danger">0.3</span><span class="mu">nm</span></div><div class="tm"><span class="ml">TCPA</span><span class="mv danger">8</span><span class="mu">min</span></div><div class="tm"><span class="ml">Dist</span><span class="mv neutral">0.7</span><span class="mu">nm</span></div></div></div>
+        <div class="ti caution"><div class="tr1"><span class="tname">MAERSK DURBAN</span><span class="ttype">Cargo</span></div><div class="tr2"><div class="tm"><span class="ml">CPA</span><span class="mv caution">0.8</span><span class="mu">nm</span></div><div class="tm"><span class="ml">TCPA</span><span class="mv caution">18</span><span class="mu">min</span></div><div class="tm"><span class="ml">Dist</span><span class="mv neutral">1.8</span><span class="mu">nm</span></div></div></div>
+        <div class="ti safe"><div class="tr1"><span class="tname">OCEAN PEARL</span><span class="ttype">Tanker</span></div><div class="tr2"><div class="tm"><span class="ml">CPA</span><span class="mv safe">2.1</span><span class="mu">nm</span></div><div class="tm"><span class="ml">TCPA</span><span class="mv safe">42</span><span class="mu">min</span></div><div class="tm"><span class="ml">Dist</span><span class="mv neutral">2.5</span><span class="mu">nm</span></div></div></div>
+      </div>
+      <div class="scale-bar"><div class="scale-line"></div><span class="scale-text">1 nm</span></div>
+      <div class="zoom-ctrl"><div class="zbtn">+</div><div class="zbtn">−</div></div>
+      <div class="ibar floating">
+        <div class="inst"><span class="il">SOG</span><span class="iv">6.2</span><span class="iu">knots</span></div>
+        <div class="inst"><span class="il">COG</span><span class="iv">185°</span><span class="iu">mag</span></div>
+        <div class="inst"><span class="il">Depth</span><span class="iv">142</span><span class="iu">feet</span></div>
+        <div class="inst"><span class="il">Wind</span><span class="iv">14</span><span class="iu">kt / 32° stbd</span></div>
+        <div class="inst"><span class="il">Baro</span><span class="iv">1018</span><span class="iu">mb ↓</span></div>
+        <div class="inst power"><span class="il">SOC</span><span class="iv soc">78%</span><span class="iu">-3.2A</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- RADAR VIEW                              -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="view-panel" id="view-radar">
+    <div class="radar-layout">
+      <div class="radar-map">
+        <svg viewBox="0 0 700 560" preserveAspectRatio="xMidYMid meet">
+          <defs><radialGradient id="rbg" cx="50%" cy="50%"><stop offset="0%" stop-color="#0a1118"/><stop offset="100%" stop-color="#060a0e"/></radialGradient><filter id="g2"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="dg2"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+          <rect width="700" height="560" fill="url(#rbg)"/>
+          <circle cx="350" cy="280" r="210" fill="none" stroke="#141e2a" stroke-width=".5"/>
+          <circle cx="350" cy="280" r="140" fill="none" stroke="#141e2a" stroke-width=".5"/>
+          <circle cx="350" cy="280" r="70" fill="none" stroke="#141e2a" stroke-width=".5"/>
+          <text x="354" y="68" font-family="IBM Plex Mono" font-size="9" fill="#2a3a4a">3nm</text>
+          <text x="354" y="138" font-family="IBM Plex Mono" font-size="9" fill="#2a3a4a">2nm</text>
+          <text x="354" y="208" font-family="IBM Plex Mono" font-size="9" fill="#2a3a4a">1nm</text>
+          <line x1="350" y1="65" x2="350" y2="495" stroke="#141e2a" stroke-width=".5"/>
+          <line x1="135" y1="280" x2="565" y2="280" stroke="#141e2a" stroke-width=".5"/>
+          <line x1="202" y1="132" x2="498" y2="428" stroke="#0f171f" stroke-width=".5"/>
+          <line x1="498" y1="132" x2="202" y2="428" stroke="#0f171f" stroke-width=".5"/>
+          <text x="350" y="58" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="#4a5a6a">N</text>
+          <text x="570" y="284" font-family="IBM Plex Mono" font-size="10" fill="#3a4a5a">090</text>
+          <text x="350" y="508" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#3a4a5a">180</text>
+          <text x="130" y="284" font-family="IBM Plex Mono" font-size="10" fill="#3a4a5a">270</text>
+          <!-- Guard zone -->
+          <circle cx="350" cy="280" r="140" fill="none" stroke="var(--guard-zone-stroke)" stroke-width="1" stroke-dasharray="6 4"/>
+          <text x="496" y="162" font-family="IBM Plex Mono" font-size="9" fill="rgba(58,122,189,.5)">GUARD 2nm</text>
+          <!-- Own vessel -->
+          <g transform="translate(350,280)"><polygon points="0,-14 -7,8 0,4 7,8" fill="var(--own-vessel)" filter="url(#g2)" opacity=".9"/><circle r="3" fill="var(--own-vessel)"/><line x1="0" y1="-14" x2="0" y2="-35" stroke="var(--own-vessel)" stroke-width="1" stroke-dasharray="3 2" opacity=".5"/></g>
+          <!-- Maria Elena -->
+          <g transform="translate(400,340)" filter="url(#dg2)"><line x1="18" y1="24" x2="35" y2="48" stroke="var(--danger)" stroke-width="1" opacity=".25"/><line x1="0" y1="0" x2="-50" y2="-60" stroke="var(--danger)" stroke-width=".7" stroke-dasharray="4 3" opacity=".4"/><polygon points="0,-8 -5,5 0,2 5,5" fill="var(--danger-bright)" transform="rotate(-35)"/><line x1="0" y1="0" x2="-12" y2="-18" stroke="var(--danger-bright)" stroke-width="1.5" opacity=".7"/><rect x="10" y="-18" width="106" height="28" rx="3" fill="rgba(196,64,64,.2)" stroke="var(--danger)" stroke-width=".5"/><text x="16" y="-4" font-family="IBM Plex Sans" font-size="9" font-weight="600" fill="var(--danger-bright)">MARIA ELENA</text><text x="16" y="6" font-family="IBM Plex Mono" font-size="8" fill="var(--danger-bright)">CPA 0.3nm 8min</text></g>
+          <!-- Maersk -->
+          <g transform="translate(445,150)"><rect x="-4" y="-10" width="8" height="20" rx="2" fill="var(--caution)" transform="rotate(-210)" opacity=".85"/><line x1="0" y1="0" x2="-8" y2="14" stroke="var(--caution)" stroke-width="1.5" opacity=".6"/><rect x="12" y="-16" width="108" height="28" rx="3" fill="rgba(196,146,48,.12)" stroke="var(--caution)" stroke-width=".5"/><text x="18" y="-2" font-family="IBM Plex Sans" font-size="9" font-weight="600" fill="var(--caution-bright)">MAERSK DURBAN</text><text x="18" y="8" font-family="IBM Plex Mono" font-size="8" fill="var(--caution)">CPA 0.8nm 18min</text></g>
+          <!-- Ocean Pearl -->
+          <g transform="translate(215,140)"><rect x="-3" y="-8" width="6" height="16" rx="1.5" fill="var(--safe)" transform="rotate(-150)" opacity=".7"/><text x="12" y="-2" font-family="IBM Plex Sans" font-size="9" font-weight="500" fill="var(--safe)">OCEAN PEARL</text><text x="12" y="8" font-family="IBM Plex Mono" font-size="8" fill="#3a6a4a">2.1nm</text></g>
+          <!-- Bahia Sport -->
+          <g transform="translate(190,370)"><polygon points="0,-6 -4,4 4,4" fill="var(--safe)" transform="rotate(45)" opacity=".5"/><text x="10" y="0" font-family="IBM Plex Sans" font-size="9" fill="#3a5a4a">BAHIA SPORT</text></g>
+          <!-- Distant -->
+          <g transform="translate(285,110)"><polygon points="0,-5 -3,3 3,3" fill="#2a3a4a" opacity=".5"/><text x="8" y="2" font-family="IBM Plex Mono" font-size="8" fill="#2a3a4a">338201000</text></g>
+        </svg>
+        <div class="legend"><div class="legend-item"><div class="legend-dot" style="background:var(--danger-bright)"></div><span>CPA &lt; 0.5nm</span></div><div class="legend-item"><div class="legend-dot" style="background:var(--caution)"></div><span>CPA &lt; 1.0nm</span></div><div class="legend-item"><div class="legend-dot" style="background:var(--safe)"></div><span>CPA &gt; 1.0nm</span></div><div class="legend-item"><div class="legend-dot" style="background:var(--blue);opacity:.5"></div><span>Guard zone</span></div></div>
+        <div class="rlabel bl">Situational Awareness — Head Up</div>
+        <div class="rlabel br">Range: 3nm</div>
+      </div>
+      <div class="radar-right">
+        <div class="ph"><span class="ph-title">AIS Targets</span><span class="ph-count">5 tracked</span></div>
+        <div class="tlist">
+          <div class="ti danger"><div class="tr1"><span class="tname">MARIA ELENA</span><span class="ttype">Fishing</span></div><div class="tr2"><div class="tm"><span class="ml">CPA</span><span class="mv danger">0.3</span><span class="mu">nm</span></div><div class="tm"><span class="ml">TCPA</span><span class="mv danger">8</span><span class="mu">min</span></div><div class="tm"><span class="ml">Dist</span><span class="mv neutral">0.7</span><span class="mu">nm</span></div></div><div class="tr3"><span>BRG <span>128°</span></span><span>COG <span>325°</span></span><span>SOG <span>4.2 kt</span></span></div></div>
+          <div class="ti caution"><div class="tr1"><span class="tname">MAERSK DURBAN</span><span class="ttype">Cargo</span></div><div class="tr2"><div class="tm"><span class="ml">CPA</span><span class="mv caution">0.8</span><span class="mu">nm</span></div><div class="tm"><span class="ml">TCPA</span><span class="mv caution">18</span><span class="mu">min</span></div><div class="tm"><span class="ml">Dist</span><span class="mv neutral">1.8</span><span class="mu">nm</span></div></div><div class="tr3"><span>BRG <span>045°</span></span><span>COG <span>210°</span></span><span>SOG <span>12.8 kt</span></span></div></div>
+          <div class="ti safe"><div class="tr1"><span class="tname">OCEAN PEARL</span><span class="ttype">Tanker</span></div><div class="tr2"><div class="tm"><span class="ml">CPA</span><span class="mv safe">2.1</span><span class="mu">nm</span></div><div class="tm"><span class="ml">TCPA</span><span class="mv safe">42</span><span class="mu">min</span></div><div class="tm"><span class="ml">Dist</span><span class="mv neutral">2.5</span><span class="mu">nm</span></div></div><div class="tr3"><span>BRG <span>312°</span></span><span>COG <span>150°</span></span><span>SOG <span>11.4 kt</span></span></div></div>
+          <div class="ti safe"><div class="tr1"><span class="tname">BAHIA SPORT</span><span class="ttype">Sailing</span></div><div class="tr2"><div class="tm"><span class="ml">CPA</span><span class="mv safe">3.4</span><span class="mu">nm</span></div><div class="tm"><span class="ml">TCPA</span><span class="mv safe">65</span><span class="mu">min</span></div><div class="tm"><span class="ml">Dist</span><span class="mv neutral">2.8</span><span class="mu">nm</span></div></div><div class="tr3"><span>BRG <span>240°</span></span><span>COG <span>165°</span></span><span>SOG <span>5.8 kt</span></span></div></div>
+          <div class="ti safe"><div class="tr1"><span class="tname" style="color:var(--text-dim)">338201000</span><span class="ttype">Class B</span></div><div class="tr2"><div class="tm"><span class="ml">CPA</span><span class="mv safe">4.8</span><span class="mu">nm</span></div><div class="tm"><span class="ml">TCPA</span><span class="mv safe">—</span></div><div class="tm"><span class="ml">Dist</span><span class="mv neutral">3.2</span><span class="mu">nm</span></div></div><div class="tr3"><span>BRG <span>348°</span></span><span>COG <span>—</span></span><span>SOG <span>0.2 kt</span></span></div></div>
+        </div>
+        <div class="ibar">
+          <div class="inst"><span class="il">SOG</span><span class="iv">6.2</span><span class="iu">kt</span></div>
+          <div class="inst"><span class="il">COG</span><span class="iv">185°</span><span class="iu">mag</span></div>
+          <div class="inst"><span class="il">Depth</span><span class="iv">142</span><span class="iu">ft</span></div>
+          <div class="inst power"><span class="il">SOC</span><span class="iv soc">78%</span><span class="iu">-3.2A</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- DASH VIEW                               -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="view-panel" id="view-dash">
+    <div class="dash-layout">
+      <!-- System Status Row -->
+      <div class="kpi-row row-status">
+        <div class="status-kpi">
+          <div class="status-icon ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v2M12 16v2M6 12h2M16 12h2M8.46 8.46l1.42 1.42M14.12 14.12l1.42 1.42M8.46 15.54l1.42-1.42M14.12 9.88l1.42-1.42"/></svg>
+          </div>
+          <div class="status-body">
+            <span class="status-title">GPS Fix</span>
+            <span class="status-val">3D Fix</span>
+            <div class="status-detail"><span>9</span> satellites · HDOP <span>0.8</span></div>
+            <div class="status-detail">WAAS active · Pos accuracy <span>±1.2m</span></div>
+          </div>
+        </div>
+        <div class="status-kpi">
+          <div class="status-icon ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <div class="status-body">
+            <span class="status-title">AIS Transponder</span>
+            <span class="status-val">Active</span>
+            <div class="status-detail"><span>5</span> targets tracked · TX every <span>30s</span></div>
+            <div class="status-detail">Last RX <span>2s ago</span> · XB-8000 green</div>
+          </div>
+        </div>
+        <div class="status-kpi">
+          <div class="status-icon info">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <div class="status-body">
+            <span class="status-title">Connected Clients</span>
+            <span class="status-val blue">2</span>
+            <div class="status-pills">
+              <span class="status-pill active">Garry — iPad Pro</span>
+              <span class="status-pill active">Felipe — iPhone 15</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-lbl">Battery &amp; Power</div>
+      <div class="kpi-row row-hero">
+        <div class="kpi hero ag">
+          <div class="kl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>State of Charge</div>
+          <div class="kvr"><span class="kv xl green">78</span><span class="ku lg">%</span></div>
+          <div class="soc-bar-c"><div class="soc-bg"><div class="soc-fill" style="width:78%"></div></div><div class="soc-labels"><span>0%</span><span>184 Ah remaining of 236 Ah</span><span>100%</span></div></div>
+          <div class="spark-c"><div class="spark-lbl">Last 12 hours</div><svg viewBox="0 0 300 44" preserveAspectRatio="none"><line x1="0" y1="11" x2="300" y2="11" stroke="var(--border)" stroke-width=".5" stroke-dasharray="2 4"/><line x1="0" y1="22" x2="300" y2="22" stroke="var(--border)" stroke-width=".5" stroke-dasharray="2 4"/><line x1="0" y1="33" x2="300" y2="33" stroke="var(--border)" stroke-width=".5" stroke-dasharray="2 4"/><text x="2" y="9" font-family="IBM Plex Mono" font-size="5" fill="var(--text-dim)">100</text><text x="2" y="43" font-family="IBM Plex Mono" font-size="5" fill="var(--text-dim)">50</text><text x="0" y="44" font-family="IBM Plex Mono" font-size="4.5" fill="var(--text-dim)">15:00</text><text x="72" y="44" font-family="IBM Plex Mono" font-size="4.5" fill="var(--text-dim)">18:00</text><text x="144" y="44" font-family="IBM Plex Mono" font-size="4.5" fill="var(--text-dim)">21:00</text><text x="216" y="44" font-family="IBM Plex Mono" font-size="4.5" fill="var(--text-dim)">00:00</text><text x="282" y="44" font-family="IBM Plex Mono" font-size="4.5" fill="var(--text-dim)">now</text><path d="M0,4 Q30,3 60,4 Q90,5 120,9 Q150,13 180,17 Q210,19 240,22 Q270,24 300,26L300,40L0,40Z" fill="var(--safe-glow)"/><path d="M0,4 Q30,3 60,4 Q90,5 120,9 Q150,13 180,17 Q210,19 240,22 Q270,24 300,26" fill="none" stroke="var(--safe-bright)" stroke-width="1.5" stroke-linecap="round"/><circle cx="300" cy="26" r="3" fill="var(--safe-bright)"/></svg></div>
+        </div>
+        <div class="kpi ag">
+          <div class="kl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Battery Voltage</div>
+          <div class="kvr"><span class="kv lg green">25.8</span><span class="ku">V</span></div>
+          <div class="ks">Nominal <span>24V</span> | Float <span>27.6V</span></div>
+          <div class="ks">Absorption <span>28.4V</span></div>
+        </div>
+        <div class="kpi ad">
+          <div class="kl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Current Flow</div>
+          <div class="kvr"><span class="kv lg discharge">-3.2</span><span class="ku">A</span></div>
+          <div class="ks">Discharging | <span>78W</span> load</div>
+          <div class="ks">Time to go: <span style="color:var(--safe-bright)">57 hrs</span></div>
+        </div>
+      </div>
+      <div class="section-lbl">Solar Production</div>
+      <div class="kpi-row row-solar">
+        <div class="kpi aa">
+          <div class="kl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>MPPT #1 — Port</div>
+          <div class="kvr"><span class="kv lg dim">0</span><span class="ku">W</span></div>
+          <div class="mppt-stats"><div class="ms"><span class="msl">Vpv</span><span class="msv">0.0</span><span class="msu">V</span></div><div class="ms"><span class="msl">State</span><span class="msv" style="color:var(--text-dim)">Off</span></div></div>
+          <div class="ks">Today: <span>1,420 Wh</span> | Peak: <span>380W</span></div>
+        </div>
+        <div class="kpi aa">
+          <div class="kl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>MPPT #2 — Stbd</div>
+          <div class="kvr"><span class="kv lg dim">0</span><span class="ku">W</span></div>
+          <div class="mppt-stats"><div class="ms"><span class="msl">Vpv</span><span class="msv">0.0</span><span class="msu">V</span></div><div class="ms"><span class="msl">State</span><span class="msv" style="color:var(--text-dim)">Off</span></div></div>
+          <div class="ks">Today: <span>1,280 Wh</span> | Peak: <span>345W</span></div>
+        </div>
+        <div class="kpi aa">
+          <div class="kl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>7-Day Solar Harvest</div>
+          <div class="kvr"><span class="kv lg amber">2,700</span><span class="ku">Wh today</span></div>
+          <div class="daily-bars"><div class="dbar" style="height:65%"></div><div class="dbar" style="height:80%"></div><div class="dbar" style="height:90%"></div><div class="dbar" style="height:45%"></div><div class="dbar" style="height:95%"></div><div class="dbar hl" style="height:75%"></div><div class="dbar today" style="height:75%"></div></div>
+          <div class="daily-labels"><span class="dlbl">Mon</span><span class="dlbl">Tue</span><span class="dlbl">Wed</span><span class="dlbl">Thu</span><span class="dlbl">Fri</span><span class="dlbl">Sat</span><span class="dlbl">Sun</span></div>
+        </div>
+      </div>
+      <div class="section-lbl">System</div>
+      <div class="kpi-row row-three">
+        <div class="kpi ab">
+          <div class="kl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Time Remaining</div>
+          <div class="kvr"><span class="kv lg blue">57</span><span class="ku">hrs</span></div>
+          <div class="ks">At current draw of <span>3.2A</span></div>
+          <div class="ks">Next solar in ~<span>4.5 hrs</span></div>
+        </div>
+        <div class="kpi ad">
+          <div class="kl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"/></svg>Consumed Today</div>
+          <div class="kvr"><span class="kv lg">52</span><span class="ku">Ah</span></div>
+          <div class="ks">= <span>1,340 Wh</span> at avg voltage</div>
+          <div class="ks">Yesterday: <span>48 Ah</span></div>
+        </div>
+        <div class="kpi ag">
+          <div class="kl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Net Balance Today</div>
+          <div class="kvr"><span class="kv lg green">+1,360</span><span class="ku">Wh</span></div>
+          <div class="ks">Solar <span>2,700 Wh</span> — Load <span>1,340 Wh</span></div>
+          <div class="ks" style="color:var(--safe)">Bank gained charge today</div>
+        </div>
+      </div>
+      <div class="astrip"><span class="asd"></span><span class="asl">Battery</span><span>No alerts. Low SOC at 40%. Critical at 20%.</span><span class="asx"></span><span class="asv">Cerbo GX — 3 devices</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SETTINGS VIEW                           -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="view-panel" id="view-settings">
+    <div class="settings-layout">
+      <div class="sidebar">
+        <div class="sb-sec">
+          <div class="sb-lbl">Crew Profiles</div>
+          <div class="crew-list">
+            <div class="crew-item active"><div class="crew-av g">G</div><div class="crew-info"><span class="crew-n">Garry</span><span class="crew-r">Skipper</span><span class="crew-d">iPad Pro</span></div></div>
+            <div class="crew-item"><div class="crew-av f">F</div><div class="crew-info"><span class="crew-n">Felipe</span><span class="crew-r">Crew</span><span class="crew-d">iPhone 15</span></div></div>
+          </div>
+        </div>
+        <div class="sb-sec">
+          <div class="sb-lbl">Alert Categories</div>
+          <div class="nav-list">
+            <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>AIS Watch<span class="nav-badge">4</span></div>
+            <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>Power<span class="nav-badge">5</span></div>
+            <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Navigation<span class="nav-badge">3</span></div>
+          </div>
+        </div>
+        <div class="sb-sec">
+          <div class="sb-lbl">Boat-Level</div>
+          <div class="nav-list">
+            <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>Physical Horn<span class="nav-badge">3</span></div>
+            <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Anchor Watch</div>
+          </div>
+        </div>
+      </div>
+      <div class="s-content">
+        <div class="s-header"><span class="s-title">Garry's Alert Settings</span><span class="profile-badge">Skipper — iPad Pro</span></div>
+        <div class="s-subtitle">These thresholds apply only to your device. Boat-level physical alarms are configured separately.</div>
+        <div class="boat-banner"><div class="bb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="bb-text"><div class="bb-t">Physical horn: CPA &lt; 0.5nm · Depth &lt; 6ft · SOC &lt; 20%</div><div class="bb-d">Boat-level alarms that wake the whole crew. Only skipper can change.</div></div><span class="bb-link">Edit</span></div>
+        <div class="rcol-h"><span>Rule</span><span>Condition</span><span class="col-c">Severity</span><span class="col-c">Notify</span><span class="col-c">On</span></div>
+
+        <!-- AIS -->
+        <div class="rcat">
+          <div class="cat-h"><svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span class="cat-n">AIS Watch</span><span class="cat-c">4 active</span></div>
+          <div class="rlist">
+            <div class="rr"><div class="rn-col"><span class="rn">CPA Proximity Warning</span><span class="rd">Any target CPA within threshold</span></div><div class="rcond"><span class="rop">CPA &lt;</span><input class="rth" value="1.0"><span class="runit">nm</span></div><span class="sev warn">Warn</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni on"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+            <div class="rr"><div class="rn-col"><span class="rn">CPA Critical</span><span class="rd">Dangerously close approach</span></div><div class="rcond"><span class="rop">CPA &lt;</span><input class="rth" value="0.5"><span class="runit">nm</span></div><span class="sev alarm">Alarm</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni on"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+            <div class="rr"><div class="rn-col"><span class="rn">TCPA Urgency</span><span class="rd">Target reaches CPA within time</span></div><div class="rcond"><span class="rop">TCPA &lt;</span><input class="rth" value="10"><span class="runit">min</span></div><span class="sev warn">Warn</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+            <div class="rr"><div class="rn-col"><span class="rn">Guard Zone Breach</span><span class="rd">Target enters guard zone radius</span></div><div class="rcond"><span class="rop">Dist &lt;</span><input class="rth" value="2.0"><span class="runit">nm</span></div><span class="sev info">Info</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+          </div>
+        </div>
+
+        <!-- Power -->
+        <div class="rcat">
+          <div class="cat-h"><svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg><span class="cat-n">Power Management</span><span class="cat-c">5 active</span></div>
+          <div class="rlist">
+            <div class="rr"><div class="rn-col"><span class="rn">Low SOC</span><span class="rd">Battery SOC below threshold</span></div><div class="rcond"><span class="rop">SOC &lt;</span><input class="rth" value="40"><span class="runit">%</span></div><span class="sev warn">Warn</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni on"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+            <div class="rr"><div class="rn-col"><span class="rn">Critical SOC</span><span class="rd">Begin load shedding immediately</span></div><div class="rcond"><span class="rop">SOC &lt;</span><input class="rth" value="20"><span class="runit">%</span></div><span class="sev crit">Critical</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni on"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+            <div class="rr"><div class="rn-col"><span class="rn">Low Voltage</span><span class="rd">Voltage below safe threshold</span></div><div class="rcond"><span class="rop">V &lt;</span><input class="rth" value="24.0"><span class="runit">V</span></div><span class="sev alarm">Alarm</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni on"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+            <div class="rr"><div class="rn-col"><span class="rn">High Current Draw</span><span class="rd">Unexpected load spike</span></div><div class="rcond"><span class="rop">A &gt;</span><input class="rth" value="10"><span class="runit">A</span></div><span class="sev warn">Warn</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+            <div class="rr"><div class="rn-col"><span class="rn">Solar Underperform</span><span class="rd">Midday output below expected</span></div><div class="rcond"><span class="rop">W &lt;</span><input class="rth" value="100"><span class="runit">W</span></div><span class="sev info">Info</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="rcat">
+          <div class="cat-h"><svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span class="cat-n">Navigation</span><span class="cat-c">3 active</span></div>
+          <div class="rlist">
+            <div class="rr"><div class="rn-col"><span class="rn">Shallow Depth</span><span class="rd">Depth below safe threshold</span></div><div class="rcond"><span class="rop">Depth &lt;</span><input class="rth" value="10"><span class="runit">ft</span></div><span class="sev alarm">Alarm</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni on"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+            <div class="rr"><div class="rn-col"><span class="rn">Baro Pressure Drop</span><span class="rd">Rapid fall — weather approaching</span></div><div class="rcond"><span class="rop">Fall &gt;</span><input class="rth" value="3"><span class="runit">mb/3hr</span></div><span class="sev warn">Warn</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+            <div class="rr"><div class="rn-col"><span class="rn">SOG Low</span><span class="rd">Near-zero speed — stalled / dragging</span></div><div class="rcond"><span class="rop">SOG &lt;</span><input class="rth" value="1.0"><span class="runit">kt</span></div><span class="sev info">Info</span><div class="nmethods"><div class="ni on"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="ni"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></div></div><div class="tog on"><div class="tog-k"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Tab navigation
+  const tabs = document.querySelectorAll('.view-tab');
+  const panels = document.querySelectorAll('.view-panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const viewId = 'view-' + tab.dataset.view;
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(viewId).classList.add('active');
+    });
+  });
+
+  // Toggle switches
+  document.querySelectorAll('.tog').forEach(tog => {
+    tog.addEventListener('click', () => tog.classList.toggle('on'));
+  });
+
+  // Notify icons
+  document.querySelectorAll('.ni').forEach(ni => {
+    ni.addEventListener('click', () => ni.classList.toggle('on'));
+  });
+</script>
+</body>
+</html>

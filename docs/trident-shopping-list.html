@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trident — Shopping List</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap');
+  :root{--bg:#0c1117;--surface:#151d27;--raised:#1a2433;--border:#243042;--text:#d4dce8;--muted:#7b8fa3;--bright:#edf2f7;--dim:#4a5a6a;--accent:#40916c;--accent-light:#52b788;--warn:#e09f3e;--blue:#4a90d9;--red:#c1574c;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px;}
+  .header{background:linear-gradient(135deg,#0f1923 0%,#162233 50%,#0f2818 100%);border-bottom:1px solid var(--border);padding:2.5rem 2rem 2rem;}
+  .header .c{max-width:960px;margin:0 auto;}
+  .header h1{font-family:'Fraunces',serif;font-size:2rem;font-weight:700;color:var(--bright);margin-bottom:.3rem;}
+  .header .sub{color:var(--muted);font-size:.9rem;}
+  main{max-width:960px;margin:0 auto;padding:2rem;}
+  h2{font-family:'Fraunces',serif;font-size:1.3rem;font-weight:600;color:var(--bright);margin:2rem 0 .75rem;padding-bottom:.4rem;border-bottom:1px solid var(--border);}
+  p{margin-bottom:.75rem;font-size:.9rem;}
+  a{color:var(--accent-light);text-decoration:none;} a:hover{text-decoration:underline;}
+  .item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;margin-bottom:.75rem;display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:start;}
+  .item-name{font-size:1rem;font-weight:600;color:var(--bright);margin-bottom:.25rem;}
+  .item-desc{font-size:.85rem;color:var(--muted);margin-bottom:.4rem;}
+  .item-links{display:flex;gap:.5rem;flex-wrap:wrap;}
+  .link-btn{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:500;padding:.25rem .65rem;border-radius:4px;border:1px solid var(--border);color:var(--text);background:var(--raised);transition:all .15s;}
+  .link-btn:hover{border-color:var(--accent);color:var(--accent-light);text-decoration:none;}
+  .link-btn.primary{border-color:var(--accent);color:var(--accent-light);background:rgba(64,145,108,.08);}
+  .item-price{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;font-weight:600;color:var(--bright);text-align:right;white-space:nowrap;}
+  .callout{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:1rem 1.25rem;margin:1rem 0;font-size:.88rem;}
+  .callout .cl{color:var(--warn);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem;}
+  .callout-red{border-left-color:var(--red);}
+  .callout-red .cl{color:var(--red);}
+  .callout-info{border-left-color:var(--blue);}
+  .callout-info .cl{color:var(--blue);}
+  .total-box{background:rgba(64,145,108,.06);border:1px solid rgba(64,145,108,.25);border-radius:8px;padding:1.25rem 1.5rem;margin-top:2rem;}
+  .total-grid{display:grid;grid-template-columns:1fr auto;gap:.3rem .5rem;font-size:.9rem;}
+  .total-grid .cat{color:var(--muted);}
+  .total-grid .amt{font-family:'IBM Plex Mono',monospace;text-align:right;color:var(--text);}
+  .total-grid .final{font-size:1.15rem;font-weight:700;color:var(--bright);padding-top:.5rem;margin-top:.5rem;border-top:2px solid rgba(64,145,108,.25);}
+  footer{max-width:960px;margin:0 auto;padding:2rem;border-top:1px solid var(--border);font-size:.8rem;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="c">
+    <h1>Trident — Shopping List</h1>
+    <p class="sub">All hardware for S/V Irene deployment. Links verified June 2026. Prices approximate — check at time of purchase.</p>
+  </div>
+</header>
+
+<main>
+
+<div class="callout callout-red">
+  <div class="cl">Case change — GPIO access required</div>
+  <p>The Flirc Pi 5 case blocks GPIO access, which we need for the alarm relay. Use the <strong>Argon NEO 5</strong> instead — aluminum passive cooling with a removable magnetic top that exposes GPIO.</p>
+</div>
+
+<h2>Raspberry Pi &amp; Compute — Amazon</h2>
+
+<div class="item">
+  <div>
+    <div class="item-name">Raspberry Pi 5 — 8GB (board only)</div>
+    <div class="item-desc">The compute heart of Trident. Board only — case, SD, and power purchased separately below.</div>
+    <div class="item-links">
+      <a href="https://www.amazon.com/Raspberry-Pi-8GB-SC1112-Quad-core/dp/B0CK2FCG1K" class="link-btn primary" target="_blank">Amazon</a>
+      <a href="https://www.pishop.us/product/raspberry-pi-5-8gb/" class="link-btn" target="_blank">PiShop.us</a>
+      <a href="https://www.canakit.com/raspberry-pi-5-8gb.html" class="link-btn" target="_blank">CanaKit</a>
+    </div>
+  </div>
+  <div class="item-price">~$95</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">Argon NEO 5 Case (aluminum, GPIO access)</div>
+    <div class="item-desc">Aluminum passive cooling. Magnetic removable top exposes GPIO pins for the alarm relay. Do NOT buy the Flirc case — it blocks GPIO.</div>
+    <div class="item-links">
+      <a href="https://www.amazon.com/s?k=Argon+NEO+5+Raspberry+Pi+5+case" class="link-btn primary" target="_blank">Amazon search</a>
+    </div>
+  </div>
+  <div class="item-price">~$25</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">Samsung PRO Endurance 256GB microSD</div>
+    <div class="item-desc">Endurance-rated for continuous write. Consumer SD cards die in always-on marine environments. Model: MB-MJ256KA/AM</div>
+    <div class="item-links">
+      <a href="https://www.amazon.com/SAMSUNG-Endurance-MicroSDXC-Adapter-security/dp/B09WB3D5GQ" class="link-btn primary" target="_blank">Amazon</a>
+    </div>
+  </div>
+  <div class="item-price">~$32</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">12V → 5V USB-C Buck Converter (5A / 25W)</div>
+    <div class="item-desc">Powers Pi 5 from house bank. Must deliver 5V/5A (25W) for the Pi 5. Search "12V to USB-C PD 25W converter". Fused input preferred.</div>
+    <div class="item-links">
+      <a href="https://www.amazon.com/s?k=12v+to+usb+c+5v+5a+25w+converter" class="link-btn primary" target="_blank">Amazon search</a>
+    </div>
+  </div>
+  <div class="item-price">~$20</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">3.3V GPIO Relay Module (opto-isolated)</div>
+    <div class="item-desc">Pi GPIO drives relay, relay switches 12V alarm horn. Get an opto-isolated single-channel module.</div>
+    <div class="item-links">
+      <a href="https://www.amazon.com/s?k=3.3v+gpio+relay+module+opto+isolated+raspberry+pi" class="link-btn primary" target="_blank">Amazon search</a>
+    </div>
+  </div>
+  <div class="item-price">~$10</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">Cat6 Ethernet Cables, 2m (×2)</div>
+    <div class="item-desc">Pi to Peplink LAN. Cerbo GX to Peplink LAN.</div>
+    <div class="item-links">
+      <a href="https://www.amazon.com/s?k=cat6+ethernet+cable+2m+2+pack" class="link-btn primary" target="_blank">Amazon search</a>
+    </div>
+  </div>
+  <div class="item-price">~$10</div>
+</div>
+
+<h2>Marine Electronics — Defender</h2>
+
+<div class="item">
+  <div>
+    <div class="item-name">Actisense NGX-1-USB</div>
+    <div class="item-desc">NMEA 2000 ↔ USB gateway + 0183 conversion. Replaces retired NGT-1. Galvanically isolated. Type-approved. Integrated 1.5m N2K drop cable. This is the Pi's connection to the N2K backbone.</div>
+    <div class="item-links">
+      <a href="https://defender.com/en_us/actisense-ngx-1-nmea-2000-dual-gateway" class="link-btn primary" target="_blank">Defender</a>
+    </div>
+  </div>
+  <div class="item-price">~$250</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">Victron Cerbo GX MK2</div>
+    <div class="item-desc">Victron data aggregator. 3× VE.Direct ports. Dual VE.Can. Ethernet. MQTT over LAN for Signal K. Get the MK2 (BPP900451100), not the original.</div>
+    <div class="item-links">
+      <a href="https://defender.com/en_us/victron-energy-cerbo-gx-mk2-communications-center-bpp900451100" class="link-btn primary" target="_blank">Defender — $248</a>
+      <a href="https://www.amazon.com/Victron-Energy-Cerbo-GX-MK2/dp/B0D6LVZWGX" class="link-btn" target="_blank">Amazon</a>
+    </div>
+  </div>
+  <div class="item-price">~$248</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">Victron VE.Direct Cable 1.8m (×3)</div>
+    <div class="item-desc">MPPT #1 + MPPT #2 + BMV-712 to Cerbo. Measure your actual runs — Victron sells 0.3m, 0.9m, 1.8m, 3m, and 5m lengths. Part #: ASS030530218 (for 1.8m).</div>
+    <div class="item-links">
+      <a href="https://defender.com/en_us/catalogsearch/result/?q=victron+ve.direct+cable" class="link-btn primary" target="_blank">Defender search</a>
+      <a href="https://www.amazon.com/s?k=victron+ve.direct+cable+1.8m" class="link-btn" target="_blank">Amazon search</a>
+    </div>
+  </div>
+  <div class="item-price">~$54</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">NMEA 2000 T-Connector</div>
+    <div class="item-desc">For Cerbo GX drop onto N2K backbone. Check if your backbone already has a spare T. The NGX-1 has its own integrated drop cable.</div>
+    <div class="item-links">
+      <a href="https://defender.com/en_us/catalogsearch/result/?q=nmea+2000+t+connector" class="link-btn primary" target="_blank">Defender search</a>
+    </div>
+  </div>
+  <div class="item-price">~$25</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">NMEA 2000 Drop Cable 1m (Micro-C)</div>
+    <div class="item-desc">Cerbo GX to T-connector. Male-to-male Micro-C. Verify Cerbo doesn't include one before buying.</div>
+    <div class="item-links">
+      <a href="https://defender.com/en_us/catalogsearch/result/?q=nmea+2000+drop+cable+micro+c" class="link-btn primary" target="_blank">Defender search</a>
+    </div>
+  </div>
+  <div class="item-price">~$20</div>
+</div>
+
+<h2>Networking — Peplink</h2>
+
+<div class="item">
+  <div>
+    <div class="item-name">Peplink MAX BR1 Mini (LTE-A + WiFi)</div>
+    <div class="item-desc">Marine router. Starlink to WAN. Single SSID. Cellular failover via SIM. Make sure you get the WiFi variant — part number contains "-W" (e.g., MAX-BR1-MINI-LTEA-<strong>W</strong>-T). The M2M variant has no WiFi AP.</div>
+    <div class="item-links">
+      <a href="https://www.amazon.com/Cellular-Peplink-Redundant-Connections-Upgradeable/dp/B0CQP9L9TB" class="link-btn primary" target="_blank">Amazon</a>
+      <a href="https://www.peplink.com/products/mobile-routers/br1-mini-hw3/" class="link-btn" target="_blank">Peplink direct</a>
+    </div>
+  </div>
+  <div class="item-price">~$450</div>
+</div>
+
+<h2>Wiring &amp; Sundries — Fisheries Supply</h2>
+
+<div class="item">
+  <div>
+    <div class="item-name">12V Marine Alarm Horn / Buzzer</div>
+    <div class="item-desc">Physical alarm for CPA/depth/SOC critical alerts. 12V DC. Loud enough to wake crew below decks. Horn or electronic buzzer — your preference.</div>
+    <div class="item-links">
+      <a href="https://www.fisheriessupply.com/search?q=12v+alarm+horn" class="link-btn primary" target="_blank">Fisheries Supply</a>
+      <a href="https://defender.com/en_us/catalogsearch/result/?q=12v+alarm+horn" class="link-btn" target="_blank">Defender</a>
+    </div>
+  </div>
+  <div class="item-price">~$35</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">16 AWG Marine Wire (red + black, 25ft ea)</div>
+    <div class="item-desc">Pi power run from house bank. Alarm horn circuit. Pre-tinned marine grade.</div>
+    <div class="item-links">
+      <a href="https://www.fisheriessupply.com/search?q=16+awg+marine+wire+tinned" class="link-btn primary" target="_blank">Fisheries Supply</a>
+    </div>
+  </div>
+  <div class="item-price">~$20</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">Inline Fuse Holder + 3A Fuse</div>
+    <div class="item-desc">Pi power supply protection.</div>
+    <div class="item-links">
+      <a href="https://www.fisheriessupply.com/search?q=inline+fuse+holder" class="link-btn primary" target="_blank">Fisheries Supply</a>
+    </div>
+  </div>
+  <div class="item-price">~$8</div>
+</div>
+
+<div class="item">
+  <div>
+    <div class="item-name">Ring Terminals, Heat Shrink, Cable Ties</div>
+    <div class="item-desc">Assorted marine electrical kit. Grab a marine terminal assortment if you don't already have one aboard.</div>
+    <div class="item-links">
+      <a href="https://www.fisheriessupply.com/search?q=marine+terminal+assortment" class="link-btn primary" target="_blank">Fisheries Supply</a>
+    </div>
+  </div>
+  <div class="item-price">~$15</div>
+</div>
+
+<h2>Charts (Software — Online Purchase)</h2>
+
+<div class="item">
+  <div>
+    <div class="item-name">Blue Latitude O-Charts — Sea of Cortez + Pacific Mexico</div>
+    <div class="item-desc">GPS-accurate anchorage charts. Two chart sets (~€36 each). Licensed for 2 devices via O-Charts. Don't buy until closer to departure — verify device activation policy.</div>
+    <div class="item-links">
+      <a href="https://o-charts.org/shop/" class="link-btn primary" target="_blank">O-Charts Store</a>
+    </div>
+  </div>
+  <div class="item-price">~$80</div>
+</div>
+
+<div class="total-box">
+  <div class="total-grid">
+    <span class="cat">Raspberry Pi &amp; compute (Amazon)</span><span class="amt">$192</span>
+    <span class="cat">Marine electronics (Defender)</span><span class="amt">$597</span>
+    <span class="cat">Networking (Peplink)</span><span class="amt">$450</span>
+    <span class="cat">Wiring &amp; sundries (Fisheries Supply)</span><span class="amt">$78</span>
+    <span class="cat">Charts (O-Charts)</span><span class="amt">$80</span>
+    <span class="final cat">Estimated Total</span><span class="final amt">~$1,397</span>
+  </div>
+</div>
+
+<div class="callout callout-info">
+  <div class="cl">Before you order — verify</div>
+  <p>1. Does your N2K backbone have a spare T-connector? If yes, skip that purchase ($25 saved). 2. Measure actual VE.Direct cable runs to each MPPT and to the BMV-712 install location — pick the right lengths. 3. Confirm the Peplink part number includes "-W" for WiFi AP capability. 4. The Cerbo GX MK2 does NOT include a DIN rail adapter — buy separately (~$12) if panel-mounting. 5. Check if the Cerbo includes an N2K drop cable — some bundles do, some don't.</p>
+</div>
+
+<div class="callout">
+  <div class="cl">Already owned — not in total</div>
+  <p>Vesper XB-8000, B&amp;G Triton 2, all N2K instruments, Simrad Tillerpilot, Starlink, 2× Victron MPPTs, Victron BMV-712 (needs install — $0 hardware cost), Victron Orion-Tr Smart, iPad, phone, laptop.</p>
+</div>
+
+</main>
+<footer>Trident Shopping List — June 2026 · ~$1,397 estimated · All links verified at time of creation — prices fluctuate.</footer>
+</body>
+</html>

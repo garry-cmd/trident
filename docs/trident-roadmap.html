@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trident — OKR Roadmap</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap');
+  :root{--bg:#0c1117;--surface:#151d27;--raised:#1a2433;--border:#243042;--text:#d4dce8;--muted:#7b8fa3;--bright:#edf2f7;--dim:#4a5a6a;--accent:#40916c;--accent-light:#52b788;--accent-dim:#2d6a4f;--warn:#e09f3e;--red:#c1574c;--blue:#4a90d9;--blue-dim:#1e3a5f;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px;}
+
+  .page-header{background:linear-gradient(135deg,#0f1923 0%,#162233 50%,#0f2818 100%);border-bottom:1px solid var(--border);padding:2.5rem 2rem 2rem;}
+  .page-header .container{max-width:960px;margin:0 auto;}
+  .page-header h1{font-family:'Fraunces',serif;font-size:2rem;font-weight:700;color:var(--bright);margin-bottom:.4rem;}
+  .page-header .subtitle{color:var(--muted);font-size:.95rem;margin-bottom:1rem;}
+  .obj-box{background:rgba(64,145,108,.06);border:1px solid rgba(64,145,108,.25);border-radius:8px;padding:1.25rem 1.5rem;}
+  .obj-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--accent-light);margin-bottom:.4rem;}
+  .obj-text{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:600;color:var(--bright);margin-bottom:.3rem;}
+  .obj-meta{font-size:.85rem;color:var(--muted);}
+  .obj-meta span{color:var(--text);font-weight:500;}
+
+  main{max-width:960px;margin:0 auto;padding:2rem;}
+
+  /* Timeline */
+  .timeline{position:relative;padding-left:32px;}
+  .timeline::before{content:'';position:absolute;left:11px;top:0;bottom:0;width:2px;background:var(--border);}
+
+  .kr{margin-bottom:2.5rem;position:relative;}
+  .kr::before{content:'';position:absolute;left:-21px;top:6px;width:12px;height:12px;border-radius:50%;border:2px solid var(--border);background:var(--bg);z-index:1;}
+  .kr.done::before{background:var(--accent-light);border-color:var(--accent-light);}
+  .kr.active::before{background:var(--warn);border-color:var(--warn);box-shadow:0 0 8px rgba(224,159,62,.3);}
+  .kr.future::before{background:var(--bg);border-color:var(--border);}
+  .kr.stretch::before{background:var(--bg);border-color:var(--dim);border-style:dashed;}
+
+  .kr-header{display:flex;align-items:baseline;gap:12px;margin-bottom:.5rem;flex-wrap:wrap;}
+  .kr-id{font-family:'IBM Plex Mono',monospace;font-size:.75rem;font-weight:600;color:var(--accent-light);background:rgba(64,145,108,.12);padding:2px 8px;border-radius:3px;}
+  .kr-id.stretch-tag{color:var(--dim);background:rgba(74,90,106,.12);}
+  .kr-title{font-size:1.1rem;font-weight:600;color:var(--bright);}
+  .kr-date{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--muted);margin-left:auto;}
+
+  .kr-desc{font-size:.9rem;color:var(--muted);margin-bottom:.75rem;}
+
+  .kr-progress{display:flex;align-items:center;gap:10px;margin-bottom:.75rem;}
+  .progress-bar{flex:1;max-width:200px;height:6px;background:var(--raised);border-radius:3px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:3px;background:var(--accent-light);transition:width .3s;}
+  .progress-fill.warn{background:var(--warn);}
+  .progress-pct{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--muted);}
+
+  .task-list{display:flex;flex-direction:column;gap:4px;margin-top:.5rem;}
+  .task{display:flex;align-items:flex-start;gap:8px;font-size:.88rem;padding:4px 0;}
+  .task-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;}
+  .task.done .task-check{border-color:var(--accent-light);background:rgba(64,145,108,.15);}
+  .task.done .task-check::after{content:'✓';font-size:10px;color:var(--accent-light);font-weight:700;}
+  .task.done .task-text{color:var(--dim);text-decoration:line-through;text-decoration-color:var(--border);}
+  .task-text{color:var(--text);}
+  .task-owner{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--dim);background:var(--raised);padding:1px 6px;border-radius:3px;margin-left:auto;flex-shrink:0;}
+
+  .dep-note{font-size:.82rem;color:var(--dim);margin-top:.5rem;padding-left:24px;border-left:2px solid var(--border);font-style:italic;}
+
+  /* Section divider */
+  .section-div{display:flex;align-items:center;gap:12px;margin:2rem 0 1.5rem;color:var(--dim);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;}
+  .section-div::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  /* Summary strip */
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2rem;}
+  .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;text-align:center;}
+  .sum-val{font-family:'IBM Plex Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--bright);line-height:1;}
+  .sum-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:4px;}
+  .sum-val.green{color:var(--accent-light);} .sum-val.amber{color:var(--warn);} .sum-val.blue{color:var(--blue);}
+
+  /* Assumptions */
+  .assumptions{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-top:2rem;font-size:.88rem;}
+  .assumptions h3{font-size:.95rem;font-weight:600;color:var(--bright);margin-bottom:.5rem;}
+  .assumptions ul{list-style:none;padding:0;}
+  .assumptions li{padding:.2rem 0 .2rem 1.2rem;position:relative;color:var(--muted);}
+  .assumptions li::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700;}
+
+  footer{max-width:960px;margin:0 auto;padding:2rem;border-top:1px solid var(--border);font-size:.8rem;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="container">
+    <h1>Trident — OKR Roadmap</h1>
+    <p class="subtitle">Hardware companion to Keeply.boats</p>
+    <div class="obj-box">
+      <div class="obj-label">Objective</div>
+      <div class="obj-text">Deploy Trident on Irene by August 24, 2026</div>
+      <div class="obj-meta">Timeline: <span>11 weeks</span> (June 7 → Aug 24) · Owner: <span>Garry</span> · Vessel: <span>S/V Irene</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<div class="summary">
+  <div class="sum-card"><div class="sum-val amber">0%</div><div class="sum-label">Overall Progress</div></div>
+  <div class="sum-card"><div class="sum-val">11</div><div class="sum-label">Weeks Remaining</div></div>
+  <div class="sum-card"><div class="sum-val blue">6</div><div class="sum-label">Key Results</div></div>
+  <div class="sum-card"><div class="sum-val">1</div><div class="sum-label">Stretch Goal</div></div>
+</div>
+
+<!-- ═══════════════════════ -->
+<div class="section-div">Phase A — Hardware (Weeks 1–4)</div>
+
+<div class="timeline">
+
+  <div class="kr active">
+    <div class="kr-header">
+      <span class="kr-id">KR1</span>
+      <span class="kr-title">All instrument + Victron data flowing into Signal K</span>
+      <span class="kr-date">Target: July 5</span>
+    </div>
+    <div class="kr-desc">Every sensor on Irene — AIS, GPS, depth, wind, heading, barometer, autopilot state, battery SOC, solar yield — is ingested into Signal K and accessible from any device on the boat's WiFi via Signal K's built-in web UI.</div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill warn" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+    <div class="task-list">
+      <div class="task"><div class="task-check"></div><span class="task-text">Install BMV-712 on battery bank negative lead</span><span class="task-owner">boat work</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Order all hardware (Pi 5, NGT-1, Peplink, Cerbo GX, cables, relay, horn, case, SD card, buck converter)</span><span class="task-owner">procurement</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Install Peplink router — Starlink to WAN, single SSID, verify all devices on one network</span><span class="task-owner">boat work</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Install Pi 5 with OpenPlotter, connect Actisense NGT-1 to N2K backbone</span><span class="task-owner">boat work</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Verify Signal K ingests all N2K instruments (AIS, GPS, depth, wind, heading, baro, autopilot)</span><span class="task-owner">config</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Install Cerbo GX — wire 2× MPPT + BMV-712 via VE.Direct, connect to N2K + Ethernet</span><span class="task-owner">boat work</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Verify Triton 2 displays SOC from Cerbo via N2K</span><span class="task-owner">verification</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Verify Signal K ingests Victron MQTT data (per-MPPT detail, shunt history)</span><span class="task-owner">config</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Disable XB-8000 WiFi access point</span><span class="task-owner">config</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Pi wired to Peplink LAN port (not WiFi) — verify Signal K accessible from all devices</span><span class="task-owner">verification</span></div>
+    </div>
+    <div class="dep-note">Blocks everything. No software work begins until the data pipeline is verified end-to-end.</div>
+  </div>
+
+  <div class="kr future">
+    <div class="kr-header">
+      <span class="kr-id">KR2</span>
+      <span class="kr-title">Physical alarm system fires correctly on threshold breach</span>
+      <span class="kr-date">Target: July 12</span>
+    </div>
+    <div class="kr-desc">The Pi drives a 12V horn via GPIO relay when CPA, depth, or SOC crosses boat-level critical thresholds. No WiFi, no phone, no internet in the path. This is the safety floor — it ships before any UI work.</div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+    <div class="task-list">
+      <div class="task"><div class="task-check"></div><span class="task-text">Wire Pi GPIO → relay module → 12V horn/buzzer, fused</span><span class="task-owner">boat work</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Build server-side alert engine: evaluates Signal K data stream against configurable thresholds</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Implement GPIO trigger: CPA &lt; 0.5nm fires horn</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Implement GPIO trigger: depth &lt; 6ft fires horn</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Implement GPIO trigger: SOC &lt; 20% fires horn</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Test with simulated data — verify horn fires and silences correctly</span><span class="task-owner">testing</span></div>
+    </div>
+    <div class="dep-note">Depends on KR1 (Signal K must be ingesting data). This is the minimum viable safety system.</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════ -->
+<div class="section-div">Phase B — Trident App (Weeks 5–9)</div>
+
+<div class="timeline">
+
+  <div class="kr future">
+    <div class="kr-header">
+      <span class="kr-id">KR3</span>
+      <span class="kr-title">Trident PWA live with Radar + Dash + Settings views</span>
+      <span class="kr-date">Target: July 26</span>
+    </div>
+    <div class="kr-desc">The core Trident web app is accessible at <code>trident.local</code> from any device on the boat's WiFi. Radar view with CPA/TCPA, Dash with all KPI cards, and Settings with per-crew notification profiles. PWA installable on iOS/Android home screens.</div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+    <div class="task-list">
+      <div class="task"><div class="task-check"></div><span class="task-text">Scaffold Next.js project, deploy to Pi, verify <code>trident.local</code> resolves</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Signal K WebSocket client: connect, parse vessel data + AIS targets into React state</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">CPA/TCPA calculation engine (server-side, feeds both alarm system and UI)</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Radar view: head-up display, range rings, guard zones, targets with heading vectors + CPA lines</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Target list panel: sorted by threat, CPA/TCPA/distance/bearing per target</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Dash view: system status row (GPS fix, AIS state, connected clients)</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Dash view: battery KPIs (SOC with sparkline, voltage, current, time remaining)</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Dash view: solar KPIs (per-MPPT, 7-day harvest, net balance)</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Settings view: per-crew profiles (cookie-based, no auth)</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Settings view: configurable thresholds for AIS, power, and navigation alerts</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Alert UI: top-bar badge, target highlighting, severity color coding</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Browser audio alerts (configurable per rule per crew)</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Night mode across all views</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">PWA manifest + service worker: installable, home screen icon, full-screen launch</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Push notification registration (works when Starlink up, degrades gracefully offline)</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Verify on iPad Safari, iPhone Safari, Android Chrome, desktop Firefox</span><span class="task-owner">testing</span></div>
+    </div>
+    <div class="dep-note">Depends on KR1 (data pipeline) and KR2 (alert engine — reused for UI alerts). Largest development effort in the project.</div>
+  </div>
+
+  <div class="kr future">
+    <div class="kr-header">
+      <span class="kr-id">KR4</span>
+      <span class="kr-title">Chart view with offline marine tiles operational</span>
+      <span class="kr-date">Target: August 9</span>
+    </div>
+    <div class="kr-desc">Trident's fourth view: a web-based navigation chart with AIS overlay, pan/zoom/pinch, offline tile cache. Pre-downloaded chart tiles covering Mexico Pacific coast and Sea of Cortez.</div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+    <div class="task-list">
+      <div class="task"><div class="task-check"></div><span class="task-text">Evaluate tile server options: tileserver-gl on Pi vs pre-rendered MBTiles via Leaflet plugin</span><span class="task-owner">research</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Set up tile serving from Pi (OpenSeaMap + ENC-derived tiles)</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Chart view: Leaflet/MapLibre integration with AIS target overlay layer</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Own vessel rendering: position, heading vector, track trail</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Floating target card + instrument bar (shared components from Radar view)</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Auto-recenter on vessel after pan timeout</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Pre-download chart tiles for Mexico cruising grounds (Pacific coast, Sea of Cortez, Baja outer coast)</span><span class="task-owner">config</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Verify offline chart rendering — disconnect Starlink, confirm tiles load from local cache</span><span class="task-owner">testing</span></div>
+    </div>
+    <div class="dep-note">Depends on KR3 (shared components). More complex than other views due to tile infrastructure. iPad pinch-zoom is the key UX test.</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════ -->
+<div class="section-div">Phase C — Validation (Weeks 9–11)</div>
+
+<div class="timeline">
+
+  <div class="kr future">
+    <div class="kr-header">
+      <span class="kr-id">KR5</span>
+      <span class="kr-title">OpenCPN configured with full Mexico chart coverage</span>
+      <span class="kr-date">Target: August 16</span>
+    </div>
+    <div class="kr-desc">OpenCPN installed on laptop (and optionally Pi HDMI) with complete chart coverage for the intended cruising grounds. Route planning capability verified.</div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+    <div class="task-list">
+      <div class="task"><div class="task-check"></div><span class="task-text">Install OpenCPN on laptop</span><span class="task-owner">config</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Purchase Blue Latitude chart sets from O-Charts (~€72: Sea of Cortez + Pacific Mexico)</span><span class="task-owner">procurement</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Download SEMAR hydrographic charts from O-Charts</span><span class="task-owner">config</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Download Chart Locker MBTiles for Baja outer coast (Turtle Bay, Bahia Magdalena)</span><span class="task-owner">config</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Configure chart groups in OpenCPN (Nav, Satellite, by region)</span><span class="task-owner">config</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Connect OpenCPN to Signal K for AIS + instruments</span><span class="task-owner">config</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Plan and verify a test route (e.g., San Diego → Turtle Bay)</span><span class="task-owner">verification</span></div>
+    </div>
+  </div>
+
+  <div class="kr future">
+    <div class="kr-header">
+      <span class="kr-id">KR6</span>
+      <span class="kr-title">Sea trial completed — Trident is primary AIS watch</span>
+      <span class="kr-date">Target: August 24</span>
+    </div>
+    <div class="kr-desc">A real offshore test with Trident running as the primary AIS watch system. Day sail + overnight anchor watch. Alert escalation verified end-to-end. Crew onboarding tested. All known issues resolved or documented.</div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+    <div class="task-list">
+      <div class="task"><div class="task-check"></div><span class="task-text">Day sail: all four Trident views live, AIS targets rendering, instruments accurate</span><span class="task-owner">sea trial</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">CPA alert test: verify horn fires when a real target crosses threshold</span><span class="task-owner">sea trial</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Depth alert test: approach shoal water, verify alarm at configured threshold</span><span class="task-owner">sea trial</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Overnight anchor watch: Trident running headless, horn fires if anchor drag detected</span><span class="task-owner">sea trial</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Crew onboarding test: crew member joins WiFi, opens trident.local, creates profile, receives alert</span><span class="task-owner">sea trial</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Starlink on/off test: fire up Starlink, verify no AIS data loss, verify push notifications deliver</span><span class="task-owner">sea trial</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">iPad battery test: Trident open for 8+ hours, verify iPad battery holds (view-only workload)</span><span class="task-owner">sea trial</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Bug sweep: document and resolve all issues found during trial</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">WatchMate app deleted from iPad — Trident is primary</span><span class="task-owner">milestone</span></div>
+    </div>
+    <div class="dep-note">The definition of done. If this KR passes, Trident is deployed on Irene.</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════ -->
+<div class="section-div">Stretch Goal</div>
+
+<div class="timeline">
+
+  <div class="kr stretch">
+    <div class="kr-header">
+      <span class="kr-id stretch-tag">STRETCH</span>
+      <span class="kr-title">Keeply voyage sync captures and uploads passage data</span>
+      <span class="kr-date">Target: Post-deploy</span>
+    </div>
+    <div class="kr-desc">The SQLite buffer → Supabase sync pipeline is functional. Voyage data (GPS track, anchorages, weather, AIS encounters, battery patterns) flows from the Pi to Keeply's backend when Starlink is available. Not blocking deploy — this is the bridge to the product vision.</div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+    <div class="task-list">
+      <div class="task"><div class="task-check"></div><span class="task-text">Define Keeply voyage data model in Supabase (tracks, anchorages, encounters, weather)</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Build SQLite buffer service on Pi — captures Signal K data at configurable intervals</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Build Supabase sync service — opportunistic push when internet available</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Keeply logbook UI: display auto-generated voyage entries with GPS track on chart</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Test full pipeline: passage → buffer → Starlink up → sync → visible in Keeply</span><span class="task-owner">testing</span></div>
+    </div>
+    <div class="dep-note">Can begin anytime after KR1. Doesn't block the Aug 24 deploy. This is where Trident becomes more than a boat project — it's the proof of concept for Keeply's automated logbook.</div>
+  </div>
+
+</div>
+
+<div class="assumptions">
+  <h3>Assumptions &amp; Risks</h3>
+  <ul>
+    <li>Hardware ships within 1–2 weeks of order. Actisense and Peplink are generally in stock; Cerbo GX availability should be verified before ordering.</li>
+    <li>Irene is accessible for boat work throughout the timeline. If she's hauled out or in transit, hardware phases shift.</li>
+    <li>N2K backbone is healthy and has open T-connectors for the NGT-1 and Cerbo drops. If not, additional N2K cabling is needed.</li>
+    <li>The Pi 5 running Signal K + Next.js + tile server stays within thermal limits in the below-decks install. The aluminum case helps but monitor temps during the sea trial.</li>
+    <li>Blue Latitude O-Charts license allows activation on the Pi. Their 2-device limit may require one activation on Pi and one on laptop — verify before purchase.</li>
+    <li>The biggest schedule risk is KR3 (Trident app). It's 16 tasks of custom code over 2 weeks. If it slips, KR4 (chart view) absorbs the impact. Chart view can ship after deploy as an update.</li>
+    <li>Keeply sync (stretch) can begin in parallel with KR3/KR4 if momentum is good, but it doesn't gate the deploy.</li>
+  </ul>
+</div>
+
+</main>
+<footer>Trident OKR Roadmap — Created June 7, 2026 · Updated as tasks complete · Objective: Deploy on Irene by August 24, 2026</footer>
+
+</body>
+</html>

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trident — Chart View Mockup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #060a0e;
+    --surface: #0d1319;
+    --surface-raised: #111923;
+    --border: #1a2536;
+    --border-light: #243040;
+    --text: #8899aa;
+    --text-bright: #c8d6e0;
+    --text-dim: #4a5a6a;
+    --value: #d0dce6;
+    --label: #556677;
+    --safe: #2d8a56;
+    --safe-bright: #3aad6e;
+    --caution: #c49230;
+    --caution-bright: #daa840;
+    --danger: #c44040;
+    --danger-bright: #e04848;
+    --danger-dim: rgba(196, 64, 64, 0.15);
+    --blue: #3a7abd;
+    --own-vessel: #4a9ade;
+    /* Chart palette — night mode */
+    --water-deep: #070d14;
+    --water-mid: #0a1520;
+    --water-shallow: #0e1e2e;
+    --water-very-shallow: #162a3a;
+    --land: #14191e;
+    --land-stroke: #2a3540;
+    --coast: #3a4a58;
+    --depth-contour: #0f1a26;
+    --nav-aid-green: #1a6a3a;
+    --nav-aid-red: #8a2a2a;
+    --channel: rgba(58, 122, 189, 0.15);
+    --track: rgba(74, 154, 222, 0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .dashboard {
+    display: grid;
+    grid-template-rows: 40px 1fr 64px;
+    grid-template-columns: 1fr;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ─── TOP BAR ─── */
+  .top-bar {
+    background: rgba(13, 19, 25, 0.92);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 18px;
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+  }
+
+  .logo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    color: var(--text-bright);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .logo svg { width: 16px; height: 16px; }
+
+  .view-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface-raised);
+    border-radius: 5px;
+    padding: 2px;
+  }
+
+  .view-tab {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 12px;
+    border-radius: 3px;
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+
+  .view-tab.active {
+    background: var(--border-light);
+    color: var(--text-bright);
+  }
+
+  .top-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+
+  .top-stat .label {
+    font-size: 9px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--label);
+  }
+
+  .top-stat .val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--value);
+  }
+
+  .top-spacer { flex: 1; }
+
+  .alert-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--danger-dim);
+    border: 1px solid var(--danger);
+    border-radius: 4px;
+    padding: 2px 9px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--danger-bright);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+  }
+
+  .alert-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--danger-bright);
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .time-display {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* ─── CHART PANEL ─── */
+  .chart-panel {
+    position: relative;
+    overflow: hidden;
+    background: var(--water-deep);
+  }
+
+  .chart-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ─── FLOATING TARGET CARD ─── */
+  .target-card {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 260px;
+    background: rgba(13, 19, 25, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 5;
+  }
+
+  .tc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tc-title {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--label);
+  }
+
+  .tc-count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .tc-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(26, 37, 54, 0.5);
+  }
+
+  .tc-item:last-child { border-bottom: none; }
+
+  .tc-item.danger {
+    background: rgba(196, 64, 64, 0.08);
+    border-left: 3px solid var(--danger);
+  }
+
+  .tc-item.caution {
+    border-left: 3px solid var(--caution);
+  }
+
+  .tc-item.safe {
+    border-left: 3px solid var(--border-light);
+  }
+
+  .tc-row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 3px;
+  }
+
+  .tc-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-bright);
+  }
+
+  .tc-type {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .tc-metrics {
+    display: flex;
+    gap: 14px;
+  }
+
+  .tc-metric {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+  }
+
+  .tc-metric .ml {
+    font-size: 8px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--label);
+  }
+
+  .tc-metric .mv {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .tc-metric .mu {
+    font-size: 8px;
+    color: var(--label);
+  }
+
+  .mv.danger { color: var(--danger-bright); }
+  .mv.caution { color: var(--caution-bright); }
+  .mv.safe { color: var(--safe-bright); }
+  .mv.neutral { color: var(--value); }
+
+  /* ─── FLOATING INSTRUMENTS ─── */
+  .floating-instruments {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(13, 19, 25, 0.92);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    z-index: 5;
+  }
+
+  .instrument {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid rgba(26, 37, 54, 0.5);
+  }
+
+  .instrument:last-child { border-right: none; }
+
+  .instrument .i-label {
+    font-size: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--label);
+    margin-bottom: 1px;
+  }
+
+  .instrument .i-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--value);
+    line-height: 1;
+  }
+
+  .instrument .i-unit {
+    font-size: 8px;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+
+  .instrument.power { background: rgba(17, 25, 35, 0.6); }
+  .i-value.soc { color: var(--safe-bright); }
+
+  /* ─── CHART OVERLAY LABELS ─── */
+  .chart-label {
+    position: absolute;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    background: rgba(6, 10, 14, 0.7);
+    padding: 2px 6px;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .scale-bar {
+    position: absolute;
+    bottom: 76px;
+    left: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 4;
+  }
+
+  .scale-line {
+    width: 80px;
+    height: 0;
+    border-top: 1px solid var(--text-dim);
+    position: relative;
+  }
+
+  .scale-line::before, .scale-line::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    width: 1px;
+    height: 7px;
+    background: var(--text-dim);
+  }
+
+  .scale-line::before { left: 0; }
+  .scale-line::after { right: 0; }
+
+  .scale-text {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  .zoom-controls {
+    position: absolute;
+    bottom: 80px;
+    right: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 4;
+  }
+
+  .zoom-btn {
+    width: 32px;
+    height: 32px;
+    background: rgba(13, 19, 25, 0.9);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    color: var(--text);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <path d="M12 2 L12 18 M8 6 L12 2 L16 6 M6 10 L12 6 L18 10 M4 14 L12 10 L20 14"/>
+      </svg>
+      TRIDENT
+    </div>
+
+    <div class="view-tabs">
+      <div class="view-tab active">Chart</div>
+      <div class="view-tab">Radar</div>
+      <div class="view-tab">Dash</div>
+    </div>
+
+    <div class="top-stat">
+      <span class="label">Pos</span>
+      <span class="val">24°38.2'N 110°22.8'W</span>
+    </div>
+
+    <div class="top-stat">
+      <span class="label">HDG</span>
+      <span class="val">185°M</span>
+    </div>
+
+    <div class="top-spacer"></div>
+
+    <div class="alert-badge">
+      <span class="alert-dot"></span>
+      CPA Alert — Maria Elena
+    </div>
+
+    <div class="time-display">02:47 UTC</div>
+  </div>
+
+  <!-- CHART PANEL -->
+  <div class="chart-panel">
+    <svg class="chart-svg" viewBox="0 0 1100 700" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="landGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#161d24"/>
+          <stop offset="100%" stop-color="#111820"/>
+        </linearGradient>
+        <linearGradient id="shallowGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0e1e2e"/>
+          <stop offset="100%" stop-color="#0a1520"/>
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="dangerGlow">
+          <feGaussianBlur stdDeviation="5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="softGlow">
+          <feGaussianBlur stdDeviation="1.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <pattern id="depthPattern" patternUnits="userSpaceOnUse" width="30" height="30" patternTransform="rotate(15)">
+          <line x1="0" y1="0" x2="30" y2="0" stroke="rgba(15,26,38,0.4)" stroke-width="0.5"/>
+        </pattern>
+      </defs>
+
+      <!-- Water background -->
+      <rect width="1100" height="700" fill="var(--water-deep)"/>
+
+      <!-- Depth contours — representing the approach to Baja coast -->
+      <!-- Very deep water (most of the chart) -->
+      <rect width="1100" height="700" fill="var(--water-deep)"/>
+
+      <!-- 100 fathom contour -->
+      <path d="M 720,0 Q 730,120 750,200 Q 780,320 760,420 Q 740,520 750,600 L 750,700"
+            fill="none" stroke="var(--depth-contour)" stroke-width="0.5" stroke-dasharray="8 4"/>
+      <text x="755" y="310" font-family="IBM Plex Mono" font-size="8" fill="#1a2a3a" transform="rotate(-5,755,310)">100 fm</text>
+
+      <!-- 50 fathom contour -->
+      <path d="M 790,0 Q 800,100 820,200 Q 850,340 830,440 Q 810,540 820,650 L 820,700"
+            fill="none" stroke="var(--depth-contour)" stroke-width="0.5" stroke-dasharray="6 3"/>
+      <text x="825" y="260" font-family="IBM Plex Mono" font-size="8" fill="#1a2a3a" transform="rotate(-3,825,260)">50 fm</text>
+
+      <!-- 20 fathom contour / shallow shelf -->
+      <path d="M 860,0 Q 870,80 880,180 Q 900,320 885,420 Q 870,520 878,640 L 880,700"
+            fill="none" stroke="rgba(22,42,58,0.6)" stroke-width="0.7"/>
+
+      <!-- Shallow water zone -->
+      <path d="M 860,0 Q 870,80 880,180 Q 900,320 885,420 Q 870,520 878,640 L 880,700 L 1100,700 L 1100,0 Z"
+            fill="var(--water-shallow)" opacity="0.5"/>
+
+      <!-- Very shallow / nearshore -->
+      <path d="M 920,0 Q 928,100 935,200 Q 945,340 938,440 Q 930,540 935,660 L 938,700 L 1100,700 L 1100,0 Z"
+            fill="var(--water-very-shallow)" opacity="0.4"/>
+
+      <!-- Depth soundings scattered -->
+      <text x="650" y="180" font-family="IBM Plex Mono" font-size="7" fill="#1a2a3a">486</text>
+      <text x="580" y="350" font-family="IBM Plex Mono" font-size="7" fill="#1a2a3a">512</text>
+      <text x="700" y="420" font-family="IBM Plex Mono" font-size="7" fill="#1a2a3a">328</text>
+      <text x="770" y="180" font-family="IBM Plex Mono" font-size="7" fill="#1a2a3a">142</text>
+      <text x="800" y="450" font-family="IBM Plex Mono" font-size="7" fill="#1a2a3a">84</text>
+      <text x="850" y="300" font-family="IBM Plex Mono" font-size="7" fill="#1e3040">52</text>
+      <text x="890" y="200" font-family="IBM Plex Mono" font-size="7" fill="#1e3040">38</text>
+      <text x="910" y="480" font-family="IBM Plex Mono" font-size="7" fill="#1e3040">24</text>
+      <text x="940" y="350" font-family="IBM Plex Mono" font-size="7" fill="#243545">12</text>
+      <text x="960" y="250" font-family="IBM Plex Mono" font-size="7" fill="#243545">8</text>
+
+      <!-- LAND — Baja Peninsula coast -->
+      <path d="M 970,0 Q 975,40 980,80 Q 990,140 985,200 Q 978,260 982,320 
+               Q 995,380 988,440 Q 975,500 980,560 Q 990,620 985,680 L 988,700 
+               L 1100,700 L 1100,0 Z"
+            fill="url(#landGrad)" stroke="var(--coast)" stroke-width="1"/>
+
+      <!-- Beach/shore detail -->
+      <path d="M 970,0 Q 975,40 980,80 Q 990,140 985,200 Q 978,260 982,320 
+               Q 995,380 988,440 Q 975,500 980,560 Q 990,620 985,680 L 988,700"
+            fill="none" stroke="rgba(58,74,88,0.4)" stroke-width="3"/>
+
+      <!-- Headland detail -->
+      <path d="M 982,318 Q 1000,330 1005,340 Q 998,355 988,360"
+            fill="url(#landGrad)" stroke="var(--coast)" stroke-width="0.7"/>
+
+      <!-- Small bay/cove -->
+      <path d="M 985,195 Q 978,210 980,225"
+            fill="none" stroke="var(--coast)" stroke-width="0.5" stroke-dasharray="2 2"/>
+
+      <!-- Anchorage area -->
+      <circle cx="965" cy="210" r="12" fill="none" stroke="rgba(58,122,189,0.2)" stroke-width="0.7" stroke-dasharray="3 2"/>
+      <!-- Anchor symbol -->
+      <g transform="translate(965,210)" opacity="0.35">
+        <line x1="0" y1="-4" x2="0" y2="4" stroke="var(--blue)" stroke-width="1"/>
+        <line x1="-3" y1="4" x2="3" y2="4" stroke="var(--blue)" stroke-width="1"/>
+        <circle cx="0" cy="-5" r="1.5" fill="none" stroke="var(--blue)" stroke-width="0.7"/>
+      </g>
+
+      <!-- Place names -->
+      <text x="1010" y="150" font-family="IBM Plex Sans" font-size="10" font-weight="500" fill="#2a3a4a" letter-spacing="0.1em">BAJA</text>
+      <text x="1005" y="163" font-family="IBM Plex Sans" font-size="10" font-weight="500" fill="#2a3a4a" letter-spacing="0.1em">CALIFORNIA</text>
+      <text x="1005" y="176" font-family="IBM Plex Sans" font-size="10" font-weight="500" fill="#2a3a4a" letter-spacing="0.1em">SUR</text>
+
+      <text x="945" y="225" font-family="IBM Plex Sans" font-size="8" font-style="italic" fill="#2a3a4a">Caleta San Lucas</text>
+
+      <text x="990" y="345" font-family="IBM Plex Sans" font-size="8" font-style="italic" fill="#2a3a4a">Pta. Frailes</text>
+
+      <!-- Lat/lon grid lines -->
+      <line x1="0" y1="175" x2="1100" y2="175" stroke="rgba(20,30,42,0.3)" stroke-width="0.5" stroke-dasharray="1 6"/>
+      <line x1="0" y1="350" x2="1100" y2="350" stroke="rgba(20,30,42,0.3)" stroke-width="0.5" stroke-dasharray="1 6"/>
+      <line x1="0" y1="525" x2="1100" y2="525" stroke="rgba(20,30,42,0.3)" stroke-width="0.5" stroke-dasharray="1 6"/>
+      <line x1="275" y1="0" x2="275" y2="700" stroke="rgba(20,30,42,0.3)" stroke-width="0.5" stroke-dasharray="1 6"/>
+      <line x1="550" y1="0" x2="550" y2="700" stroke="rgba(20,30,42,0.3)" stroke-width="0.5" stroke-dasharray="1 6"/>
+      <line x1="825" y1="0" x2="825" y2="700" stroke="rgba(20,30,42,0.3)" stroke-width="0.5" stroke-dasharray="1 6"/>
+
+      <!-- Grid labels -->
+      <text x="272" y="12" font-family="IBM Plex Mono" font-size="7" fill="#1a2536" text-anchor="middle">110°40'W</text>
+      <text x="547" y="12" font-family="IBM Plex Mono" font-size="7" fill="#1a2536" text-anchor="middle">110°25'W</text>
+      <text x="822" y="12" font-family="IBM Plex Mono" font-size="7" fill="#1a2536" text-anchor="middle">110°10'W</text>
+      <text x="4" y="178" font-family="IBM Plex Mono" font-size="7" fill="#1a2536">24°45'N</text>
+      <text x="4" y="353" font-family="IBM Plex Mono" font-size="7" fill="#1a2536">24°35'N</text>
+      <text x="4" y="528" font-family="IBM Plex Mono" font-size="7" fill="#1a2536">24°25'N</text>
+
+      <!-- Nav aids -->
+      <!-- Green buoy -->
+      <g transform="translate(920,280)">
+        <polygon points="0,-6 -4,4 4,4" fill="var(--nav-aid-green)" filter="url(#softGlow)"/>
+        <text x="7" y="2" font-family="IBM Plex Mono" font-size="7" fill="#1a4a2a">Fl G 4s</text>
+      </g>
+
+      <!-- Red buoy -->
+      <g transform="translate(935,390)">
+        <circle cx="0" cy="0" r="4" fill="var(--nav-aid-red)" filter="url(#softGlow)"/>
+        <text x="7" y="2" font-family="IBM Plex Mono" font-size="7" fill="#5a2a2a">Fl R 6s</text>
+      </g>
+
+      <!-- Light on headland -->
+      <g transform="translate(998,330)">
+        <circle cx="0" cy="0" r="3" fill="#8a7a30" filter="url(#softGlow)"/>
+        <!-- Light sector lines -->
+        <line x1="0" y1="0" x2="-40" y2="-25" stroke="rgba(138,122,48,0.15)" stroke-width="0.5"/>
+        <line x1="0" y1="0" x2="-45" y2="15" stroke="rgba(138,122,48,0.15)" stroke-width="0.5"/>
+        <text x="-35" y="-8" font-family="IBM Plex Mono" font-size="7" fill="#5a5020">Fl(2) W 10s 42m</text>
+      </g>
+
+      <!-- ═══════ VESSEL TRACK ═══════ -->
+      <path d="M 555,100 Q 558,140 560,180 Q 563,220 565,260 Q 568,300 570,340"
+            fill="none" stroke="var(--track)" stroke-width="1.5" stroke-dasharray="4 6"/>
+
+      <!-- ═══════ OWN VESSEL ═══════ -->
+      <g transform="translate(570,340)" filter="url(#glow)">
+        <!-- Heading line -->
+        <line x1="0" y1="0" x2="2" y2="60" stroke="var(--own-vessel)" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+        <!-- Vessel icon -->
+        <polygon points="0,-16 -8,10 0,5 8,10" fill="var(--own-vessel)" opacity="0.9"/>
+        <circle cx="0" cy="0" r="3" fill="#70b8f0"/>
+        <!-- COG vector -->
+        <line x1="0" y1="-16" x2="1" y2="-40" stroke="var(--own-vessel)" stroke-width="1.5" opacity="0.5"/>
+      </g>
+
+      <!-- ═══════ AIS TARGETS ═══════ -->
+
+      <!-- MARIA ELENA (fishing) — DANGER — SE of own vessel, closing -->
+      <g transform="translate(640,430)">
+        <!-- CPA geometry line to own vessel -->
+        <line x1="0" y1="0" x2="-70" y2="-90" stroke="var(--danger)" stroke-width="0.7" stroke-dasharray="4 4" opacity="0.35"/>
+        <!-- CPA point -->
+        <circle cx="-35" cy="-45" r="3" fill="none" stroke="var(--danger)" stroke-width="0.7" stroke-dasharray="2 2" opacity="0.5"/>
+        <!-- Trail -->
+        <line x1="18" y1="30" x2="30" y2="55" stroke="var(--danger)" stroke-width="0.8" opacity="0.15"/>
+        <!-- Vessel heading vector -->
+        <line x1="0" y1="0" x2="-14" y2="-22" stroke="var(--danger-bright)" stroke-width="1.5" opacity="0.7"/>
+        <!-- Vessel icon -->
+        <polygon points="0,-8 -5,5 0,2 5,5" fill="var(--danger-bright)" transform="rotate(-35)" filter="url(#dangerGlow)"/>
+        <!-- Label -->
+        <rect x="10" y="-20" width="112" height="30" rx="3" fill="rgba(196,64,64,0.18)" stroke="var(--danger)" stroke-width="0.5"/>
+        <text x="16" y="-6" font-family="IBM Plex Sans" font-size="9" font-weight="600" fill="var(--danger-bright)">MARIA ELENA</text>
+        <text x="16" y="5" font-family="IBM Plex Mono" font-size="8" fill="var(--danger-bright)">CPA 0.3nm  8min</text>
+      </g>
+
+      <!-- MAERSK DURBAN (cargo) — CAUTION — NE, large vessel heading SW -->
+      <g transform="translate(720,180)">
+        <!-- CPA line -->
+        <line x1="0" y1="0" x2="-150" y2="160" stroke="var(--caution)" stroke-width="0.5" stroke-dasharray="5 4" opacity="0.2"/>
+        <!-- Trail -->
+        <line x1="10" y1="-18" x2="20" y2="-38" stroke="var(--caution)" stroke-width="0.8" opacity="0.1"/>
+        <!-- Vessel (larger rect — cargo) -->
+        <rect x="-5" y="-12" width="10" height="24" rx="2" fill="var(--caution)" transform="rotate(-210)" opacity="0.8"/>
+        <!-- Heading vector -->
+        <line x1="0" y1="0" x2="-10" y2="18" stroke="var(--caution)" stroke-width="1.5" opacity="0.5"/>
+        <!-- Label -->
+        <rect x="14" y="-18" width="118" height="28" rx="3" fill="rgba(196,146,48,0.1)" stroke="var(--caution)" stroke-width="0.5"/>
+        <text x="20" y="-4" font-family="IBM Plex Sans" font-size="9" font-weight="600" fill="var(--caution-bright)">MAERSK DURBAN</text>
+        <text x="20" y="6" font-family="IBM Plex Mono" font-size="8" fill="var(--caution)">CPA 0.8nm  18min</text>
+      </g>
+
+      <!-- OCEAN PEARL (tanker) — SAFE — NW, heading SE -->
+      <g transform="translate(340,160)">
+        <rect x="-4" y="-10" width="8" height="20" rx="2" fill="var(--safe)" transform="rotate(-150)" opacity="0.6"/>
+        <line x1="0" y1="0" x2="8" y2="12" stroke="var(--safe)" stroke-width="1" opacity="0.4"/>
+        <text x="12" y="-2" font-family="IBM Plex Sans" font-size="9" font-weight="500" fill="var(--safe)">OCEAN PEARL</text>
+        <text x="12" y="8" font-family="IBM Plex Mono" font-size="8" fill="#2a5a3a">2.1nm</text>
+      </g>
+
+      <!-- BAHIA SPORT (sailboat) — SAFE — SW, distant -->
+      <g transform="translate(380,480)">
+        <polygon points="0,-7 -4,5 0,2 4,5" fill="var(--safe)" transform="rotate(45)" opacity="0.4"/>
+        <text x="8" y="0" font-family="IBM Plex Sans" font-size="8" font-weight="500" fill="#2a4a3a">BAHIA SPORT</text>
+      </g>
+
+      <!-- Distant Class B target -->
+      <g transform="translate(420,90)">
+        <polygon points="0,-5 -3,3 0,1 3,3" fill="#2a3a4a" opacity="0.4"/>
+      </g>
+
+    </svg>
+
+    <!-- Floating target list card -->
+    <div class="target-card">
+      <div class="tc-header">
+        <span class="tc-title">Nearby Targets</span>
+        <span class="tc-count">5 tracked</span>
+      </div>
+
+      <div class="tc-item danger">
+        <div class="tc-row1">
+          <span class="tc-name">MARIA ELENA</span>
+          <span class="tc-type">Fishing</span>
+        </div>
+        <div class="tc-metrics">
+          <div class="tc-metric">
+            <span class="ml">CPA</span>
+            <span class="mv danger">0.3</span>
+            <span class="mu">nm</span>
+          </div>
+          <div class="tc-metric">
+            <span class="ml">TCPA</span>
+            <span class="mv danger">8</span>
+            <span class="mu">min</span>
+          </div>
+          <div class="tc-metric">
+            <span class="ml">Dist</span>
+            <span class="mv neutral">0.7</span>
+            <span class="mu">nm</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tc-item caution">
+        <div class="tc-row1">
+          <span class="tc-name">MAERSK DURBAN</span>
+          <span class="tc-type">Cargo</span>
+        </div>
+        <div class="tc-metrics">
+          <div class="tc-metric">
+            <span class="ml">CPA</span>
+            <span class="mv caution">0.8</span>
+            <span class="mu">nm</span>
+          </div>
+          <div class="tc-metric">
+            <span class="ml">TCPA</span>
+            <span class="mv caution">18</span>
+            <span class="mu">min</span>
+          </div>
+          <div class="tc-metric">
+            <span class="ml">Dist</span>
+            <span class="mv neutral">1.8</span>
+            <span class="mu">nm</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tc-item safe">
+        <div class="tc-row1">
+          <span class="tc-name">OCEAN PEARL</span>
+          <span class="tc-type">Tanker</span>
+        </div>
+        <div class="tc-metrics">
+          <div class="tc-metric">
+            <span class="ml">CPA</span>
+            <span class="mv safe">2.1</span>
+            <span class="mu">nm</span>
+          </div>
+          <div class="tc-metric">
+            <span class="ml">TCPA</span>
+            <span class="mv safe">42</span>
+            <span class="mu">min</span>
+          </div>
+          <div class="tc-metric">
+            <span class="ml">Dist</span>
+            <span class="mv neutral">2.5</span>
+            <span class="mu">nm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scale bar -->
+    <div class="scale-bar">
+      <div class="scale-line"></div>
+      <span class="scale-text">1 nm</span>
+    </div>
+
+    <!-- Zoom controls -->
+    <div class="zoom-controls">
+      <div class="zoom-btn">+</div>
+      <div class="zoom-btn">−</div>
+    </div>
+
+    <!-- Floating instrument bar -->
+    <div class="floating-instruments">
+      <div class="instrument">
+        <span class="i-label">SOG</span>
+        <span class="i-value">6.2</span>
+        <span class="i-unit">knots</span>
+      </div>
+      <div class="instrument">
+        <span class="i-label">COG</span>
+        <span class="i-value">185°</span>
+        <span class="i-unit">mag</span>
+      </div>
+      <div class="instrument">
+        <span class="i-label">Depth</span>
+        <span class="i-value">142</span>
+        <span class="i-unit">feet</span>
+      </div>
+      <div class="instrument">
+        <span class="i-label">Wind</span>
+        <span class="i-value">14</span>
+        <span class="i-unit">kt / 32° stbd</span>
+      </div>
+      <div class="instrument">
+        <span class="i-label">Baro</span>
+        <span class="i-value">1018</span>
+        <span class="i-unit">mb ↓</span>
+      </div>
+      <div class="instrument power">
+        <span class="i-label">SOC</span>
+        <span class="i-value soc">78%</span>
+        <span class="i-unit">-3.2A</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
