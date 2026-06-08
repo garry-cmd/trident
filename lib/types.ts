@@ -3,6 +3,40 @@
 export type ThreatLevel = "safe" | "caution" | "danger";
 export type DisplayMode = "head-up" | "course-up" | "north-up";
 
+// ── Canonical world model (lat/lon native) ──────────────────────────────────
+// What both the simulator and the live Signal K client emit. The radar's
+// bearing/range view is derived from this (lib/state.ts), so the data source
+// can swap with no change downstream.
+export interface LatLon {
+  lat: number; // deg
+  lon: number; // deg
+}
+
+export interface SelfState {
+  position: LatLon;
+  cog: number; // deg true
+  sog: number; // kt
+  heading: number; // deg true
+  depth: number; // depth below transducer (Signal K native unit)
+}
+
+export interface Contact {
+  id: string; // MMSI in production
+  name: string; // "" if unknown
+  type: string; // class / vessel type label
+  aton: boolean; // Aid to Navigation (stationary)
+  position: LatLon;
+  cog: number; // deg true
+  sog: number; // kt
+}
+
+export interface BoatState {
+  self: SelfState;
+  contacts: Contact[];
+  source: "sim" | "live"; // drives the SIM badge — never claim live when sim
+  ts: number; // ms epoch of last update
+}
+
 // User-tunable alert thresholds. Live (set in Settings), injected into the
 // pure CPA functions so a bug or a tweak has one path, not many.
 export interface Thresholds {

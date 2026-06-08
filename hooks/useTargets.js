@@ -1,24 +1,20 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
-import { initTargets, advanceTargets, OWN, TICK_MS } from "@/lib/simulate";
+import { useMemo } from "react";
+import { deriveTargets } from "@/lib/state";
 import { enrichTargets } from "@/lib/ais";
+import { useBoatState } from "./useBoatState";
 import { useSettings } from "./useSettings";
 
-// Owns the target data lifecycle. Today the source is the simulator; swapping
-// in a live Signal K client means replacing initTargets/advanceTargets with
-// the WS feed — the returned shape (enriched targets + own) stays identical,
-// so no consuming component changes. Enrichment is memoized so the CPA trig
-// only runs when the raw data actually changes, not on every parent render.
+// Composes the data pipeline for the radar: world model -> brg/range view ->
+// relative motion + CPA. Returns { targets, own } exactly as before, so every
+// consuming component is untouched whether the source is sim or live. Each
+// stage is memoized so the CPA trig only re-runs when its inputs change.
 export function useTargets() {
-  const { paused, thresholds } = useSettings();
-  const [raw, setRaw] = useState(initTargets);
+  const { state } = useBoatState();
+  const { thresholds } = useSettings();
 
-  useEffect(() => {
-    if (paused) return;
-    const iv = setInterval(() => setRaw((prev) => advanceTargets(prev, OWN)), TICK_MS);
-    return () => clearInterval(iv);
-  }, [paused]);
+  const { targets: raw, own } = useMemo(() => deriveTargets(state), [state]);
+  const targets = useMemo(() => enrichTargets(raw, own, thresholds), [raw, own, thresholds]);
 
-  const targets = useMemo(() => enrichTargets(raw, OWN, thresholds), [raw, thresholds]);
-  return { targets, own: OWN };
+  return { targets, own };
 }

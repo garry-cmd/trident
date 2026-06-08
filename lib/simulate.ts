@@ -1,45 +1,62 @@
-// Simulated AIS data source for dev. Swappable with a live Signal K source.
-// Targets carry only absolute COG/SOG (as real AIS does); relative motion is
-// derived against own vessel via the shared physics in ais.ts.
-import type { Target, OwnVessel } from "./types";
+// Simulated data source for dev — now emits the canonical lat/lon BoatState,
+// the same shape a live Signal K feed produces (lib/signalk.ts). Self and every
+// contact move absolutely over ground along their own COG/SOG; the radar's
+// relative picture is derived in lib/state.ts. Swapping to live is a one-line
+// source change in useBoatState; nothing here is in the collision path.
+import type { BoatState, Contact, LatLon } from "./types";
 import { DEFAULT_RANGE } from "./settings";
-import { relativeVelocity } from "./ais";
+import { project, distanceNm } from "./geo";
 
 export const TICK_MS = 1000;
 const SPEED_X = 8; // sim speed multiplier
 const RESPAWN_NM = DEFAULT_RANGE * 2; // off-screen bound -> respawn
 const STEP_MIN = (SPEED_X * TICK_MS) / 60000; // sim minutes advanced per tick
 
-const rad = (d: number) => (d * Math.PI) / 180;
-const deg = (r: number) => (r * 180) / Math.PI;
+// Own vessel start. In production this comes from Signal K (navigation.*).
+const SELF_START: LatLon = { lat: 48.05, lon: -122.95 }; // Admiralty Inlet
+const SELF = { cog: 185, sog: 6.2, heading: 185, depth: 142 };
 
-// Own vessel. In production this comes from Signal K (navigation.*).
-export const OWN: OwnVessel = { sog: 6.2, cog: 185, heading: 185, depth: 142 };
+// Seeds carry each contact's bearing/range FROM own at spawn, so they can be
+// projected onto lat/lon relative to wherever own currently is — at init, and
+// again on respawn after own has wandered.
+interface Seed { id: string; name: string; type: string; aton: boolean; brg0: number; dist0: number; cog: number; sog: number; }
+const SEEDS: Seed[] = [
+  { id: "1", name: "MARIA ELENA", type: "Fishing", brg0: 128, dist0: 1.4, cog: 223, sog: 6.6, aton: false },
+  { id: "2", name: "MAERSK DURBAN", type: "Cargo", brg0: 42, dist0: 2.6, cog: 212, sog: 10.0, aton: false },
+  { id: "3", name: "OCEAN PEARL", type: "Tanker", brg0: 312, dist0: 2.8, cog: 154, sog: 7.0, aton: false },
+  { id: "4", name: "BAHIA SPORT", type: "Sailing", brg0: 238, dist0: 3.2, cog: 40, sog: 7.0, aton: false },
+  { id: "5", name: "", type: "Class B", brg0: 348, dist0: 3.8, cog: 180, sog: 0.2, aton: false },
+  { id: "6", name: "Fl G 4s", type: "Nav Aid", brg0: 95, dist0: 2.1, cog: 0, sog: 0, aton: true },
+];
 
-export function initTargets(): Target[] {
-  return [
-    { id: "1", name: "MARIA ELENA", type: "Fishing", brg: 128, dist: 1.4, cog: 223, sog: 6.6, aton: false },
-    { id: "2", name: "MAERSK DURBAN", type: "Cargo", brg: 42, dist: 2.6, cog: 212, sog: 10.0, aton: false },
-    { id: "3", name: "OCEAN PEARL", type: "Tanker", brg: 312, dist: 2.8, cog: 154, sog: 7.0, aton: false },
-    { id: "4", name: "BAHIA SPORT", type: "Sailing", brg: 238, dist: 3.2, cog: 40, sog: 7.0, aton: false },
-    { id: "5", name: "", type: "Class B", brg: 348, dist: 3.8, cog: 180, sog: 0.2, aton: false },
-    { id: "6", name: "Fl G 4s", type: "Nav Aid", brg: 95, dist: 2.1, cog: 0, sog: 0, aton: true },
-  ];
+const spawn = (s: Seed, from: LatLon): Contact => ({
+  id: s.id, name: s.name, type: s.type, aton: s.aton,
+  position: project(from, s.brg0, s.dist0), cog: s.cog, sog: s.sog,
+});
+
+export function initState(): BoatState {
+  return {
+    self: { position: SELF_START, ...SELF },
+    contacts: SEEDS.map((s) => spawn(s, SELF_START)),
+    source: "sim",
+    ts: Date.now(),
+  };
 }
 
-// Advance all targets one tick by their velocity relative to own. AtoN are
-// stationary. Targets that drift off-screen or pass through respawn.
-export function advanceTargets(prev: Target[], own: OwnVessel): Target[] {
-  const fresh = initTargets();
-  return prev.map((t) => {
-    if (t.aton) return t;
-    const { e, n } = relativeVelocity(t, own);
-    const rE = t.dist * Math.sin(rad(t.brg)) + e * STEP_MIN;
-    const rN = t.dist * Math.cos(rad(t.brg)) + n * STEP_MIN;
-    const nd = Math.hypot(rE, rN);
-    if (nd > RESPAWN_NM || nd < 0.03) return fresh.find((i) => i.id === t.id) || t;
-    let nb = deg(Math.atan2(rE, rN));
-    if (nb < 0) nb += 360;
-    return { ...t, brg: nb, dist: nd };
+// Advance one tick: self and each non-AtoN contact move along their own course.
+// A contact that drifts past the off-screen bound (or passes through own)
+// respawns at its seed bearing/range from the CURRENT own position.
+export function advanceState(prev: BoatState): BoatState {
+  const self = { ...prev.self, position: project(prev.self.position, prev.self.cog, prev.self.sog * STEP_MIN) };
+  const contacts = prev.contacts.map((c) => {
+    if (c.aton) return c;
+    const next = project(c.position, c.cog, c.sog * STEP_MIN);
+    const d = distanceNm(self.position, next);
+    if (d > RESPAWN_NM || d < 0.03) {
+      const seed = SEEDS.find((s) => s.id === c.id);
+      if (seed) return spawn(seed, self.position);
+    }
+    return { ...c, position: next };
   });
+  return { self, contacts, source: "sim", ts: Date.now() };
 }
