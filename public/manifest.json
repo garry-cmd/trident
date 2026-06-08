@@ -1,0 +1,9 @@
+{
+  "name": "Trident",
+  "short_name": "Trident",
+  "description": "Marine navigation and AIS watch",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060a0e",
+  "theme_color": "#060a0e"
+}
