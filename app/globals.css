@@ -1,0 +1,64 @@
+/* Trident design tokens — SINGLE SOURCE OF TRUTH.
+   Edit colours, fonts, and the radar palette here. JS reads these through
+   lib/theme.ts (e.g. C.danger === "var(--danger)"), so changing a value here
+   updates every surface with no recompile.
+
+   Night mode: add a `:root[data-theme="night"] { --bg: ...; }` block below and
+   set document.documentElement.dataset.theme = "night" — every token swaps. */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* type */
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-sans: 'IBM Plex Sans', -apple-system, sans-serif;
+
+  /* surfaces */
+  --bg: #060a0e;
+  --surface: #0d1319;
+  --raised: #111923;
+  --border: #1a2536;
+  --border-lt: #243040;
+  --ring: #121a24;
+
+  /* text */
+  --text: #8899aa;
+  --bright: #c8d6e0;
+  --dim: #4a5a6a;
+  --value: #d0dce6;
+  --label: #556677;
+
+  /* status */
+  --safe: #2d8a56;
+  --safe-br: #3aad6e;
+  --caution: #c49230;
+  --caution-br: #daa840;
+  --danger: #c44040;
+  --danger-br: #e04848;
+  --danger-dim: rgba(196, 64, 64, 0.15);
+
+  /* accents */
+  --blue: #3a7abd;
+  --own: #4a9ade;
+  --guard: rgba(58, 122, 189, 0.2);
+  --aton: #8a7a30;
+
+  /* radar chrome (previously hardcoded hex inside RadarSVG) */
+  --radar-grad-0: #090f16;
+  --radar-grad-1: #060a0e;
+  --ring-label: #1e2a36;
+  --compass-n: #3a6a4a;
+  --compass: #2a3a48;
+  --radar-info: #1e2e3e;
+  --label-bg: rgba(13, 19, 25, 0.85);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { background: var(--bg); overflow: hidden; }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.65; } }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border-lt); border-radius: 2px; }

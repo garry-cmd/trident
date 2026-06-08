@@ -17,13 +17,6 @@ export default function AppShell({ children }) {
           onPointerDown={() => getAudioCtx()}
           style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", background: C.bg, fontFamily: FONT_SANS, overflow: "hidden" }}
         >
-          <style>{`
-            @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
-            @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.65}}
-            @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-            *{margin:0;padding:0;box-sizing:border-box}
-            ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:${C.borderLt};border-radius:2px}
-          `}</style>
           <AlertModal />
           <TopBar />
           <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>{children}</main>

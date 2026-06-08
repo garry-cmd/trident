@@ -1,3 +1,4 @@
+import "./globals.css";
 import AppShell from "@/components/AppShell";
 
 export const metadata = {
@@ -17,7 +18,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, padding: 0, background: "#060a0e", overflow: "hidden" }}>
+      <body>
         <AppShell>{children}</AppShell>
       </body>
     </html>
