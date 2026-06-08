@@ -3,6 +3,15 @@
 export type ThreatLevel = "safe" | "caution" | "danger";
 export type DisplayMode = "head-up" | "course-up" | "north-up";
 
+// User-tunable alert thresholds. Live (set in Settings), injected into the
+// pure CPA functions so a bug or a tweak has one path, not many.
+export interface Thresholds {
+  cpaCaution: number; // nm — amber band
+  cpaDanger: number; // nm — red band + alarm
+  guardNm: number; // nm — guard ring radius
+  tcpaAlert: number; // min — alarm when a closing target is this near CPA
+}
+
 export interface OwnVessel {
   sog: number; // kt
   cog: number; // deg true

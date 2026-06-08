@@ -53,6 +53,46 @@
   --label-bg: rgba(13, 19, 25, 0.85);
 }
 
+/* Night-vision mode — red-on-black to protect dark adaptation on watch.
+   Every token shifts to a long-wavelength scale; brightness still encodes
+   importance (danger is the brightest thing on the screen). Toggled by
+   setting document.documentElement.dataset.theme = "night" (useSettings). */
+:root[data-theme="night"] {
+  --bg: #0a0000;
+  --surface: #150303;
+  --raised: #1d0606;
+  --border: #3a1010;
+  --border-lt: #4d1616;
+  --ring: #200808;
+
+  --text: #b05550;
+  --bright: #ff8c7a;
+  --dim: #5a2020;
+  --value: #e07060;
+  --label: #803030;
+
+  --safe: #5a1818;
+  --safe-br: #7a2525;
+  --caution: #c05a30;
+  --caution-br: #e07840;
+  --danger: #e83030;
+  --danger-br: #ff4038;
+  --danger-dim: rgba(232, 48, 48, 0.18);
+
+  --blue: #a04040;
+  --own: #ff6a55;
+  --guard: rgba(200, 70, 70, 0.18);
+  --aton: #9a5020;
+
+  --radar-grad-0: #120202;
+  --radar-grad-1: #0a0000;
+  --ring-label: #401414;
+  --compass-n: #7a2a2a;
+  --compass: #4a1818;
+  --radar-info: #401818;
+  --label-bg: rgba(21, 3, 3, 0.85);
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body { background: var(--bg); overflow: hidden; }

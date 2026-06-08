@@ -3,12 +3,15 @@
 // Relative velocity is derived from absolute COG/SOG (target minus own), which
 // is how real AIS works — targets broadcast their own course/speed, never a
 // pre-computed relative vector.
-import type { Target, OwnVessel, EnrichedTarget, ThreatLevel } from "./types";
+import type { Target, OwnVessel, EnrichedTarget, ThreatLevel, Thresholds } from "./types";
 import { C } from "./theme";
+import { DEFAULT_THRESHOLDS } from "./settings";
 
-export const CPA_DANGER = 0.5; // nm
-export const CPA_CAUTION = 1.0; // nm
-export const GUARD_NM = 2; // nm — guard ring radius
+// Legacy constant exports, now derived from the single default source so older
+// imports (and tests) keep working. Live values come through the `th` param.
+export const CPA_DANGER = DEFAULT_THRESHOLDS.cpaDanger; // nm
+export const CPA_CAUTION = DEFAULT_THRESHOLDS.cpaCaution; // nm
+export const GUARD_NM = DEFAULT_THRESHOLDS.guardNm; // nm — guard ring radius
 
 const rad = (d: number) => (d * Math.PI) / 180;
 
@@ -23,8 +26,8 @@ export function cpaTcpa(rx: number, ry: number, vx: number, vy: number): { cpa: 
   return { cpa: Math.hypot(rx + vx * t, ry + vy * t), tcpa: t };
 }
 
-export function threat(cpa: number): ThreatLevel {
-  return cpa < CPA_DANGER ? "danger" : cpa < CPA_CAUTION ? "caution" : "safe";
+export function threat(cpa: number, th: Thresholds = DEFAULT_THRESHOLDS): ThreatLevel {
+  return cpa < th.cpaDanger ? "danger" : cpa < th.cpaCaution ? "caution" : "safe";
 }
 
 export function tColor(level: ThreatLevel): string {
@@ -43,7 +46,7 @@ export function relativeVelocity(mover: { cog: number; sog: number }, own: OwnVe
 
 // Enrich a raw target against own vessel. Output rx,ry,vx,vy are in the screen
 // frame (x = East, y = -North) the radar renderer expects.
-export function enrichTarget(t: Target, own: OwnVessel): EnrichedTarget {
+export function enrichTarget(t: Target, own: OwnVessel, th: Thresholds = DEFAULT_THRESHOLDS): EnrichedTarget {
   const r = rad(t.brg);
   const rx = Math.sin(r) * t.dist; // East
   const ry = -Math.cos(r) * t.dist; // -North (screen)
@@ -54,8 +57,8 @@ export function enrichTarget(t: Target, own: OwnVessel): EnrichedTarget {
   const vx = e; // East
   const vy = -n; // -North (screen)
   const { cpa, tcpa } = cpaTcpa(rx, ry, vx, vy);
-  return { ...t, rx, ry, vx, vy, cpa, tcpa, level: threat(cpa) };
+  return { ...t, rx, ry, vx, vy, cpa, tcpa, level: threat(cpa, th) };
 }
 
-export const enrichTargets = (arr: Target[], own: OwnVessel): EnrichedTarget[] =>
-  arr.map((t) => enrichTarget(t, own));
+export const enrichTargets = (arr: Target[], own: OwnVessel, th: Thresholds = DEFAULT_THRESHOLDS): EnrichedTarget[] =>
+  arr.map((t) => enrichTarget(t, own, th));

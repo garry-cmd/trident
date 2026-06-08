@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { playAlarm } from "@/lib/audio";
+import { useSettings } from "./useSettings";
 
 const AlertsContext = createContext(null);
 
@@ -9,6 +10,7 @@ const AlertsContext = createContext(null);
 // alert, drives the alarm, and exposes ack(). Acked entries are pruned to the
 // current danger set, so a target that leaves and re-enters danger re-alerts.
 export function AlertsProvider({ children }) {
+  const { alarmEnabled } = useSettings();
   const [dangers, setDangersState] = useState([]); // [{id,name,tcpa}]
   const [acked, setAcked] = useState({});
 
@@ -31,13 +33,13 @@ export function AlertsProvider({ children }) {
   const unacked = dangers.find((d) => !acked[d.id]) || null;
   const anyDangerAcked = dangers.find((d) => acked[d.id]) || null;
 
-  // Alarm loop while an unacknowledged danger exists.
+  // Alarm loop while an unacknowledged danger exists and the alarm is enabled.
   useEffect(() => {
-    if (!unacked) return;
+    if (!unacked || !alarmEnabled) return;
     playAlarm();
     const iv = setInterval(playAlarm, 2000);
     return () => clearInterval(iv);
-  }, [unacked?.id]);
+  }, [unacked?.id, alarmEnabled]);
 
   const value = { dangers, setDangers, acked, ack, unacked, anyDangerAcked };
   return <AlertsContext.Provider value={value}>{children}</AlertsContext.Provider>;

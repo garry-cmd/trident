@@ -12,7 +12,7 @@ import TargetList from "@/components/radar/TargetList";
 // Radar is the root view — the default 2am watch screen. This assembles the
 // dumb components; all logic lives in hooks and lib.
 export default function RadarPage() {
-  const { displayMode, filterRange, viewRange, setViewRange } = useSettings();
+  const { displayMode, filterRange, viewRange, setViewRange, thresholds } = useSettings();
   const { targets, own } = useTargets();
   const { setDangers } = useAlerts();
   const [selId, setSelId] = useState(null);
@@ -24,10 +24,19 @@ export default function RadarPage() {
   );
   const selTarget = targets.find((t) => t.id === selId) || null;
 
-  // Feed current dangers to the alert system.
+  // Feed current dangers to the alert system. A target alarms if it's in the
+  // CPA danger band, OR it's closing and will reach a within-caution CPA inside
+  // the TCPA-alert window (the "minutes to act" trigger from Settings).
   const dangers = useMemo(
-    () => targets.filter((t) => t.level === "danger").map((t) => ({ id: t.id, name: t.name, tcpa: t.tcpa })),
-    [targets]
+    () =>
+      targets
+        .filter(
+          (t) =>
+            t.level === "danger" ||
+            (!t.aton && t.tcpa > 0 && t.tcpa < thresholds.tcpaAlert && t.cpa < thresholds.cpaCaution)
+        )
+        .map((t) => ({ id: t.id, name: t.name, tcpa: t.tcpa })),
+    [targets, thresholds.tcpaAlert, thresholds.cpaCaution]
   );
   const dangerKey = dangers.map((d) => d.id + ":" + Math.round(d.tcpa)).join(",");
   useEffect(() => { setDangers(dangers); }, [dangerKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -51,6 +60,7 @@ export default function RadarPage() {
           displayMode={displayMode}
           own={own}
           filterRange={filterRange}
+          guardNm={thresholds.guardNm}
           onSelect={selectTarget}
           onResetBackground={resetView}
         />

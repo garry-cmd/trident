@@ -77,6 +77,16 @@ describe("threat — CPA banding", () => {
     expect(threat(CPA_CAUTION)).toBe("safe"); // 1.0 exactly
     expect(threat(CPA_CAUTION - 1e-9)).toBe("caution");
   });
+
+  it("respects injected custom thresholds (Settings can retune the bands)", () => {
+    const tight = { cpaCaution: 0.4, cpaDanger: 0.2, guardNm: 1, tcpaAlert: 6 };
+    // 0.7nm is caution under the default 1.0 caution band but...
+    expect(threat(0.7)).toBe("caution");
+    // ...safe under a tightened 0.4nm caution band.
+    expect(threat(0.7, tight)).toBe("safe");
+    expect(threat(0.3, tight)).toBe("caution");
+    expect(threat(0.1, tight)).toBe("danger");
+  });
 });
 
 describe("tColor — threat to token", () => {

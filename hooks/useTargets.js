@@ -10,7 +10,7 @@ import { useSettings } from "./useSettings";
 // so no consuming component changes. Enrichment is memoized so the CPA trig
 // only runs when the raw data actually changes, not on every parent render.
 export function useTargets() {
-  const { paused } = useSettings();
+  const { paused, thresholds } = useSettings();
   const [raw, setRaw] = useState(initTargets);
 
   useEffect(() => {
@@ -19,6 +19,6 @@ export function useTargets() {
     return () => clearInterval(iv);
   }, [paused]);
 
-  const targets = useMemo(() => enrichTargets(raw, OWN), [raw]);
+  const targets = useMemo(() => enrichTargets(raw, OWN, thresholds), [raw, thresholds]);
   return { targets, own: OWN };
 }

@@ -9,7 +9,7 @@ const COMPASS = [{ l: "N", d: 0 }, { l: "E", d: 90 }, { l: "S", d: 180 }, { l: "
 // Colours are applied via `style` (not fill=/stroke= attributes) because SVG
 // presentation attributes can't resolve CSS var() — this keeps the radar on the
 // same token system (lib/theme.ts -> globals.css) as the rest of the app.
-export default function RadarSVG({ targets, selId, viewRange, displayMode, own, filterRange, onSelect, onResetBackground }) {
+export default function RadarSVG({ targets, selId, viewRange, displayMode, own, filterRange, guardNm = GUARD_NM, onSelect, onResetBackground }) {
   const rotOff = displayMode === "head-up" ? -own.heading : displayMode === "course-up" ? -own.cog : 0;
   const rotBrg = (b) => { let r = b + rotOff; while (r < 0) r += 360; while (r >= 360) r -= 360; return r; };
   const nm2px = (nm) => (nm / viewRange) * RR;
@@ -41,7 +41,7 @@ export default function RadarSVG({ targets, selId, viewRange, displayMode, own, 
         return <text key={c.l} x={lx} y={ly + 3} textAnchor="middle" fontFamily="IBM Plex Mono" fontSize={c.l === "N" ? 10 : 9} fontWeight={c.l === "N" ? 600 : 400} style={{ fill: c.l === "N" ? C.compassN : C.compass }}>{c.l}</text>;
       })}
 
-      {GUARD_NM <= viewRange && <circle cx={CX} cy={CY} r={nm2px(GUARD_NM)} fill="none" strokeWidth="0.7" strokeDasharray="6 5" style={{ stroke: C.guard }} />}
+      {guardNm <= viewRange && <circle cx={CX} cy={CY} r={nm2px(guardNm)} fill="none" strokeWidth="0.7" strokeDasharray="6 5" style={{ stroke: C.guard }} />}
 
       <g transform={`translate(${CX},${CY})`} filter="url(#gl)">
         <line x1={0} y1={-14} x2={0} y2={-32} strokeWidth="0.8" opacity="0.4" style={{ stroke: C.own }} />
