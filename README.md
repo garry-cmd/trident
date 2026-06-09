@@ -6,7 +6,7 @@ Replaces iPad/Navionics chartplotter, Vesper WatchMate AIS app, and Victron Blue
 
 ## Status
 
-**Phase:** Design complete. Production build starting.  
+**Phase:** Production build underway — modular Radar live, Settings (Phase 2a) live, lat/lon data model + Signal K client built (sim feed; live swap is one line).  
 **Target:** Deploy on Irene by August 24, 2026.
 
 See [CONTEXT.md](CONTEXT.md) for current state.
