@@ -64,7 +64,7 @@ export default function RadarPage() {
           onSelect={selectTarget}
           onResetBackground={resetView}
         />
-        <HeadingKPI heading={own.heading} selTarget={selTarget} />
+        <HeadingKPI own={own} displayMode={displayMode} selTarget={selTarget} />
 
         <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 6, zIndex: 5 }}>
           <div onClick={() => setViewRange((r) => Math.max(1, r - 1))} style={zoomBtn}>+</div>
