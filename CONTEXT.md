@@ -33,15 +33,15 @@ Every design decision passes one test: would a solo sailor, cold, tired, half-as
 - **Internet:** Starlink (intermittent, hourly for weather/comms) — **no internet at sea; the app must run fully offline**
 
 ## Current State
-- **Phase:** Production build underway. Radar view is real and modular. Data is still simulated — but the simulator now emits the **canonical lat/lon `BoatState`** the live Signal K feed will produce, so going live is a one-line source swap in `useBoatState`. `lib/` has full vitest coverage (46 tests).
+- **Phase:** Production build underway. Radar **and Chart** are real and modular; Settings is built with a full **Day/Dusk/Night** theme system. Data is still simulated — the simulator emits the **canonical lat/lon `BoatState`** the live Signal K feed will produce, so going live is a one-line source swap in `useBoatState`. `lib/` has vitest coverage (**59 tests**).
 - **Target:** Deploy on Irene by August 24, 2026
 - **Prototype live at:** `trident.keeply.boats`
-- **Shipped this session (all deployed):**
-  - **vitest coverage on `lib/`** (46 tests) — collision math (`cpaTcpa`, `threat`, `relativeVelocity`, `enrichTarget`) plus geo / Signal K / derive / simulator logic. Geometries hand-derived and asserted against known answers, not against the implementation.
-  - **Settings view (Phase 2a, trimmed-but-honest)** — live collision thresholds (CPA caution/danger, guard zone, TCPA alert) lifted from hardcoded constants into settings state and injected into the pure CPA functions; night-vision red mode (`data-theme` swap); master alarm enable + test-alarm button. Power / depth / crew-profile controls **deferred** (one greyed footer line), never faked — passes the "no aspirational features" rule.
-  - **Signal K infrastructure (the live-data layer)** — canonical lat/lon `BoatState` model; `lib/geo.ts` (haversine / bearing / projection); `lib/state.ts` `deriveTargets()` (world model → radar brg/range); `lib/signalk.ts` (`applyDelta` pure delta-folding + thin `connect` WS shell); `hooks/useBoatState.js` owns the source; simulator rewritten to emit/advance `BoatState`; `useTargets` recomposed. **`lib/ais.ts` and the collision math untouched**; all six seeds reproduce their exact on-load geometry (radar byte-identical).
-  - **Fixed a 60× sim-speed bug** introduced in the lat/lon rewrite (knots weren't converted to nm/min in the motion step); added a per-tick distance test (`nmPerTick`) so the unit can't silently regress again.
-  - Confirmed the radar still renders correctly after last session's `style`-based SVG colour conversion (the one thing tsc couldn't prove).
+- **Shipped this session (session 3, all deployed):**
+  - **Chart view (MapLibre GL)** — own-vessel + AIS overlay driven straight off `BoatState` positions; native map rotation (`setBearing`) so orientation matches the radar. Online OSM raster + OpenSeaMap seamarks are the chart's "simulator-equivalent"; offline MBTiles is a Pi-phase tile-source swap. `hooks/useChartData.js`, `components/chart/{ChartMap.jsx,icons.js}`.
+  - **Shared Watch Shell (`components/WatchLayout.jsx`)** — radar and chart now render into one layout (top instrument strip + centre view slot + sidebar list/heading). The shell owns range filter, CPA sort, selected-target resolution, and **danger→alarm registration so the collision alarm fires on the Chart too** (was radar-only). **Phone support dropped** below 768px for an honest rotate notice (`SmallScreenNotice`).
+  - **Day/Dusk/Night theme system** — replaced the `nightMode` boolean with a `theme` tri-state. **Day** = sun-readable light (default), **Dusk** = the old dark base, **Night** = red-on-black. 3-way selector in Settings; theme-aware chart-tile filter; tokenised the hardcoded-dark controls (zoom buttons) that were invisible in Day. Boots in Day with no flash.
+  - **Radar fills the view area** — moved the scope gradient onto the slot (full-bleed) and dropped RadarSVG's own background rect, removing the day-mode "three-greys" buffer band between radar and sidebar.
+  - **Settings persistence (`lib/persist.ts`)** — theme / depth unit / display mode / range filter / alarm enable / all four thresholds now survive reload via localStorage; a tested `sanitize()` validates the stored blob (bad enums dropped, thresholds clamped, danger kept inside caution) so a corrupt entry can't brick the radar. `paused` and `viewRange` are deliberately **not** restored. Pre-paint theme boot in `layout.js` so a night reload doesn't flash white.
 - **Amazon hardware ordered:** June 7, 2026 — $322.71 — arriving June 12
   - Raspberry Pi 5 8GB, Official Active Cooler, 3-Channel Relay HAT (opto-isolated), PlusRoc 12V→5V 25W USB-C converter, SanDisk High Endurance 256GB microSD, Argon NEO 5 M.2 case
 - **Still to order (closer to Mexico trip):**
@@ -55,64 +55,73 @@ Modular. Each view is a route. Components are dumb (props in, render out). Hooks
 ```
 trident/
   app/
-    globals.css          <- Design tokens (CSS custom properties) — SINGLE SOURCE OF TRUTH
-    layout.js            <- Server: metadata + viewport, imports globals.css, renders <AppShell>
-    page.js              <- Radar view (root "/") — assembles the radar from components/hooks
-    chart/page.js        <- Phase 2 stub
-    dash/page.js         <- Phase 2 stub
-    settings/page.js     <- Phase 2 stub
+    globals.css          <- Design tokens (CSS custom properties) — SINGLE SOURCE OF TRUTH.
+                            :root = Dusk base; :root[data-theme="day"] = sun-readable light
+                            (default); :root[data-theme="night"] = red-on-black. Validated w/ PostCSS.
+    layout.js            <- Server: metadata + viewport + <html data-theme="day"
+                            suppressHydrationWarning> + a pre-paint script that applies the saved
+                            theme before first paint (no night-watch white flash). Renders <AppShell>.
+    page.js              <- Radar view ("/") — scope dropped into <WatchLayout>
+    chart/page.js        <- Chart view ("/chart") — MapLibre map dropped into <WatchLayout> (BUILT)
+    dash/page.js         <- Phase-2 stub (needs Victron data to be honest)
+    settings/page.js     <- Settings (BUILT): thresholds, theme (Day/Dusk/Night), depth unit,
+                            master alarm + test
 
   components/
-    AppShell.jsx         <- Client shell: context providers + persistent TopBar + AlertModal + audio unlock
-    TopBar.jsx           <- Nav tabs, display mode, range filter, timer, alert badge (persistent across routes)
+    AppShell.jsx         <- Client shell: context providers + persistent bottom nav + AlertModal + audio unlock
+    TopBar.jsx           <- Persistent nav bar, now at the BOTTOM (thumb zone): view tabs, display
+                            mode, range filter, pause, alert badge
+    WatchLayout.jsx      <- Shared shell for Radar + Chart: top InstrumentStrip + centre view slot
+                            (children) + sidebar (TargetList + SidebarHeading). Owns range filter,
+                            CPA sort, selected-target resolution, danger->alarm registration.
+    InstrumentStrip.jsx  <- Top read-strip: COG / SOG / Depth / Position (HDG is in the sidebar)
+    SmallScreenNotice.jsx<- Below 768px: rotate notice (phone isn't a supported watch surface)
     Timer.jsx            <- Watch timer with alarm beep
-    AlertModal.jsx       <- Full-screen CPA warning (reads useAlerts)
-    HeadingKPI.jsx       <- Heading overlay + CLOSING/OPENING (shared radar + future chart)
+    AlertModal.jsx       <- Full-screen CPA warning (useAlerts); dark scrim is intentional in every theme
     radar/
-      RadarSVG.jsx       <- SVG radar display only. Colours via style={{}} (NOT fill=/stroke=
-                            attributes) so CSS var() resolves inside SVG.
+      RadarSVG.jsx       <- SVG radar display only. Colours via style={{}} (NOT fill=/stroke=) so
+                            var() resolves. No background rect — the slot carries the scope gradient.
+      SidebarHeading.jsx <- Orientation-truthful heading block in the sidebar (lib/orient.ts)
       TargetCard.jsx     <- Single target row
       TargetDetail.jsx   <- Expanded selected-target panel
-      TargetList.jsx     <- Right-panel container: header + detail + sorted cards
-
-  hooks/  (React, context-backed)
-    useSettings.js       <- Global context: displayMode, filterRange, viewRange, paused,
-                            nightMode, alarmEnabled, + live thresholds. setThreshold clamps to
-                            bounds and fences the danger band inside the caution band. Syncs
-                            document data-theme for night mode.
-    useAlerts.js         <- Global context: danger registration, ack, escalation, alarm loop
-                            (now gated by alarmEnabled)
-    useBoatState.js      <- Owns the data source + lifecycle. Today: sim interval. THE live
-                            swap point — replace with connect(piUrl, setState) from signalk.ts
-    useTargets.js        <- Pure composition: useBoatState -> deriveTargets -> enrichTargets
-                            (memoized). Returns { targets, own }; consumers unchanged sim or live
-
-  components/
+      TargetList.jsx     <- Sidebar container: header + detail + sorted cards
+    chart/
+      ChartMap.jsx       <- MapLibre GL map: own-vessel + AIS DOM markers, theme-aware tile filter,
+                            rotation matched to radar, zoom/recenter controls
+      icons.js           <- DOM marker builders (colours via CSS var() in style)
     settings/
       ThresholdStepper.jsx <- One tunable threshold; stepper only (no free-text), 48px buttons
       Toggle.jsx           <- On/off switch, whole row is a >=48px hit target
 
-  lib/  (TypeScript, pure logic, no React)
-    theme.ts             <- Token map onto CSS vars (C.danger === "var(--danger)"); FONT_MONO/SANS
-    geo.ts               <- Spherical math: distanceNm, bearingDeg, project. project then
-                            bearing/distance round-trips exactly (the sim seeds depend on it)
-    ais.ts               <- cpaTcpa, threat(cpa, th?), tColor, relativeVelocity,
-                            enrichTarget/enrichTargets(arr, own, th?). Thresholds injected,
-                            default to the settings constants. THE collision-critical file.
-    state.ts             <- deriveTargets(BoatState) -> { targets, own }. The ONLY place
-                            lat/lon becomes brg/range. Pure.
-    signalk.ts           <- applyDelta(state, delta): pure SK-delta folding (rad->deg, m/s->kt,
-                            self/contact routing, AtoN); connect(url, onState): thin WS shell
-    simulate.ts          <- Sim source: initState/advanceState emit canonical BoatState in
-                            lat/lon; self + contacts move absolutely over ground; nmPerTick()
-    audio.ts             <- Alarm tones, timer beeps, singleton AudioContext (unlocked on gesture)
-    settings.ts          <- DEFAULT_RANGE, modes, options, DEFAULT_THRESHOLDS, THRESHOLD_FIELDS,
-                            DEFAULT_SETTINGS
-    types.ts             <- Display types (Target, EnrichedTarget, OwnVessel, Thresholds, ...)
-                            + canonical model (LatLon, SelfState, Contact, BoatState)
-    {ais,geo,state,signalk,simulate}.test.ts  <- vitest, 46 tests
+  hooks/  (React, context-backed)
+    useSettings.js       <- Global context: displayMode, filterRange, viewRange, paused, theme,
+                            alarmEnabled, depthUnit, + live thresholds. setThreshold clamps + fences
+                            danger inside caution. Syncs document data-theme; loads/saves via lib/persist.
+    useAlerts.js         <- Global context: danger registration, ack, escalation, alarm loop (gated by alarmEnabled)
+    useBoatState.js      <- Owns the data source + lifecycle. Today: sim interval. THE live swap
+                            point — replace with connect(piUrl, setState) from signalk.ts
+    useTargets.js        <- Pure composition: useBoatState -> deriveTargets -> enrichTargets (memoized)
+    useChartData.js      <- Joins self lat/lon + enriched threat-by-id off one useBoatState, for the chart
 
-  Not yet built: components/chart/*, components/dash/* — Chart and Dash remain honest Phase-2 stubs.
+  lib/  (TypeScript, pure logic, no React)
+    theme.ts             <- Token map onto CSS vars (C.danger === "var(--danger)"); FONT_MONO/SANS;
+                            radar palette tokens (gradient, ring labels, compass)
+    geo.ts               <- Spherical math: distanceNm, bearingDeg, project (round-trips exactly)
+    ais.ts               <- cpaTcpa, threat(cpa, th?), tColor, relativeVelocity, enrichTarget(s).
+                            Thresholds injected. THE collision-critical file.
+    state.ts             <- deriveTargets(BoatState) -> { targets, own }. lat/lon -> brg/range. Pure.
+    signalk.ts           <- applyDelta(state, delta) pure SK-delta folding; connect(url, onState) WS shell
+    simulate.ts          <- Sim source: initState/advanceState emit canonical BoatState; nmPerTick()
+    orient.ts            <- describeOrientation() — orientation-truthful heading label for the sidebar
+    units.ts             <- formatDepth (ft/m), formatLatLon — display formatting off the metric model
+    persist.ts           <- localStorage load/save + pure sanitize() validator (tested)
+    audio.ts             <- Alarm tones, timer beeps, singleton AudioContext (unlocked on gesture)
+    settings.ts          <- DEFAULT_RANGE, modes, FILTER/DEPTH/THEME options, DEFAULT_THRESHOLDS,
+                            THRESHOLD_FIELDS, DEFAULT_SETTINGS
+    types.ts             <- Display types + canonical model (LatLon, SelfState, Contact, BoatState)
+    {ais,geo,state,signalk,simulate,persist,units}.test.ts  <- vitest, 59 tests
+
+  Phase-2 stub remaining: app/dash/page.js (Dash needs the BMV-712 + Cerbo data to be honest).
 ```
 
 ### Architecture rules
@@ -125,13 +134,13 @@ trident/
 
 ## Trident App — Four Views
 1. **Radar** — Head-up situational awareness, guard zones, CPA/TCPA, auto-zoom on target select *(built)*
-2. **Chart** — Web-based nav chart with AIS overlay, pan/zoom, offline tiles *(Phase 2)*
-3. **Dash** — KPI cards: system status (GPS/AIS/connected clients), battery, solar *(Phase 2)*
-4. **Settings** — Live collision thresholds, night-vision mode, alarm controls *(built, Phase 2a)*. Per-crew profiles + power/nav-sensor rules deferred until their sensors exist.
+2. **Chart** — MapLibre GL nav chart with AIS overlay, pan/zoom, rotation matched to the radar; online OSM/OpenSeaMap tiles now, offline MBTiles in the Pi phase *(built)*
+3. **Dash** — KPI cards: system status (GPS/AIS/connected clients), battery, solar *(Phase 2 — gated on Victron data, won't be faked)*
+4. **Settings** — Live collision thresholds, Day/Dusk/Night theme, depth unit, alarm controls, all persisted *(built)*. Per-crew profiles + power/nav-sensor rules deferred until their sensors exist.
 
 ## Radar View — Design Decisions (v4, now built)
-- Large heading KPI top center — just the number; CLOSING/OPENING below it when a target is selected
-- No bottom instrument bar — heading is the only always-visible metric
+- Layout is the shared Watch Shell: top instrument read-strip (COG/SOG/Depth/Position), the scope filling the centre slot edge-to-edge, a right sidebar (target list + heading block), and the persistent nav bar at the BOTTOM (thumb zone).
+- Heading lives in the sidebar (`SidebarHeading`), not over the scope centre — orientation-truthful (reads "N" in north-up). Big value, one glance.
 - Alert modal shows ONLY vessel name and TCPA ("minutes to act")
 - Nav/controls minimum 44px touch targets
 - Unselected target = short heading tick; selected = extended predicted track + CPA point
@@ -162,10 +171,11 @@ The whole app now hangs off one source-agnostic world model (`lib/types.ts`), la
 - **Sim motion units:** vessels travel `nmPerTick(sog) = sog * STEP_MIN / 60` per tick (knots → nm/min). A missing `/60` here was a 60× speed bug; a per-tick distance test now guards it.
 
 ## Design Tokens / Theming
-- `app/globals.css` `:root` holds all colour/font tokens + the radar palette (gradient, ring labels, compass) that used to be hardcoded hex inside RadarSVG.
-- `lib/theme.ts` maps token names to `var(--x)` so components stay typo-safe (`C.danger`) while values live in CSS.
-- **Night-vision red mode** is **built** — a `:root[data-theme="night"]{ ... }` block in `globals.css` remaps every token to a red-on-black scale (brightness still encodes threat; danger stays brightest), toggled from Settings via `document.documentElement.dataset.theme`.
-- Fonts currently load via Google Fonts `@import` — **won't work offline at sea**. Self-host via `next/font` or local files in the Pi phase.
+- `app/globals.css` `:root` holds all colour/font tokens + the radar palette (gradient, ring labels, compass). `lib/theme.ts` maps token names to `var(--x)` so components stay typo-safe (`C.danger`) while values live in CSS. **No hardcoded hex in components** — the few that slipped through (radar/chart zoom buttons) were tokenised this session because they were invisible in Day.
+- **Day / Dusk / Night theme system.** `:root` is the **Dusk** base (dark). `:root[data-theme="day"]` is a sun-readable **light** palette (default). `:root[data-theme="night"]` is red-on-black for dark adaptation. Threat semantics hold in every theme — danger is the most saturated thing on screen. Selected in Settings (3-way control); applied by setting `document.documentElement.dataset.theme` (`"dusk"` → no attribute). The radar reads tokens through `style`, so it re-skins automatically; the chart filters its tiles per theme (Day bright, Dusk dim, Night red-dim).
+- **No-flash boot:** `<html data-theme="day">` + a pre-paint inline script in `layout.js` reads the saved theme from localStorage and sets `data-theme` *before* first paint, so reloading on night watch never flashes the light theme. `<html>` carries `suppressHydrationWarning` because that script mutates the server-rendered attribute.
+- **CSS is now validated.** A find/replace that spliced the Day block into a header comment broke CSS comment-nesting and failed `next build` — and because tsc / esbuild / vitest don't parse CSS, it sailed through green and silently blocked three deploys (remote `main` never moved). `globals.css` is now run through the **real PostCSS parser** (the one Next uses) as part of validation, and deploys are verified with `git ls-remote`.
+- Fonts still load via Google Fonts `@import` — **won't work offline at sea**. Self-host via `next/font` or local files in the Pi phase.
 
 ## Alert Architecture (Layered)
 1. **Physical horn** (GPIO relay) — safety floor, no WiFi/phone/internet dependency
@@ -208,15 +218,18 @@ Top cover stays in spares drawer.
 - `trident-full-mockup.html` — All 4 views interactive mockup
 
 ## What's Next
-1. **Pi hardware arrives June 12** — OpenPlotter / Signal K setup. Then the payoff: point `useBoatState` at the Pi's Signal K WS via `connect(piUrl, setState)` and the radar runs on live AIS, UI unchanged. Verify `applyDelta` against the real delta stream (esp. depth unit + AtoN/`design.aisShipType` paths) — these were built against the spec, not a live feed.
-2. **Settings persistence** — thresholds/night/alarm currently reset on reload (`useSettings` is in-memory). localStorage or cookie. Small, real, hardware-independent.
-3. **Build Chart view** (Leaflet/MapLibre + MBTiles) — now unblocked: own-vessel marker + AIS overlay drive straight off `BoatState` positions. Then Dash (system/battery/solar — needs the BMV-712 + Cerbo data to be honest).
-4. **Static export config** (`output: 'export'`) for Pi serving; keep avoiding server-only Next features.
-5. **Offline/PWA:** service worker for true offline; self-host fonts (`next/font`) to drop the Google Fonts `@import`.
-6. **Low power:** pause rendering/animation when the tab is hidden (Page Visibility API).
-7. **Responsive pass** for phone/portrait layout.
-8. **(Parked)** Predicted-track relative-vector option (see Radar Design Decisions) — revisit if dual-frame display confuses on the water.
+1. **Pi hardware (arriving June 12) → live Signal K.** OpenPlotter / Signal K setup, then the payoff: point `useBoatState` at the Pi's Signal K WS via `connect(piUrl, setState)` and radar + chart run on live AIS, UI unchanged. Verify `applyDelta` against the real delta stream (esp. depth unit + AtoN / `design.aisShipType` paths) — built against the spec, not a live feed.
+2. **Self-host fonts** (`next/font` / local files) to drop the Google Fonts `@import` — required for offline at sea. Rides with the static-export work.
+3. **Static export config** (`output: 'export'`) for nginx/caddy serving on the Pi; keep avoiding server-only Next features.
+4. **Low power:** pause rendering/animation when the tab is hidden (Page Visibility API).
+5. **Dash view** — system status / battery / solar. Gated on real Victron data (BMV-712 + Cerbo); won't be built with fake gauges.
+6. **Offline/PWA:** service worker for true offline.
+7. **DSC calling** — CALL button → PGN 129808 to the GX1850, pending hardware verification (Phase 3).
+8. **(Parked)** Predicted-track relative-vector option (see Radar Design Decisions) — revisit if the dual-frame display confuses on the water.
+
+Done this session and off the list: Chart view, Day/Dusk/Night theming, settings persistence, and the phone "responsive pass" (resolved by dropping phone support for a rotate notice).
 
 ## Session Log
+- **2026-06-10 (session 3):** Built the **Chart view** (MapLibre GL: own-vessel + AIS overlay off `BoatState`, rotation matched to radar, online OSM/OpenSeaMap tiles). Extracted the **shared Watch Shell** (`WatchLayout`) so radar + chart share one layout and the collision alarm fires on both; **dropped phone support** for an honest rotate notice. Redesigned the radar chrome (bottom nav, top instrument strip, heading moved to the sidebar) and fixed the own-boat icon pointing bug. Built the **Day/Dusk/Night theme system** (replacing the night boolean; Day default, sun-readable) and made the **radar fill the view area** (scope gradient on the slot, dropped the SVG bg rect — killed the three-greys buffer). Built **settings persistence** (localStorage, sanitised loader, pre-paint theme boot; `paused`/`viewRange` excluded). 59 tests. **Process learning:** a CSS comment-nesting bug from a careless find/replace failed `next build` and silently blocked three deploys (remote `main` didn't move) — diagnosed by re-cloning the remote + reading the build error; **added PostCSS parsing to validation** and now verify deploys with `git ls-remote`. All deployed (tsc green; real `next build` runs on Garry's Mac / Vercel — sandbox SIGBUSes).
 - **2026-06-08 (session 2):** Confirmed radar renders correctly post SVG-colour conversion. Investigated and explained the divergent predicted-track vs CPA lines (correct frame mixing, not a bug — see parked decision). **Added vitest** with 46 tests across `lib/`. **Built the Settings view (Phase 2a):** lifted CPA/guard/TCPA thresholds from constants into live settings state injected through the pure CPA functions, added a TCPA-window alarm, night-vision `data-theme` mode, master alarm + test button; deferred power/depth/crew controls honestly. **Built the live-data layer:** canonical lat/lon `BoatState` model + `geo.ts` + `state.ts` (`deriveTargets`) + `signalk.ts` (`applyDelta` + `connect`) + `useBoatState`; rewrote the simulator to emit `BoatState` and recomposed `useTargets` — collision math untouched, all seeds reproduce exactly, live swap reduced to one line. Caught and fixed a 60× sim-speed regression from the rewrite (knots→nm/min) and added a guarding test. All deployed (tsc green; `next build` unverified locally — sandbox SIGBUS — but Vercel builds clean).
 - **2026-06-08 (session 1):** Decomposed monolithic `app/radar.jsx` (425 lines) into the modular architecture above (23 files). Cleaned URL structure (radar at root, named routes + honest Phase-2 stubs). Migrated `lib/` to strict TypeScript with real types. Fixed CPA to derive relative velocity from absolute COG/SOG (was using hand-authored relative vectors); re-tuned the sim for a sensible threat spread. Memoized enrichment. Moved all design tokens to CSS custom properties in `globals.css` (single source of truth); converted RadarSVG colours to `style`-based so `var()` resolves; pulled previously-hardcoded radar hexes into tokens. Revised the file-size rule from a hard 150-line cap to a one-responsibility principle. All changes built clean (tsc + next build) and deployed.
