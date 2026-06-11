@@ -96,14 +96,14 @@
 <main>
 
 <div class="summary">
-  <div class="sum-card"><div class="sum-val amber">13%</div><div class="sum-label">Overall Progress</div></div>
+  <div class="sum-card"><div class="sum-val amber">18%</div><div class="sum-label">Overall Progress</div></div>
   <div class="sum-card"><div class="sum-val">10</div><div class="sum-label">Weeks Remaining</div></div>
   <div class="sum-card"><div class="sum-val blue">6</div><div class="sum-label">Key Results</div></div>
   <div class="sum-card"><div class="sum-val">1</div><div class="sum-label">Stretch Goal</div></div>
 </div>
 
 <div class="status-note" style="background:var(--raised);border:1px solid var(--border);border-left:3px solid var(--accent-light);border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.75rem;font-size:.9rem;line-height:1.55;">
-  <strong>Status — June 10, 2026 (session 3):</strong> The app got pulled forward, ahead of the hardware. The full UI — Radar, Chart, and Settings views, the CPA/TCPA collision engine, alerts, Day/Dusk/Night theming, and settings persistence — is built, unit-tested (59 tests), and live at <code>trident.keeply.boats</code>, running on a simulator that emits the exact <code>BoatState</code> shape Signal K produces. <strong>Going live is a one-line source swap</strong> once KR1 lands the Pi (hardware arrives June 12). Still ahead in Phase B: deploy onto the Pi at <code>trident.local</code>, the Dash view (gated on real Victron data — not faked), PWA service worker + push, per-crew profiles, and offline chart tiles. Phases A and C (hardware install, sea trial) are the bulk of the remaining work and haven't started.
+  <strong>Status — June 11, 2026 (session 4):</strong> The Pi is built and Trident runs on real hardware. Pi 5 assembled (Active Cooler + NEO 5 base), Raspberry Pi OS Lite headless at <code>trident.local</code>, Node 20, and the app served as a <strong>static export by Caddy</strong> on port 80 — alongside Signal K (v2.23.0, vessel Irene), both set to auto-start and <strong>verified to survive a cold reboot</strong>. The app is still on the simulator, but <strong>live AIS is now a single dockside step</strong>: point Signal K at the Vesper's WiFi NMEA stream (192.168.15.1:39150) and flip <code>useBoatState</code> to <code>connect()</code> — pending the Pi going aboard Irene. Full instrument + Victron data (KR1) remains gated on the Actisense NGX-1-USB N2K tap and the Cerbo GX, neither ordered yet. Still ahead in Phase B: the Dash view (gated on real Victron data — not faked), PWA service worker + push, and offline chart tiles. Phase C (sea trial) hasn't started.
 </div>
 
 <!-- ═══════════════════════ -->
@@ -118,12 +118,13 @@
       <span class="kr-date">Target: July 5</span>
     </div>
     <div class="kr-desc">Every sensor on Irene — AIS, GPS, depth, wind, heading, barometer, autopilot state, battery SOC, solar yield — is ingested into Signal K and accessible from any device on the boat's WiFi via Signal K's built-in web UI.</div>
-    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill warn" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill warn" style="width:15%"></div></div><span class="progress-pct">15%</span></div>
     <div class="task-list">
       <div class="task"><div class="task-check"></div><span class="task-text">Install BMV-712 on battery bank negative lead</span><span class="task-owner">boat work</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Order all hardware (Pi 5, NGT-1, Peplink, Cerbo GX, cables, relay, horn, case, SD card, buck converter)</span><span class="task-owner">procurement</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Order all hardware (Pi 5, NGX-1-USB, Peplink, Cerbo GX, cables, relay, horn, case, SD card, buck converter)</span><span class="task-owner">procurement</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Install Peplink router — Starlink to WAN, single SSID, verify all devices on one network</span><span class="task-owner">boat work</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Install Pi 5 with OpenPlotter, connect Actisense NGT-1 to N2K backbone</span><span class="task-owner">boat work</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Build Pi 5 (Active Cooler + NEO 5 base), flash Pi OS Lite headless, Signal K running + auto-start, reachable at trident.local</span><span class="task-owner">boat work</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Connect Actisense NGX-1-USB to N2K backbone</span><span class="task-owner">boat work</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Verify Signal K ingests all N2K instruments (AIS, GPS, depth, wind, heading, baro, autopilot)</span><span class="task-owner">config</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Install Cerbo GX — wire 2× MPPT + BMV-712 via VE.Direct, connect to N2K + Ethernet</span><span class="task-owner">boat work</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Verify Triton 2 displays SOC from Cerbo via N2K</span><span class="task-owner">verification</span></div>
@@ -167,9 +168,9 @@
       <span class="kr-date">Target: July 26</span>
     </div>
     <div class="kr-desc">The core Trident web app is accessible at <code>trident.local</code> from any device on the boat's WiFi. Radar view with CPA/TCPA, Dash with all KPI cards, and Settings with per-crew notification profiles. PWA installable on iOS/Android home screens.</div>
-    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:45%"></div></div><span class="progress-pct">45%</span></div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:52%"></div></div><span class="progress-pct">52%</span></div>
     <div class="task-list">
-      <div class="task"><div class="task-check"></div><span class="task-text">Scaffold Next.js project, deploy to Pi, verify <code>trident.local</code> resolves</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Scaffold Next.js, deploy to Pi as static export served by Caddy, verify <code>trident.local</code> resolves</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Signal K WebSocket client: connect, parse vessel data + AIS targets into React state</span><span class="task-owner">code</span></div>
       <div class="task done"><div class="task-check"></div><span class="task-text">CPA/TCPA calculation engine — pure lib/ais.ts, unit-tested; feeds both alarm + UI</span><span class="task-owner">code</span></div>
       <div class="task done"><div class="task-check"></div><span class="task-text">Radar view: head-up display, range rings, guard zones, targets with heading vectors + CPA lines</span><span class="task-owner">code</span></div>
@@ -293,7 +294,7 @@
     <li>Hardware ships within 1–2 weeks of order. Actisense and Peplink are generally in stock; Cerbo GX availability should be verified before ordering.</li>
     <li>Irene is accessible for boat work throughout the timeline. If she's hauled out or in transit, hardware phases shift.</li>
     <li>N2K backbone is healthy and has open T-connectors for the NGT-1 and Cerbo drops. If not, additional N2K cabling is needed.</li>
-    <li>The Pi 5 running Signal K + Next.js + tile server stays within thermal limits in the below-decks install. The aluminum case helps but monitor temps during the sea trial.</li>
+    <li>The Pi 5 running Signal K + the static app (Caddy) + tile server stays within thermal limits in the below-decks install. The aluminum case helps but monitor temps during the sea trial.</li>
     <li>Blue Latitude O-Charts license allows activation on the Pi. Their 2-device limit may require one activation on Pi and one on laptop — verify before purchase.</li>
     <li>The biggest schedule risk is KR3 (Trident app). It's 16 tasks of custom code over 2 weeks. If it slips, KR4 (chart view) absorbs the impact. Chart view can ship after deploy as an update.</li>
     <li>Keeply sync (stretch) can begin in parallel with KR3/KR4 if momentum is good, but it doesn't gate the deploy.</li>
@@ -301,7 +302,7 @@
 </div>
 
 </main>
-<footer>Trident OKR Roadmap — Created June 7, 2026 · Last updated June 10, 2026 (session 3) · Objective: Deploy on Irene by August 24, 2026</footer>
+<footer>Trident OKR Roadmap — Created June 7, 2026 · Last updated June 11, 2026 (session 4) · Objective: Deploy on Irene by August 24, 2026</footer>
 
 </body>
 </html>

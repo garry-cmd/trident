@@ -23,7 +23,7 @@ Every design decision passes one test: would a solo sailor, cold, tired, half-as
 - **Boring solutions first.** Big buttons beat gesture UX. Dropdowns beat drag-and-drop. Proven patterns beat clever ones.
 
 ## The Boat — S/V Irene
-- **AIS:** Vesper XB-8000 (Class B transponder, stays, WiFi AP disabled post-build)
+- **AIS:** Vesper XB-8000 (Class B transponder, stays). WiFi AP (default) streams **NMEA 0183 over `192.168.15.1:39150` (TCP/UDP)** — sentences include RMC/VTG (GPS position + COG/SOG), VDM/VDO (AIS targets + own), HDG. **This is the live-AIS path without the N2K tap**: Signal K ingests it as a data connection directly. The AP gets disabled later once the boat LAN + NGX-1 are in.
 - **Instruments:** B&G Triton 2 (instrument display only — NOT a chartplotter), depth, barometer — all on NMEA 2000 backbone
 - **Autopilot:** Simrad Tillerpilot on N2K (read-only monitoring in Trident, write deferred to Phase 10)
 - **VHF:** Standard Horizon GX1850 on N2K — supports DSC Class D, potentially accepts DSC call commands via PGN 129808 (to verify in Phase 3)
@@ -33,15 +33,15 @@ Every design decision passes one test: would a solo sailor, cold, tired, half-as
 - **Internet:** Starlink (intermittent, hourly for weather/comms) — **no internet at sea; the app must run fully offline**
 
 ## Current State
-- **Phase:** Production build underway. Radar **and Chart** are real and modular; Settings is built with a full **Day/Dusk/Night** theme system. Data is still simulated — the simulator emits the **canonical lat/lon `BoatState`** the live Signal K feed will produce, so going live is a one-line source swap in `useBoatState`. `lib/` has vitest coverage (**59 tests**).
+- **Phase:** **The Pi is built.** Trident is deployed on real hardware at `trident.local` (static export served by Caddy) with Signal K running and verified to survive reboot. Radar, Chart, and Settings are real and modular; data is still **simulated** — the simulator emits the canonical lat/lon `BoatState` the live feed produces, so live AIS is a one-line source swap in `useBoatState` once the Pi is aboard Irene. `lib/` has vitest coverage (**59 tests**).
 - **Target:** Deploy on Irene by August 24, 2026
 - **Prototype live at:** `trident.keeply.boats`
-- **Shipped this session (session 3, all deployed):**
-  - **Chart view (MapLibre GL)** — own-vessel + AIS overlay driven straight off `BoatState` positions; native map rotation (`setBearing`) so orientation matches the radar. Online OSM raster + OpenSeaMap seamarks are the chart's "simulator-equivalent"; offline MBTiles is a Pi-phase tile-source swap. `hooks/useChartData.js`, `components/chart/{ChartMap.jsx,icons.js}`.
-  - **Shared Watch Shell (`components/WatchLayout.jsx`)** — radar and chart now render into one layout (top instrument strip + centre view slot + sidebar list/heading). The shell owns range filter, CPA sort, selected-target resolution, and **danger→alarm registration so the collision alarm fires on the Chart too** (was radar-only). **Phone support dropped** below 768px for an honest rotate notice (`SmallScreenNotice`).
-  - **Day/Dusk/Night theme system** — replaced the `nightMode` boolean with a `theme` tri-state. **Day** = sun-readable light (default), **Dusk** = the old dark base, **Night** = red-on-black. 3-way selector in Settings; theme-aware chart-tile filter; tokenised the hardcoded-dark controls (zoom buttons) that were invisible in Day. Boots in Day with no flash.
-  - **Radar fills the view area** — moved the scope gradient onto the slot (full-bleed) and dropped RadarSVG's own background rect, removing the day-mode "three-greys" buffer band between radar and sidebar.
-  - **Settings persistence (`lib/persist.ts`)** — theme / depth unit / display mode / range filter / alarm enable / all four thresholds now survive reload via localStorage; a tested `sanitize()` validates the stored blob (bad enums dropped, thresholds clamped, danger kept inside caution) so a corrupt entry can't brick the radar. `paused` and `viewRange` are deliberately **not** restored. Pre-paint theme boot in `layout.js` so a night reload doesn't flash white.
+- **Shipped this session (session 4 — the Pi is built):**
+  - **Pi 5 assembled & headless** — Active Cooler + Argon NEO 5 base. **Relay HAT deferred**: it only drives the not-yet-ordered 12V horn, and leaving it off avoids an Active-Cooler height/clearance issue. Flashed **Raspberry Pi OS Lite 64-bit** via Pi Imager (hostname `trident`, SSH, WiFi preset) — booted headless and SSH'd first try at `trident.local`.
+  - **Node 20.20.2** (NodeSource) + **Signal K server 2.23.0** — vessel **Irene**, port 3000, **auto-start on boot**. Admin dashboard confirmed alive at `trident.local:3000` (0 deltas/s — correct, no data source attached yet).
+  - **Static-export switch (deployed, commit `00332a5`)** — `next.config.mjs` emits `output: 'export'` only when `STATIC_EXPORT=true`; added the `build:static` script. **Vercel is unaffected** (flag unset → normal build), so `trident.keeply.boats` is unchanged. (This was item #3 on the old What's Next.)
+  - **App live on the Pi** — repo cloned to `~/trident`, `npm run build:static` → `out/`, served by **Caddy** on port 80. Trident (radar/chart/settings, on the simulator) loads at `trident.local`.
+  - **Boot-survival verified** — cold `reboot`, then `uptime` 5 min + `systemctl is-active caddy signalk` → `active`/`active`, neither service hand-started. The box recovers unattended — the whole point for a mooring.
 - **Amazon hardware ordered:** June 7, 2026 — $322.71 — arriving June 12
   - Raspberry Pi 5 8GB, Official Active Cooler, 3-Channel Relay HAT (opto-isolated), PlusRoc 12V→5V 25W USB-C converter, SanDisk High Endurance 256GB microSD, Argon NEO 5 M.2 case
 - **Still to order (closer to Mexico trip):**
@@ -192,15 +192,23 @@ GX1850 is on N2K. CALL button on target detail cards. Flow: tap Call -> confirm 
 1. Argon NEO 5 base (screw-mounted to panel)
 2. Pi 5 8GB
 3. Official Active Cooler (fan header)
-4. 3-Channel Relay HAT (GPIO via standoffs)
+4. 3-Channel Relay HAT (GPIO via standoffs) — **deferred at build (session 4)**: only drives the not-yet-ordered 12V horn, and leaving it off avoids an Active-Cooler height/clearance issue. Adds on when the horn is wired.
 Top cover stays in spares drawer.
+**As built (session 4):** items 1–3. Bench power is any USB-C PD charger; the 12V→5V converter is for the boat install.
+
+## Pi Box — As Built (session 4)
+- **Access:** `ssh garry@trident.local` (password auth, bench WiFi). App at `http://trident.local` (Caddy :80). Signal K admin at `http://trident.local:3000`.
+- **App:** repo cloned at `~/trident` on the Pi. Rebuild after a push: `cd ~/trident && git pull && npm run build:static` — Caddy serves the new `out/` immediately, no restart.
+- **Services:** `signalk` + `caddy` are systemd units, enabled on boot (`systemctl is-active caddy signalk` → both `active`). `sudo systemctl reload caddy` after a Caddyfile change.
+- **Gotchas banked:** Pi OS Lite ships without `git` (apt-install it); Caddy's `caddy` user needs `o+x` on `/home/garry` to traverse to `out/` (the 403 fix — traverse only, not list); the Pi's USB-C port is power-only (the Mac never sees the Pi over it).
+- **MMSI:** Irene's MMSI is set in Signal K — kept out of this public repo by choice.
 
 ## Software Stack
-- **OS:** OpenPlotter (or clean Pi OS + Signal K)
-- **N2K tap:** Actisense NGX-1-USB
-- **Victron data:** Cerbo GX MK2 -> N2K + MQTT over LAN
+- **OS (decided & built):** Raspberry Pi OS Lite 64-bit (headless) + Node 20 + Signal K + **Caddy**. **Not OpenPlotter** — that's a bundled marine *desktop* for a Pi that is itself the plotter; Trident's Pi is a headless server and the browser app is the plotter. Pi OS Lite + SK + Caddy *is* the production stack with no desktop cruft (what you bench is what you ship).
+- **N2K tap:** Actisense NGX-1-USB *(not yet ordered — no instrument/depth/wind data until it's in)*
+- **Victron data:** Cerbo GX MK2 -> N2K + MQTT over LAN *(not yet ordered — Dash stays stubbed until then)*
 - **Trident app:** Next.js 14 (App Router) / React 18 / **TypeScript in `lib/`** PWA
-- **On the Pi:** plan to serve as a **static export** (`output: 'export'`) via nginx/caddy — lighter and more robust on an always-on box than a `next start` Node process
+- **On the Pi (done):** served as a **static export** (`STATIC_EXPORT=true npm run build:static` → `out/`) by **Caddy** on port 80 — no Node process on the boat box. Caddyfile roots at `/home/garry/trident/out` with `try_files {path} {path}.html {path}/index.html /index.html` to resolve the flat per-route `.html` files.
 - **Chart engine:** Leaflet or MapLibre GL with pre-cached marine tiles (MBTiles)
 - **Charts for Mexico:** O-Charts Blue Latitude, SEMAR, Chart Locker MBTiles
 - **Keeply sync:** SQLite buffer on Pi -> Supabase when Starlink up
@@ -218,18 +226,19 @@ Top cover stays in spares drawer.
 - `trident-full-mockup.html` — All 4 views interactive mockup
 
 ## What's Next
-1. **Pi hardware (arriving June 12) → live Signal K.** OpenPlotter / Signal K setup, then the payoff: point `useBoatState` at the Pi's Signal K WS via `connect(piUrl, setState)` and radar + chart run on live AIS, UI unchanged. Verify `applyDelta` against the real delta stream (esp. depth unit + AtoN / `design.aisShipType` paths) — built against the spec, not a live feed.
-2. **Self-host fonts** (`next/font` / local files) to drop the Google Fonts `@import` — required for offline at sea. Rides with the static-export work.
-3. **Static export config** (`output: 'export'`) for nginx/caddy serving on the Pi; keep avoiding server-only Next features.
-4. **Low power:** pause rendering/animation when the tab is hidden (Page Visibility API).
-5. **Dash view** — system status / battery / solar. Gated on real Victron data (BMV-712 + Cerbo); won't be built with fake gauges.
-6. **Offline/PWA:** service worker for true offline.
+1. **Live AIS (dockside, Pi aboard Irene) — the payoff.** Add a Signal K connection to the Vesper NMEA stream at `192.168.15.1:39150` (NMEA 0183 over TCP), then flip `useBoatState` from the sim interval to `connect(piUrl, setState)` (the shell in `lib/signalk.ts` is built + tested). Radar + chart run on live AIS, UI unchanged. **Verify `applyDelta` against the real delta stream** — built to spec, not a live feed; check position/COG/SOG (RMC/VTG) and AIS (VDM/VDO) paths first, then AtoN / `design.aisShipType`. Needs the Pi in range of the Vesper's WiFi + a GPS fix + AIS traffic to see targets. Depth/wind/instruments + Victron stay dark until the **NGX-1-USB** and **Cerbo** are ordered/installed.
+2. **Self-host fonts** (`next/font` / local files) to drop the Google Fonts `@import` — required for offline at sea.
+3. **Low power:** pause rendering/animation when the tab is hidden (Page Visibility API).
+4. **Dash view** — system status / battery / solar. Gated on real Victron data (BMV-712 + Cerbo); won't be built with fake gauges.
+5. **Offline/PWA:** service worker for true offline.
+6. **GPIO horn alarm layer** — wire the Relay HAT + 12V horn (both pending), then the safety-floor output (`useAlerts` state → horn), keeping alert state separate from output as planned.
 7. **DSC calling** — CALL button → PGN 129808 to the GX1850, pending hardware verification (Phase 3).
 8. **(Parked)** Predicted-track relative-vector option (see Radar Design Decisions) — revisit if the dual-frame display confuses on the water.
 
-Done this session and off the list: Chart view, Day/Dusk/Night theming, settings persistence, and the phone "responsive pass" (resolved by dropping phone support for a rotate notice).
+Done this session and off the list: the Pi build (OS, Node, Signal K, app on Caddy at `trident.local`, reboot-survival) and the static-export config (was #3).
 
 ## Session Log
+- **2026-06-11 (session 4):** **Built the Pi.** Assembled Pi 5 (Active Cooler + Argon NEO 5 base; **Relay HAT deferred** — only drives the unordered horn + an Active-Cooler clearance issue). Flashed **Raspberry Pi OS Lite 64-bit** headless via Pi Imager (hostname `trident`, SSH, WiFi) — booted and SSH'd first try. Installed **Node 20.20.2** (NodeSource) and **Signal K 2.23.0** (vessel Irene, port 3000, auto-start on boot; dashboard confirmed at `:3000`, 0 deltas/s as expected). **Decided the OS/serving stack:** Pi OS Lite + SK + **Caddy**, not OpenPlotter (headless server vs. desktop plotter; matches the static-export plan). Shipped the **conditional static export** (`STATIC_EXPORT=true` → `output:'export'`; added `build:static`; Vercel untouched; commit `00332a5`, verified on remote `main` with `git ls-remote`). Cloned the repo on the Pi, `build:static` → `out/`, served by **Caddy** on :80 (`try_files` for the flat per-route `.html`). Hit + fixed a **403** — Caddy's `caddy` user couldn't traverse `/home/garry`; `chmod o+x /home/garry` (traverse only, no recursive perms, home stays unlistable). **Verified reboot survival**: cold reboot → uptime 5 min, `caddy`+`signalk` both `active`, neither hand-started. Process notes banked: Pi OS Lite has no `git` by default; `build:static` runs clean on the Pi 5 8GB (sandbox SIGBUS is sandbox-only); Pi USB-C is power-only. Live AIS is now one dockside step (SK → Vesper `192.168.15.1:39150`, flip `useBoatState` to `connect()`).
 - **2026-06-10 (session 3):** Built the **Chart view** (MapLibre GL: own-vessel + AIS overlay off `BoatState`, rotation matched to radar, online OSM/OpenSeaMap tiles). Extracted the **shared Watch Shell** (`WatchLayout`) so radar + chart share one layout and the collision alarm fires on both; **dropped phone support** for an honest rotate notice. Redesigned the radar chrome (bottom nav, top instrument strip, heading moved to the sidebar) and fixed the own-boat icon pointing bug. Built the **Day/Dusk/Night theme system** (replacing the night boolean; Day default, sun-readable) and made the **radar fill the view area** (scope gradient on the slot, dropped the SVG bg rect — killed the three-greys buffer). Built **settings persistence** (localStorage, sanitised loader, pre-paint theme boot; `paused`/`viewRange` excluded). 59 tests. **Process learning:** a CSS comment-nesting bug from a careless find/replace failed `next build` and silently blocked three deploys (remote `main` didn't move) — diagnosed by re-cloning the remote + reading the build error; **added PostCSS parsing to validation** and now verify deploys with `git ls-remote`. All deployed (tsc green; real `next build` runs on Garry's Mac / Vercel — sandbox SIGBUSes).
 - **2026-06-08 (session 2):** Confirmed radar renders correctly post SVG-colour conversion. Investigated and explained the divergent predicted-track vs CPA lines (correct frame mixing, not a bug — see parked decision). **Added vitest** with 46 tests across `lib/`. **Built the Settings view (Phase 2a):** lifted CPA/guard/TCPA thresholds from constants into live settings state injected through the pure CPA functions, added a TCPA-window alarm, night-vision `data-theme` mode, master alarm + test button; deferred power/depth/crew controls honestly. **Built the live-data layer:** canonical lat/lon `BoatState` model + `geo.ts` + `state.ts` (`deriveTargets`) + `signalk.ts` (`applyDelta` + `connect`) + `useBoatState`; rewrote the simulator to emit `BoatState` and recomposed `useTargets` — collision math untouched, all seeds reproduce exactly, live swap reduced to one line. Caught and fixed a 60× sim-speed regression from the rewrite (knots→nm/min) and added a guarding test. All deployed (tsc green; `next build` unverified locally — sandbox SIGBUS — but Vercel builds clean).
 - **2026-06-08 (session 1):** Decomposed monolithic `app/radar.jsx` (425 lines) into the modular architecture above (23 files). Cleaned URL structure (radar at root, named routes + honest Phase-2 stubs). Migrated `lib/` to strict TypeScript with real types. Fixed CPA to derive relative velocity from absolute COG/SOG (was using hand-authored relative vectors); re-tuned the sim for a sensible threat spread. Memoized enrichment. Moved all design tokens to CSS custom properties in `globals.css` (single source of truth); converted RadarSVG colours to `style`-based so `var()` resolves; pulled previously-hardcoded radar hexes into tokens. Revised the file-size rule from a hard 150-line cap to a one-responsibility principle. All changes built clean (tsc + next build) and deployed.
