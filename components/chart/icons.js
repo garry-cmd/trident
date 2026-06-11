@@ -5,7 +5,7 @@
 //
 // IMPORTANT: colours are set via CSS `style` (fill:var(--x)), never the SVG
 // `fill=` presentation attribute — var() does not resolve in presentation
-// attributes (the same reason RadarSVG uses style-based colours). Threat
+// attributes (the same reason AisScope uses style-based colours). Threat
 // colours match the radar's tColor exactly: danger/caution/safe ->
 // --danger-br / --caution-br / --safe-br.
 

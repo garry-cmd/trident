@@ -7,7 +7,7 @@ import ThresholdStepper from "@/components/settings/ThresholdStepper";
 import Toggle from "@/components/settings/Toggle";
 
 // Settings (Phase 2a) — only controls wired to live behaviour. Collision
-// thresholds feed lib/ais.ts + the radar; night mode swaps the CSS theme; the
+// thresholds feed lib/ais.ts + the AIS view; night mode swaps the CSS theme; the
 // alarm row gates the real alarm loop. Power / depth / crew profiles are
 // deferred until their sensors exist (footer), never faked.
 export default function SettingsPage() {
@@ -16,7 +16,7 @@ export default function SettingsPage() {
   return (
     <div style={{ height: "100%", overflowY: "auto", display: "flex", justifyContent: "center" }}>
       <div style={{ width: "100%", maxWidth: 640, padding: "24px 20px 60px" }}>
-        <Section label="Collision" note="Live — feeds the radar and the collision alarm">
+        <Section label="Collision" note="Live — feeds the AIS view and the collision alarm">
           {THRESHOLD_FIELDS.map((f) => (
             <ThresholdStepper
               key={f.key}

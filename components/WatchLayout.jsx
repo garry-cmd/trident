@@ -4,18 +4,18 @@ import { C } from "@/lib/theme";
 import { useSettings } from "@/hooks/useSettings";
 import { useAlerts } from "@/hooks/useAlerts";
 import InstrumentStrip from "./InstrumentStrip";
-import SidebarHeading from "./radar/SidebarHeading";
-import TargetList from "./radar/TargetList";
+import SidebarHeading from "./ais/SidebarHeading";
+import TargetList from "./ais/TargetList";
 
-// The watch shell both Radar and Chart render into: instrument strip on top,
+// The watch shell both AIS and Chart render into: instrument strip on top,
 // the view in the centre slot (children), target list + heading panel in the
 // sidebar. It also owns the cross-view concerns so the two views behave
 // identically and stay in sync:
 //   - range filter + CPA sort for the sidebar
 //   - resolving the selected target for the detail panel
 //   - danger -> alert registration, so the collision alarm fires whichever
-//     view is open (this used to live in the radar page, making it radar-only)
-// Both views pass an enriched target list (radar: EnrichedTarget; chart: the
+//     view is open (this used to live in the AIS page, making it AIS-only)
+// Both views pass an enriched target list (AIS: EnrichedTarget; chart: the
 // same fields joined onto each contact), so everything downstream is identical.
 export default function WatchLayout({ self, displayMode, targets, selId, onSelect, onClose, children }) {
   const { filterRange, depthUnit, thresholds } = useSettings();

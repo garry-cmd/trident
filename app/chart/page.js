@@ -3,6 +3,7 @@ import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSettings } from "@/hooks/useSettings";
 import { useChartData } from "@/hooks/useChartData";
+import { useTrack } from "@/hooks/useTrack";
 import WatchLayout from "@/components/WatchLayout";
 import { C, FONT_MONO } from "@/lib/theme";
 
@@ -19,12 +20,13 @@ const ChartMap = dynamic(() => import("@/components/chart/ChartMap"), {
 
 // Chart view: the map dropped into the shared watch shell, so it gets the
 // instrument strip, sidebar list, and heading panel for free — identical to
-// radar. Selection is unified: tapping a marker OR a sidebar row selects the
+// AIS view. Selection is unified: tapping a marker OR a sidebar row selects the
 // target, which both highlights it and centres the map on it (handled in
 // ChartMap). No more floating card — the sidebar detail panel covers that.
 export default function ChartPage() {
   const { displayMode, theme, filterRange } = useSettings();
   const { self, contacts, source } = useChartData();
+  const track = useTrack(self.position);
   const [selId, setSelId] = useState(null);
   const [follow, setFollow] = useState(true);
 
@@ -46,6 +48,7 @@ export default function ChartPage() {
         selId={selId}
         follow={follow}
         source={source}
+        track={track}
         onSelect={select}
         onUserPan={onUserPan}
         onRecenter={recenter}

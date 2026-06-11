@@ -4,14 +4,14 @@ import { C, FONT_MONO } from "@/lib/theme";
 import { DEFAULT_RANGE } from "@/lib/settings";
 import { useSettings } from "@/hooks/useSettings";
 import { useTargets } from "@/hooks/useTargets";
-import RadarSVG from "@/components/radar/RadarSVG";
+import AisScope from "@/components/ais/AisScope";
 import WatchLayout from "@/components/WatchLayout";
 
-// Radar view: the radar scope dropped into the shared watch shell. The shell
-// owns the instrument strip, sidebar (list + heading), range filter, CPA sort,
-// and danger->alarm registration; this page owns only the scope, its zoom, and
-// radar-specific selection (selecting a target auto-zooms the scope).
-export default function RadarPage() {
+// AIS view: the AIS scope dropped into the shared watch shell. The shell owns
+// the instrument strip, sidebar (list + heading), range filter, CPA sort, and
+// danger->alarm registration; this page owns only the scope, its zoom, and
+// scope-specific selection (selecting a target auto-zooms the scope).
+export default function AisPage() {
   const { displayMode, filterRange, viewRange, setViewRange, thresholds } = useSettings();
   const { targets, own, self } = useTargets();
   const [selId, setSelId] = useState(null);
@@ -27,7 +27,7 @@ export default function RadarPage() {
 
   return (
     <WatchLayout self={self} displayMode={displayMode} targets={targets} selId={selId} onSelect={selectTarget} onClose={resetView}>
-      <RadarSVG
+      <AisScope
         targets={targets}
         selId={selId}
         viewRange={viewRange}

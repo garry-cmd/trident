@@ -5,11 +5,11 @@ import { tColor, GUARD_NM } from "@/lib/ais";
 const CX = 350, CY = 280, RR = 230;
 const COMPASS = [{ l: "N", d: 0 }, { l: "E", d: 90 }, { l: "S", d: 180 }, { l: "W", d: 270 }];
 
-// Pure radar display. Receives enriched targets + view state, draws the scope.
-// Colours are applied via `style` (not fill=/stroke= attributes) because SVG
-// presentation attributes can't resolve CSS var() — this keeps the radar on the
-// same token system (lib/theme.ts -> globals.css) as the rest of the app.
-export default function RadarSVG({ targets, selId, viewRange, displayMode, own, filterRange, guardNm = GUARD_NM, onSelect, onResetBackground }) {
+// Pure AIS scope display. Receives enriched targets + view state, draws the
+// scope. Colours are applied via `style` (not fill=/stroke= attributes) because
+// SVG presentation attributes can't resolve CSS var() — this keeps the scope on
+// the same token system (lib/theme.ts -> globals.css) as the rest of the app.
+export default function AisScope({ targets, selId, viewRange, displayMode, own, filterRange, guardNm = GUARD_NM, onSelect, onResetBackground }) {
   const rotOff = displayMode === "head-up" ? -own.heading : displayMode === "course-up" ? -own.cog : 0;
   const rotBrg = (b) => { let r = b + rotOff; while (r < 0) r += 360; while (r >= 360) r -= 360; return r; };
   const nm2px = (nm) => (nm / viewRange) * RR;

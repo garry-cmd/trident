@@ -9,7 +9,7 @@ import Timer from "./Timer";
 
 const TABS = [
   { label: "Chart", href: "/chart" },
-  { label: "Radar", href: "/" },
+  { label: "AIS", href: "/" },
   { label: "Dash", href: "/dash" },
   { label: "Settings", href: "/settings" },
 ];
