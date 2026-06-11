@@ -30,7 +30,7 @@ export default function TopBar() {
   const selectStyle = { fontSize: 13, fontWeight: 600, padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.borderLt}`, background: C.raised, color: C.text, cursor: "pointer", minHeight: 44, appearance: "none", WebkitAppearance: "none", paddingRight: 12 };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", padding: "0 12px", gap: 8, height: 60, background: C.surface, borderTop: `1px solid ${C.border}`, zIndex: 10, flexShrink: 0 }}>
+    <div style={{ display: "flex", alignItems: "center", padding: "0 12px", gap: 8, height: "calc(60px + env(safe-area-inset-bottom))", paddingBottom: "env(safe-area-inset-bottom)", background: C.surface, borderTop: `1px solid ${C.border}`, zIndex: 10, flexShrink: 0 }}>
       <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 14, letterSpacing: "0.15em", color: C.bright, flexShrink: 0, marginRight: 4 }}>TRIDENT</div>
 
       <div style={{ display: "flex", gap: 3, background: C.raised, borderRadius: 8, padding: 3, flexShrink: 0 }}>

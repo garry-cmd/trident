@@ -95,7 +95,12 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html, body { background: var(--bg); overflow: hidden; }
+html, body { height: 100%; background: var(--bg); overflow: hidden; }
+
+/* App shell height. 100vh on mobile Safari includes the strip behind the
+   browser toolbar, which hid the bottom nav bar; 100dvh excludes it. The vh
+   line is the fallback for browsers without dvh. */
+.trd-shell { height: 100vh; height: 100dvh; }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.65; } }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }

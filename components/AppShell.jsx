@@ -15,7 +15,8 @@ export default function AppShell({ children }) {
       <AlertsProvider>
         <div
           onPointerDown={() => getAudioCtx()}
-          style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", background: C.bg, fontFamily: FONT_SANS, overflow: "hidden" }}
+          className="trd-shell"
+          style={{ display: "flex", flexDirection: "column", width: "100%", background: C.bg, fontFamily: FONT_SANS, overflow: "hidden" }}
         >
           <AlertModal />
           <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>{children}</main>
