@@ -7,16 +7,15 @@ import InstrumentStrip from "./InstrumentStrip";
 import SidebarHeading from "./ais/SidebarHeading";
 import TargetList from "./ais/TargetList";
 
-// The watch shell both AIS and Chart render into: instrument strip on top,
-// the view in the centre slot (children), target list + heading panel in the
-// sidebar. It also owns the cross-view concerns so the two views behave
-// identically and stay in sync:
+// The watch shell the AIS view renders into: instrument strip on top, the scope
+// in the centre slot (children), target list + heading panel in the sidebar. It
+// also owns the cross-cutting concerns:
 //   - range filter + CPA sort for the sidebar
 //   - resolving the selected target for the detail panel
-//   - danger -> alert registration, so the collision alarm fires whichever
-//     view is open (this used to live in the AIS page, making it AIS-only)
-// Both views pass an enriched target list (AIS: EnrichedTarget; chart: the
-// same fields joined onto each contact), so everything downstream is identical.
+//   - danger -> alert registration, so the collision alarm fires from the shell
+//     rather than the page
+// (Previously shared with a chart view; that view was dropped — Trident is an
+// AIS + systems monitor, not a chartplotter.)
 export default function WatchLayout({ self, displayMode, targets, selId, onSelect, onClose, children }) {
   const { filterRange, depthUnit, thresholds } = useSettings();
   const { setDangers } = useAlerts();

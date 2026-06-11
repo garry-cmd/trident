@@ -8,7 +8,6 @@ import { useAlerts } from "@/hooks/useAlerts";
 import Timer from "./Timer";
 
 const TABS = [
-  { label: "Chart", href: "/chart" },
   { label: "AIS", href: "/" },
   { label: "Dash", href: "/dash" },
   { label: "Settings", href: "/settings" },
