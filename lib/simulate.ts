@@ -18,7 +18,7 @@ const STEP_MIN = (SPEED_X * TICK_MS) / 60000; // sim minutes advanced per tick
 export const nmPerTick = (sogKt: number): number => (sogKt * STEP_MIN) / 60;
 
 // Own vessel start. In production this comes from Signal K (navigation.*).
-const SELF_START: LatLon = { lat: 48.05, lon: -122.95 }; // Admiralty Inlet
+const SELF_START: LatLon = { lat: 47.9, lon: -125.1 }; // open Pacific, ~20nm off the WA (Olympic Peninsula) coast
 const SELF = { cog: 185, sog: 6.2, heading: 185, depth: 24 }; // depth in metres
 
 // Seeds carry each contact's bearing/range FROM own at spawn, so they can be
