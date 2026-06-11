@@ -16,5 +16,5 @@ export function useTargets() {
   const { targets: raw, own } = useMemo(() => deriveTargets(state), [state]);
   const targets = useMemo(() => enrichTargets(raw, own, thresholds), [raw, own, thresholds]);
 
-  return { targets, own };
+  return { targets, own, self: state.self };
 }

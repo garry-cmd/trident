@@ -43,7 +43,7 @@ export default function RadarSVG({ targets, selId, viewRange, displayMode, own, 
 
       {guardNm <= viewRange && <circle cx={CX} cy={CY} r={nm2px(guardNm)} fill="none" strokeWidth="0.7" strokeDasharray="6 5" style={{ stroke: C.guard }} />}
 
-      <g transform={`translate(${CX},${CY})`} filter="url(#gl)">
+      <g transform={`translate(${CX},${CY}) rotate(${rotBrg(own.heading)})`} filter="url(#gl)">
         <line x1={0} y1={-14} x2={0} y2={-32} strokeWidth="0.8" opacity="0.4" style={{ stroke: C.own }} />
         <polygon points="0,-12 -6,7 0,3 6,7" opacity="0.85" style={{ fill: C.own }} />
       </g>

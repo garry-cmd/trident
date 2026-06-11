@@ -19,7 +19,7 @@ export const nmPerTick = (sogKt: number): number => (sogKt * STEP_MIN) / 60;
 
 // Own vessel start. In production this comes from Signal K (navigation.*).
 const SELF_START: LatLon = { lat: 48.05, lon: -122.95 }; // Admiralty Inlet
-const SELF = { cog: 185, sog: 6.2, heading: 185, depth: 142 };
+const SELF = { cog: 185, sog: 6.2, heading: 185, depth: 24 }; // depth in metres
 
 // Seeds carry each contact's bearing/range FROM own at spawn, so they can be
 // projected onto lat/lon relative to wherever own currently is — at init, and

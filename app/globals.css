@@ -102,3 +102,41 @@ html, body { background: var(--bg); overflow: hidden; }
 
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-thumb { background: var(--border-lt); border-radius: 2px; }
+
+/* ── Responsive layout (structure only; component skins stay inline) ──────────
+   Radar view rearranges at two breakpoints. Default (mobile-first) is the
+   stacked portrait/phone layout; >=900px is the nav-station landscape layout
+   with the sidebar. Persistent nav bar sheds its range/timer below 560px. */
+
+.radar-grid {
+  display: grid;
+  grid-template-areas: "inst" "scope" "strip";
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%; width: 100%;
+}
+.inst-strip   { grid-area: inst; }
+.radar-scope  { grid-area: scope; position: relative; overflow: hidden; }
+.radar-side   { grid-area: side; display: none; }
+.radar-strip  { grid-area: strip; }
+
+.inst-hdg     { display: flex; }
+.inst-pos     { display: none; }
+.radar-ochip  { display: flex; }
+
+@media (max-width: 559px) {
+  .nav-range, .nav-timer { display: none !important; }
+}
+
+@media (min-width: 900px) {
+  .radar-grid {
+    grid-template-areas: "inst inst" "scope side";
+    grid-template-columns: 1fr 300px;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .radar-side  { display: flex; flex-direction: column; min-height: 0; }
+  .radar-strip { display: none; }
+  .inst-hdg    { display: none; }  /* heading is in the sidebar panel here */
+  .inst-pos    { display: flex; }  /* room for position */
+  .radar-ochip { display: none; }  /* sidebar panel already shows orientation */
+}

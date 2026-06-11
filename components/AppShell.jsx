@@ -18,8 +18,8 @@ export default function AppShell({ children }) {
           style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", background: C.bg, fontFamily: FONT_SANS, overflow: "hidden" }}
         >
           <AlertModal />
-          <TopBar />
           <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>{children}</main>
+          <TopBar />
         </div>
       </AlertsProvider>
     </SettingsProvider>

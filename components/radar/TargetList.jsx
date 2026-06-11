@@ -7,7 +7,7 @@ import TargetDetail from "./TargetDetail";
 // Receives already filtered+sorted targets — no logic here.
 export default function TargetList({ targets, selId, selTarget, onSelect, onClose }) {
   return (
-    <div style={{ background: C.surface, display: "flex", flexDirection: "column", overflow: "hidden", borderLeft: `1px solid ${C.border}` }}>
+    <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", flex: 1, minHeight: 0 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderBottom: `1px solid ${C.border}` }}>
         <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: C.label }}>Targets</span>
         <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: C.dim }}>{targets.length}</span>

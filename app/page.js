@@ -2,18 +2,24 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { C, FONT_MONO } from "@/lib/theme";
 import { DEFAULT_RANGE } from "@/lib/settings";
+import { describeOrientation } from "@/lib/orient";
 import { useSettings } from "@/hooks/useSettings";
 import { useTargets } from "@/hooks/useTargets";
 import { useAlerts } from "@/hooks/useAlerts";
 import RadarSVG from "@/components/radar/RadarSVG";
-import HeadingKPI from "@/components/HeadingKPI";
+import InstrumentStrip from "@/components/InstrumentStrip";
+import SidebarHeading from "@/components/radar/SidebarHeading";
 import TargetList from "@/components/radar/TargetList";
+import TargetStrip from "@/components/radar/TargetStrip";
 
-// Radar is the root view — the default 2am watch screen. This assembles the
-// dumb components; all logic lives in hooks and lib.
+// Radar is the root view. Layout: instrument read-strip on top, radar in the
+// middle, and either the sidebar (landscape) or a target strip (portrait/phone)
+// — driven by CSS in globals.css. Heading is never floating over the radar
+// centre: it's in the sidebar panel (landscape) or the instrument strip +
+// orientation chip (narrow). All logic lives in hooks/lib; this just assembles.
 export default function RadarPage() {
-  const { displayMode, filterRange, viewRange, setViewRange, thresholds } = useSettings();
-  const { targets, own } = useTargets();
+  const { displayMode, filterRange, viewRange, setViewRange, thresholds, depthUnit } = useSettings();
+  const { targets, own, self } = useTargets();
   const { setDangers } = useAlerts();
   const [selId, setSelId] = useState(null);
 
@@ -24,9 +30,8 @@ export default function RadarPage() {
   );
   const selTarget = targets.find((t) => t.id === selId) || null;
 
-  // Feed current dangers to the alert system. A target alarms if it's in the
-  // CPA danger band, OR it's closing and will reach a within-caution CPA inside
-  // the TCPA-alert window (the "minutes to act" trigger from Settings).
+  // A target alarms if it's in the CPA danger band, OR it's closing and will
+  // reach a within-caution CPA inside the TCPA-alert window ("minutes to act").
   const dangers = useMemo(
     () =>
       targets
@@ -50,9 +55,13 @@ export default function RadarPage() {
 
   const resetView = useCallback(() => { setSelId(null); setViewRange(DEFAULT_RANGE); }, [setViewRange]);
 
+  const orient = describeOrientation(displayMode, own);
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", height: "100%", width: "100%" }}>
-      <div style={{ position: "relative", overflow: "hidden" }}>
+    <div className="radar-grid">
+      <InstrumentStrip self={self} depthUnit={depthUnit} />
+
+      <div className="radar-scope">
         <RadarSVG
           targets={targets}
           selId={selId}
@@ -64,7 +73,11 @@ export default function RadarPage() {
           onSelect={selectTarget}
           onResetBackground={resetView}
         />
-        <HeadingKPI own={own} displayMode={displayMode} selTarget={selTarget} />
+
+        {/* Orientation chip — portrait/phone only (sidebar panel covers landscape). */}
+        <div className="radar-ochip" style={{ position: "absolute", top: 10, left: 10, background: "rgba(6,10,14,0.8)", border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 10px", zIndex: 5, fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", color: C.compassN }}>
+          {"\u25B2 "}{orient.mode}
+        </div>
 
         <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 6, zIndex: 5 }}>
           <div onClick={() => setViewRange((r) => Math.max(1, r - 1))} style={zoomBtn}>+</div>
@@ -73,11 +86,18 @@ export default function RadarPage() {
         </div>
 
         <div style={{ position: "absolute", bottom: 12, left: 12, fontSize: 8, color: "#1e2e3e" }}>
-          {displayMode === "head-up" ? "HDG UP" : displayMode === "course-up" ? "CRS UP" : "N UP"} {"\u00B7"} tap background to reset
+          tap background to reset
         </div>
       </div>
 
-      <TargetList targets={sorted} selId={selId} selTarget={selTarget} onSelect={selectTarget} onClose={resetView} />
+      <aside className="radar-side" style={{ background: C.surface, borderLeft: `1px solid ${C.border}` }}>
+        <TargetList targets={sorted} selId={selId} selTarget={selTarget} onSelect={selectTarget} onClose={resetView} />
+        <SidebarHeading own={own} displayMode={displayMode} />
+      </aside>
+
+      <div className="radar-strip">
+        <TargetStrip targets={sorted} selId={selId} onSelect={selectTarget} />
+      </div>
     </div>
   );
 }

@@ -17,6 +17,7 @@ export function SettingsProvider({ children }) {
   const [paused, setPaused] = useState(DEFAULT_SETTINGS.paused);
   const [nightMode, setNightMode] = useState(DEFAULT_SETTINGS.nightMode);
   const [alarmEnabled, setAlarmEnabled] = useState(DEFAULT_SETTINGS.alarmEnabled);
+  const [depthUnit, setDepthUnit] = useState(DEFAULT_SETTINGS.depthUnit);
   const [thresholds, setThresholds] = useState(DEFAULT_SETTINGS.thresholds);
 
   // Reflect night mode onto the document so the CSS token swap takes over.
@@ -44,6 +45,7 @@ export function SettingsProvider({ children }) {
     paused, setPaused,
     nightMode, setNightMode,
     alarmEnabled, setAlarmEnabled,
+    depthUnit, setDepthUnit,
     thresholds, setThreshold,
   };
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

@@ -19,6 +19,13 @@ export const FILTER_OPTIONS: { v: number; l: string }[] = [
 
 export const TIMER_OPTIONS = [5, 10, 15, 20, 30]; // minutes
 
+// Depth read-out unit. The model stores metres (Signal K native); this only
+// picks how it's shown. lib/units.ts does the conversion.
+export const DEPTH_UNITS: { v: "ft" | "m"; l: string }[] = [
+  { v: "ft", l: "Feet" },
+  { v: "m", l: "Metres" },
+];
+
 // Alert thresholds — the defaults that lib/ais.ts falls back to and that
 // Settings starts from. Changing one here changes the whole app's defaults.
 export const DEFAULT_THRESHOLDS: Thresholds = {
@@ -51,5 +58,6 @@ export const DEFAULT_SETTINGS = {
   paused: false,
   nightMode: false,
   alarmEnabled: true,
+  depthUnit: "ft" as "ft" | "m",
   thresholds: DEFAULT_THRESHOLDS,
 };
