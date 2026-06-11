@@ -96,10 +96,14 @@
 <main>
 
 <div class="summary">
-  <div class="sum-card"><div class="sum-val amber">0%</div><div class="sum-label">Overall Progress</div></div>
-  <div class="sum-card"><div class="sum-val">11</div><div class="sum-label">Weeks Remaining</div></div>
+  <div class="sum-card"><div class="sum-val amber">13%</div><div class="sum-label">Overall Progress</div></div>
+  <div class="sum-card"><div class="sum-val">10</div><div class="sum-label">Weeks Remaining</div></div>
   <div class="sum-card"><div class="sum-val blue">6</div><div class="sum-label">Key Results</div></div>
   <div class="sum-card"><div class="sum-val">1</div><div class="sum-label">Stretch Goal</div></div>
+</div>
+
+<div class="status-note" style="background:var(--raised);border:1px solid var(--border);border-left:3px solid var(--accent-light);border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.75rem;font-size:.9rem;line-height:1.55;">
+  <strong>Status — June 10, 2026 (session 3):</strong> The app got pulled forward, ahead of the hardware. The full UI — Radar, Chart, and Settings views, the CPA/TCPA collision engine, alerts, Day/Dusk/Night theming, and settings persistence — is built, unit-tested (59 tests), and live at <code>trident.keeply.boats</code>, running on a simulator that emits the exact <code>BoatState</code> shape Signal K produces. <strong>Going live is a one-line source swap</strong> once KR1 lands the Pi (hardware arrives June 12). Still ahead in Phase B: deploy onto the Pi at <code>trident.local</code>, the Dash view (gated on real Victron data — not faked), PWA service worker + push, per-crew profiles, and offline chart tiles. Phases A and C (hardware install, sea trial) are the bulk of the remaining work and haven't started.
 </div>
 
 <!-- ═══════════════════════ -->
@@ -156,28 +160,30 @@
 
 <div class="timeline">
 
-  <div class="kr future">
+  <div class="kr active">
     <div class="kr-header">
       <span class="kr-id">KR3</span>
       <span class="kr-title">Trident PWA live with Radar + Dash + Settings views</span>
       <span class="kr-date">Target: July 26</span>
     </div>
     <div class="kr-desc">The core Trident web app is accessible at <code>trident.local</code> from any device on the boat's WiFi. Radar view with CPA/TCPA, Dash with all KPI cards, and Settings with per-crew notification profiles. PWA installable on iOS/Android home screens.</div>
-    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:45%"></div></div><span class="progress-pct">45%</span></div>
     <div class="task-list">
       <div class="task"><div class="task-check"></div><span class="task-text">Scaffold Next.js project, deploy to Pi, verify <code>trident.local</code> resolves</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Signal K WebSocket client: connect, parse vessel data + AIS targets into React state</span><span class="task-owner">code</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">CPA/TCPA calculation engine (server-side, feeds both alarm system and UI)</span><span class="task-owner">code</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Radar view: head-up display, range rings, guard zones, targets with heading vectors + CPA lines</span><span class="task-owner">code</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Target list panel: sorted by threat, CPA/TCPA/distance/bearing per target</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">CPA/TCPA calculation engine — pure lib/ais.ts, unit-tested; feeds both alarm + UI</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Radar view: head-up display, range rings, guard zones, targets with heading vectors + CPA lines</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Target list panel: sorted by threat, CPA/TCPA/distance/bearing per target</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Dash view: system status row (GPS fix, AIS state, connected clients)</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Dash view: battery KPIs (SOC with sparkline, voltage, current, time remaining)</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Dash view: solar KPIs (per-MPPT, 7-day harvest, net balance)</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Settings view: per-crew profiles (cookie-based, no auth)</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Settings view: configurable thresholds for AIS, power, and navigation alerts</span><span class="task-owner">code</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Alert UI: top-bar badge, target highlighting, severity color coding</span><span class="task-owner">code</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Browser audio alerts (configurable per rule per crew)</span><span class="task-owner">code</span></div>
-      <div class="task done"><div class="task-check"></div><span class="task-text">Night mode across all views</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Alert UI: top-bar badge, target highlighting, severity color coding</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Browser audio alerts (master alarm + TCPA-window alarm, gated by master toggle)</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Day/Dusk/Night theme system across all views (sun-readable Day default)</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Settings: live CPA/guard/TCPA thresholds (fenced steppers) + persistence (localStorage)</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Shared watch shell — Radar + Chart on one layout; collision alarm fires on both</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">PWA manifest + service worker: installable, home screen icon, full-screen launch</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Push notification registration (works when Starlink up, degrades gracefully offline)</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Verify on iPad Safari, iPhone Safari, Android Chrome, desktop Firefox</span><span class="task-owner">testing</span></div>
@@ -185,20 +191,20 @@
     <div class="dep-note">Depends on KR1 (data pipeline) and KR2 (alert engine — reused for UI alerts). Largest development effort in the project.</div>
   </div>
 
-  <div class="kr future">
+  <div class="kr active">
     <div class="kr-header">
       <span class="kr-id">KR4</span>
       <span class="kr-title">Chart view with offline marine tiles operational</span>
       <span class="kr-date">Target: August 9</span>
     </div>
     <div class="kr-desc">Trident's fourth view: a web-based navigation chart with AIS overlay, pan/zoom/pinch, offline tile cache. Pre-downloaded chart tiles covering Mexico Pacific coast and Sea of Cortez.</div>
-    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill" style="width:35%"></div></div><span class="progress-pct">35%</span></div>
     <div class="task-list">
       <div class="task"><div class="task-check"></div><span class="task-text">Evaluate tile server options: tileserver-gl on Pi vs pre-rendered MBTiles via Leaflet plugin</span><span class="task-owner">research</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Set up tile serving from Pi (OpenSeaMap + ENC-derived tiles)</span><span class="task-owner">code</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Chart view: Leaflet/MapLibre integration with AIS target overlay layer</span><span class="task-owner">code</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Own vessel rendering: position, heading vector, track trail</span><span class="task-owner">code</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Floating target card + instrument bar (shared components from Radar view)</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Chart view: MapLibre GL integration with AIS target overlay layer</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Own vessel rendering: position + heading marker, rotation matched to radar</span><span class="task-owner">code</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Instrument strip + target list — shared Watch Shell from Radar view</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Auto-recenter on vessel after pan timeout</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Pre-download chart tiles for Mexico cruising grounds (Pacific coast, Sea of Cortez, Baja outer coast)</span><span class="task-owner">config</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Verify offline chart rendering — disconnect Starlink, confirm tiles load from local cache</span><span class="task-owner">testing</span></div>
@@ -295,7 +301,7 @@
 </div>
 
 </main>
-<footer>Trident OKR Roadmap — Created June 7, 2026 · Updated as tasks complete · Objective: Deploy on Irene by August 24, 2026</footer>
+<footer>Trident OKR Roadmap — Created June 7, 2026 · Last updated June 10, 2026 (session 3) · Objective: Deploy on Irene by August 24, 2026</footer>
 
 </body>
 </html>
