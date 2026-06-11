@@ -45,16 +45,10 @@ export function useChartData() {
     [state.contacts, byId]
   );
 
-  const self = useMemo(
-    () => ({
-      lat: state.self.position.lat,
-      lon: state.self.position.lon,
-      heading: state.self.heading,
-      cog: state.self.cog,
-      sog: state.self.sog,
-    }),
-    [state.self]
-  );
+  // Canonical SelfState (position{lat,lon}, heading, cog, sog, depth) — the same
+  // shape the radar exposes, so the shared InstrumentStrip / SidebarHeading work
+  // unchanged on the chart.
+  const self = state.self;
 
   return { self, contacts, source: state.source };
 }

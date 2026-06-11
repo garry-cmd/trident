@@ -48,11 +48,11 @@ export default function TopBar() {
         {DISPLAY_MODES.map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
       </select>
 
-      <select className="nav-range" value={filterRange} onChange={(e) => onFilter(Number(e.target.value))} style={selectStyle}>
+      <select value={filterRange} onChange={(e) => onFilter(Number(e.target.value))} style={selectStyle}>
         {FILTER_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
       </select>
 
-      <span className="nav-timer"><Timer /></span>
+      <Timer />
 
       <div style={{ flex: 1 }} />
 

@@ -3,42 +3,41 @@ import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useSettings } from "@/hooks/useSettings";
 import { useChartData } from "@/hooks/useChartData";
-import ChartTargetCard from "@/components/chart/ChartTargetCard";
+import WatchLayout from "@/components/WatchLayout";
 import { C, FONT_MONO } from "@/lib/theme";
 
-// MapLibre touches window/WebGL, so the map is client-only — dynamically
-// imported with ssr:false. This stays a one-line switch to a static export for
-// the Pi later (no server-only features in play).
+// MapLibre touches window/WebGL, so the map is client-only (ssr:false). Stays a
+// one-line switch to a static export for the Pi later.
 const ChartMap = dynamic(() => import("@/components/chart/ChartMap"), {
   ssr: false,
   loading: () => (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: C.dim, fontFamily: FONT_MONO, fontSize: 12, letterSpacing: "0.12em" }}>
+    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.dim, fontFamily: FONT_MONO, fontSize: 12, letterSpacing: "0.12em" }}>
       LOADING CHART{"\u2026"}
     </div>
   ),
 });
 
-// Chart view: own vessel + AIS overlay on a slippy chart. Orientation and night
-// mode come from the global Settings the radar also reads, so the two views can
-// never disagree. The page owns only selection + follow state; the map is
-// imperative, the card is dumb.
+// Chart view: the map dropped into the shared watch shell, so it gets the
+// instrument strip, sidebar list, and heading panel for free — identical to
+// radar. Selection is unified: tapping a marker OR a sidebar row selects the
+// target, which both highlights it and centres the map on it (handled in
+// ChartMap). No more floating card — the sidebar detail panel covers that.
 export default function ChartPage() {
   const { displayMode, nightMode, filterRange } = useSettings();
   const { self, contacts, source } = useChartData();
   const [selId, setSelId] = useState(null);
   const [follow, setFollow] = useState(true);
 
-  // Honour the same range filter as the radar (drops distant targets from the
-  // view). Selection reads the full set so the card survives a filter change.
   const visible = contacts.filter((c) => c.dist <= filterRange);
-  const sel = contacts.find((c) => c.id === selId) || null;
 
-  const select = useCallback((id) => setSelId((p) => (p === id ? null : id)), []);
+  // Selecting a target stops follow so the map can settle on it; the recenter
+  // button (in ChartMap) brings own-vessel follow back.
+  const select = useCallback((id) => { setSelId((p) => (p === id ? null : id)); setFollow(false); }, []);
   const onUserPan = useCallback(() => setFollow(false), []);
   const recenter = useCallback(() => setFollow(true), []);
 
   return (
-    <div style={{ position: "relative", height: "100%", width: "100%", overflow: "hidden" }}>
+    <WatchLayout self={self} displayMode={displayMode} targets={contacts} selId={selId} onSelect={select} onClose={() => setSelId(null)}>
       <ChartMap
         self={self}
         contacts={visible}
@@ -51,7 +50,6 @@ export default function ChartPage() {
         onUserPan={onUserPan}
         onRecenter={recenter}
       />
-      {sel && <ChartTargetCard target={sel} onClose={() => setSelId(null)} />}
-    </div>
+    </WatchLayout>
   );
 }

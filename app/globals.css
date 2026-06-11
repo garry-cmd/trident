@@ -108,40 +108,23 @@ html, body { height: 100%; background: var(--bg); overflow: hidden; }
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-thumb { background: var(--border-lt); border-radius: 2px; }
 
-/* ── Responsive layout (structure only; component skins stay inline) ──────────
-   Radar view rearranges at two breakpoints. Default (mobile-first) is the
-   stacked portrait/phone layout; >=900px is the nav-station landscape layout
-   with the sidebar. Persistent nav bar sheds its range/timer below 560px. */
-
-.radar-grid {
+/* ── Watch layout (shared by Radar + Chart) — tablet/desktop only ──────
+   One layout at every supported size: instrument strip across the top, the
+   view (radar scope or chart map) in the centre slot, target list + heading
+   panel in the sidebar. Below 768px Trident shows a rotate notice instead —
+   the phone isn't a supported watch surface, so we say so rather than ship a
+   broken layout. */
+.watch-grid {
   display: grid;
-  grid-template-areas: "inst" "scope" "strip";
-  grid-template-columns: 1fr;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "inst inst" "slot side";
+  grid-template-columns: 1fr 300px;
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100%; width: 100%;
 }
-.inst-strip   { grid-area: inst; }
-.radar-scope  { grid-area: scope; position: relative; overflow: hidden; }
-.radar-side   { grid-area: side; display: none; }
-.radar-strip  { grid-area: strip; }
+.watch-inst { grid-area: inst; }
+.watch-slot { grid-area: slot; position: relative; overflow: hidden; }
+.watch-side { grid-area: side; display: flex; flex-direction: column; min-height: 0; }
 
-.inst-hdg     { display: flex; }
-.inst-pos     { display: none; }
-.radar-ochip  { display: flex; }
-
-@media (max-width: 559px) {
-  .nav-range, .nav-timer { display: none !important; }
-}
-
-@media (min-width: 900px) {
-  .radar-grid {
-    grid-template-areas: "inst inst" "scope side";
-    grid-template-columns: 1fr 300px;
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  .radar-side  { display: flex; flex-direction: column; min-height: 0; }
-  .radar-strip { display: none; }
-  .inst-hdg    { display: none; }  /* heading is in the sidebar panel here */
-  .inst-pos    { display: flex; }  /* room for position */
-  .radar-ochip { display: none; }  /* sidebar panel already shows orientation */
-}
+/* Below the tablet floor: cover the app with a landscape notice. */
+.trd-toosmall { display: none; }
+@media (max-width: 767px) { .trd-toosmall { display: flex; } }

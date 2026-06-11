@@ -1,0 +1,55 @@
+"use client";
+import { useMemo, useEffect } from "react";
+import { C } from "@/lib/theme";
+import { useSettings } from "@/hooks/useSettings";
+import { useAlerts } from "@/hooks/useAlerts";
+import InstrumentStrip from "./InstrumentStrip";
+import SidebarHeading from "./radar/SidebarHeading";
+import TargetList from "./radar/TargetList";
+
+// The watch shell both Radar and Chart render into: instrument strip on top,
+// the view in the centre slot (children), target list + heading panel in the
+// sidebar. It also owns the cross-view concerns so the two views behave
+// identically and stay in sync:
+//   - range filter + CPA sort for the sidebar
+//   - resolving the selected target for the detail panel
+//   - danger -> alert registration, so the collision alarm fires whichever
+//     view is open (this used to live in the radar page, making it radar-only)
+// Both views pass an enriched target list (radar: EnrichedTarget; chart: the
+// same fields joined onto each contact), so everything downstream is identical.
+export default function WatchLayout({ self, displayMode, targets, selId, onSelect, onClose, children }) {
+  const { filterRange, depthUnit, thresholds } = useSettings();
+  const { setDangers } = useAlerts();
+
+  const filtered = useMemo(() => targets.filter((t) => t.dist <= filterRange), [targets, filterRange]);
+  const sorted = useMemo(
+    () => [...filtered].sort((a, b) => (a.aton ? 1 : b.aton ? -1 : a.cpa - b.cpa)),
+    [filtered]
+  );
+  const selTarget = targets.find((t) => t.id === selId) || null;
+
+  const dangers = useMemo(
+    () =>
+      targets
+        .filter(
+          (t) =>
+            t.level === "danger" ||
+            (!t.aton && t.tcpa > 0 && t.tcpa < thresholds.tcpaAlert && t.cpa < thresholds.cpaCaution)
+        )
+        .map((t) => ({ id: t.id, name: t.name, tcpa: t.tcpa })),
+    [targets, thresholds.tcpaAlert, thresholds.cpaCaution]
+  );
+  const dangerKey = dangers.map((d) => d.id + ":" + Math.round(d.tcpa)).join(",");
+  useEffect(() => { setDangers(dangers); }, [dangerKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="watch-grid">
+      <div className="watch-inst"><InstrumentStrip self={self} depthUnit={depthUnit} /></div>
+      <div className="watch-slot">{children}</div>
+      <aside className="watch-side" style={{ background: C.surface, borderLeft: `1px solid ${C.border}` }}>
+        <TargetList targets={sorted} selId={selId} selTarget={selTarget} onSelect={onSelect} onClose={onClose} />
+        <SidebarHeading own={self} displayMode={displayMode} />
+      </aside>
+    </div>
+  );
+}
