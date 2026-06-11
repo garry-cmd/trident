@@ -161,7 +161,13 @@ html, body { height: 100%; background: var(--bg); overflow: hidden; }
   height: 100%; width: 100%;
 }
 .watch-inst { grid-area: inst; }
-.watch-slot { grid-area: slot; position: relative; overflow: hidden; }
+.watch-slot {
+  grid-area: slot; position: relative; overflow: hidden;
+  /* The scope gradient fills the whole view area so the radar reads edge-to-
+     edge up to the sidebar — no darker buffer band. The chart's map paints
+     opaquely over this, so it only shows on the radar. */
+  background: radial-gradient(circle at 50% 48%, var(--radar-grad-0), var(--radar-grad-1));
+}
 .watch-side { grid-area: side; display: flex; flex-direction: column; min-height: 0; }
 
 /* Below the tablet floor: cover the app with a landscape notice. */

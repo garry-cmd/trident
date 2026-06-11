@@ -23,11 +23,9 @@ export default function RadarSVG({ targets, selId, viewRange, displayMode, own, 
   return (
     <svg viewBox="0 0 700 580" style={{ width: "100%", height: "100%" }} preserveAspectRatio="xMidYMid meet" onClick={onBgClick}>
       <defs>
-        <radialGradient id="rbg" cx="50%" cy="50%"><stop offset="0%" style={{ stopColor: C.radarGrad0 }} /><stop offset="100%" style={{ stopColor: C.radarGrad1 }} /></radialGradient>
         <filter id="gl"><feGaussianBlur stdDeviation="2" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         <filter id="dgl"><feGaussianBlur stdDeviation="4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
       </defs>
-      <rect width="700" height="580" fill="url(#rbg)" />
 
       {rings.map((r) => <circle key={r} cx={CX} cy={CY} r={nm2px(r)} fill="none" strokeWidth="0.4" style={{ stroke: C.ring }} />)}
       {rings.map((r) => <text key={`l${r}`} x={CX + 4} y={CY - nm2px(r) + 11} fontFamily="IBM Plex Mono" fontSize="8" style={{ fill: C.ringLabel }}>{r}</text>)}
