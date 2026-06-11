@@ -1,6 +1,7 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { DEFAULT_SETTINGS, THRESHOLD_FIELDS } from "@/lib/settings";
+import { loadSettings, saveSettings } from "@/lib/persist";
 
 const SettingsContext = createContext(null);
 
@@ -8,8 +9,8 @@ const FIELD = Object.fromEntries(THRESHOLD_FIELDS.map((f) => [f.key, f]));
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 // Global display/UI settings + live alert thresholds, shared across all views
-// and the persistent TopBar. In-memory for now; cookie/localStorage
-// persistence is a later task.
+// and the persistent TopBar. Persisted to localStorage (lib/persist) so the
+// boat boots the way you left it.
 export function SettingsProvider({ children }) {
   const [displayMode, setDisplayMode] = useState(DEFAULT_SETTINGS.displayMode);
   const [filterRange, setFilterRange] = useState(DEFAULT_SETTINGS.filterRange);
@@ -25,6 +26,29 @@ export function SettingsProvider({ children }) {
   useEffect(() => {
     document.documentElement.dataset.theme = theme === "dusk" ? "" : theme;
   }, [theme]);
+
+  // ── Persistence ───────────────────────────────────────────────────────
+  // Load saved settings once after mount. SSR/first paint render the defaults;
+  // the inline boot script in layout.js has already applied the saved THEME
+  // before paint (so reloading at night never flashes white), and the rest
+  // settle here a frame later. paused + viewRange are intentionally not restored.
+  useEffect(() => {
+    const s = loadSettings();
+    if (s.displayMode !== undefined) setDisplayMode(s.displayMode);
+    if (s.filterRange !== undefined) setFilterRange(s.filterRange);
+    if (s.theme !== undefined) setTheme(s.theme);
+    if (s.alarmEnabled !== undefined) setAlarmEnabled(s.alarmEnabled);
+    if (s.depthUnit !== undefined) setDepthUnit(s.depthUnit);
+    if (s.thresholds !== undefined) setThresholds(s.thresholds);
+  }, []);
+
+  // Persist on change. Skip the first run so we don't write defaults over the
+  // saved blob before the load effect above has applied it.
+  const firstSave = useRef(true);
+  useEffect(() => {
+    if (firstSave.current) { firstSave.current = false; return; }
+    saveSettings({ displayMode, filterRange, theme, alarmEnabled, depthUnit, thresholds });
+  }, [displayMode, filterRange, theme, alarmEnabled, depthUnit, thresholds]);
 
   // Set one threshold, clamped to its bounds. The danger band must stay inside
   // the caution band, so the two CPA fields fence each other — you can't set a
