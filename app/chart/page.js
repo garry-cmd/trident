@@ -23,7 +23,7 @@ const ChartMap = dynamic(() => import("@/components/chart/ChartMap"), {
 // target, which both highlights it and centres the map on it (handled in
 // ChartMap). No more floating card — the sidebar detail panel covers that.
 export default function ChartPage() {
-  const { displayMode, nightMode, filterRange } = useSettings();
+  const { displayMode, theme, filterRange } = useSettings();
   const { self, contacts, source } = useChartData();
   const [selId, setSelId] = useState(null);
   const [follow, setFollow] = useState(true);
@@ -42,7 +42,7 @@ export default function ChartPage() {
         self={self}
         contacts={visible}
         displayMode={displayMode}
-        nightMode={nightMode}
+        theme={theme}
         selId={selId}
         follow={follow}
         source={source}

@@ -36,18 +36,22 @@ const STYLE = {
   ],
 };
 
-// Dim the bright OSM raster so the chart reads dark, and dim hard in night mode
-// to protect dark adaptation. Markers are DOM overlays outside the canvas, so
-// they keep full strength — the chart darkens, the AIS picture does not.
-const FILTER_DAY = "brightness(0.55) saturate(0.65) contrast(1.05)";
-const FILTER_NIGHT = "brightness(0.32) saturate(0.45) contrast(1.0) sepia(0.5) hue-rotate(-25deg)";
+// Tile treatment per theme. Day keeps the raster bright (sun-readable); Dusk
+// dims it to read dark; Night red-dims it to protect dark adaptation. Markers
+// are DOM overlays outside the canvas, so the AIS picture stays full-strength.
+const TILE_FILTER = {
+  day: "saturate(0.9) contrast(1.02)",
+  dusk: "brightness(0.55) saturate(0.65) contrast(1.05)",
+  night: "brightness(0.32) saturate(0.45) contrast(1.0) sepia(0.5) hue-rotate(-25deg)",
+};
+const filterFor = (t) => TILE_FILTER[t] || TILE_FILTER.dusk;
 
 // Orientation is driven by the same global displayMode the radar reads, so the
 // two views can never disagree.
 const bearingFor = (mode, self) =>
   mode === "head-up" ? self.heading : mode === "course-up" ? self.cog : 0;
 
-export default function ChartMap({ self, contacts, displayMode, nightMode, selId, follow, source, onSelect, onUserPan, onRecenter }) {
+export default function ChartMap({ self, contacts, displayMode, theme, selId, follow, source, onSelect, onUserPan, onRecenter }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const readyRef = useRef(false);
@@ -116,7 +120,7 @@ export default function ChartMap({ self, contacts, displayMode, nightMode, selId
     if (map.touchZoomRotate && map.touchZoomRotate.disableRotation) map.touchZoomRotate.disableRotation();
     map.on("load", () => {
       readyRef.current = true;
-      map.getCanvas().style.filter = nightMode ? FILTER_NIGHT : FILTER_DAY;
+      map.getCanvas().style.filter = filterFor(theme);
       syncRef.current();
     });
     map.on("dragstart", () => { if (onUserPan) onUserPan(); });
@@ -158,8 +162,8 @@ export default function ChartMap({ self, contacts, displayMode, nightMode, selId
   // Night dimming rides the global toggle.
   useEffect(() => {
     const map = mapRef.current;
-    if (map && readyRef.current) map.getCanvas().style.filter = nightMode ? FILTER_NIGHT : FILTER_DAY;
-  }, [nightMode]);
+    if (map && readyRef.current) map.getCanvas().style.filter = filterFor(theme);
+  }, [theme]);
 
   const zoom = (d) => { const m = mapRef.current; if (m) m.easeTo({ zoom: m.getZoom() + d, duration: 200 }); };
 
@@ -176,7 +180,7 @@ export default function ChartMap({ self, contacts, displayMode, nightMode, selId
       </div>
 
       {!follow && (
-        <div onClick={onRecenter} style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", minHeight: 48, padding: "0 18px", display: "flex", alignItems: "center", gap: 8, background: "rgba(13,19,25,0.92)", border: `1px solid ${C.own}`, borderRadius: 8, color: C.own, fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", cursor: "pointer", zIndex: 6 }}>
+        <div onClick={onRecenter} style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", minHeight: 48, padding: "0 18px", display: "flex", alignItems: "center", gap: 8, background: "var(--raised)", border: `1px solid ${C.own}`, borderRadius: 8, color: C.own, fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", cursor: "pointer", zIndex: 6 }}>
           <svg width="14" height="14" viewBox="-7 -7 14 14"><circle r="5" fill="none" stroke={C.own} strokeWidth="1.5" /><circle r="1.5" fill={C.own} /></svg>
           CENTER ON ME
         </div>
@@ -190,4 +194,4 @@ export default function ChartMap({ self, contacts, displayMode, nightMode, selId
   );
 }
 
-const zoomBtn = { width: 48, height: 48, background: "rgba(13,19,25,0.9)", border: "1px solid var(--border)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT_MONO, fontSize: 22, fontWeight: 700, color: "var(--text)", cursor: "pointer" };
+const zoomBtn = { width: 48, height: 48, background: "var(--raised)", border: "1px solid var(--border)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT_MONO, fontSize: 22, fontWeight: 700, color: "var(--bright)", cursor: "pointer" };

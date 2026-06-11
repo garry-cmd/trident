@@ -26,6 +26,15 @@ export const DEPTH_UNITS: { v: "ft" | "m"; l: string }[] = [
   { v: "m", l: "Metres" },
 ];
 
+// Display theme. Day = sun-readable light; Dusk = the dark base; Night =
+// red-on-black for dark adaptation. Default Day — the boat is used mostly in
+// daylight, where the dark theme is unreadable.
+export const THEME_OPTIONS: { v: "day" | "dusk" | "night"; l: string }[] = [
+  { v: "day", l: "Day" },
+  { v: "dusk", l: "Dusk" },
+  { v: "night", l: "Night" },
+];
+
 // Alert thresholds — the defaults that lib/ais.ts falls back to and that
 // Settings starts from. Changing one here changes the whole app's defaults.
 export const DEFAULT_THRESHOLDS: Thresholds = {
@@ -56,7 +65,7 @@ export const DEFAULT_SETTINGS = {
   filterRange: DEFAULT_RANGE,
   viewRange: DEFAULT_RANGE,
   paused: false,
-  nightMode: false,
+  theme: "day" as "day" | "dusk" | "night",
   alarmEnabled: true,
   depthUnit: "ft" as "ft" | "m",
   thresholds: DEFAULT_THRESHOLDS,

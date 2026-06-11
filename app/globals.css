@@ -57,6 +57,45 @@
    Every token shifts to a long-wavelength scale; brightness still encodes
    importance (danger is the brightest thing on the screen). Toggled by
    setting document.documentElement.dataset.theme = "night" (useSettings). */
+/* Day mode — light, high-contrast, readable in direct sun. Dusk (the dark
+   default :root) and Night wash out under a bright sky. Threat semantics hold:
+   danger is the most saturated thing on screen, safe is muted. */
+:root[data-theme="day"] {
+  --bg: #dde3e9;
+  --surface: #eef2f6;
+  --raised: #ffffff;
+  --border: #bcc6d0;
+  --border-lt: #a6b2be;
+  --ring: #c6d0da;
+
+  --text: #2b3845;
+  --bright: #0d1720;
+  --dim: #788593;
+  --value: #14202b;
+  --label: #5c6b78;
+
+  --safe: #1d7a43;
+  --safe-br: #1c9a52;
+  --caution: #9a6700;
+  --caution-br: #c08400;
+  --danger: #c41f29;
+  --danger-br: #e22531;
+  --danger-dim: rgba(196, 31, 41, 0.12);
+
+  --blue: #1565c0;
+  --own: #135ab0;
+  --guard: rgba(19, 90, 176, 0.18);
+  --aton: #8a6800;
+
+  --radar-grad-0: #eef3f8;
+  --radar-grad-1: #e0e7ee;
+  --ring-label: #9aa6b2;
+  --compass-n: #1d7a43;
+  --compass: #8492a0;
+  --radar-info: #a6b2be;
+  --label-bg: rgba(238, 242, 246, 0.92);
+}
+
 :root[data-theme="night"] {
   --bg: #0a0000;
   --surface: #150303;

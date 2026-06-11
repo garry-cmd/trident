@@ -1,6 +1,6 @@
 "use client";
 import { C, FONT_MONO, FONT_SANS } from "@/lib/theme";
-import { THRESHOLD_FIELDS, DEPTH_UNITS } from "@/lib/settings";
+import { THRESHOLD_FIELDS, DEPTH_UNITS, THEME_OPTIONS } from "@/lib/settings";
 import { useSettings } from "@/hooks/useSettings";
 import { playAlarm } from "@/lib/audio";
 import ThresholdStepper from "@/components/settings/ThresholdStepper";
@@ -11,7 +11,7 @@ import Toggle from "@/components/settings/Toggle";
 // alarm row gates the real alarm loop. Power / depth / crew profiles are
 // deferred until their sensors exist (footer), never faked.
 export default function SettingsPage() {
-  const { thresholds, setThreshold, nightMode, setNightMode, alarmEnabled, setAlarmEnabled, depthUnit, setDepthUnit } = useSettings();
+  const { thresholds, setThreshold, theme, setTheme, alarmEnabled, setAlarmEnabled, depthUnit, setDepthUnit } = useSettings();
 
   return (
     <div style={{ height: "100%", overflowY: "auto", display: "flex", justifyContent: "center" }}>
@@ -33,12 +33,22 @@ export default function SettingsPage() {
         </Section>
 
         <Section label="Display">
-          <Toggle
-            label="Night mode"
-            desc="Red-on-black to protect night vision on watch"
-            on={nightMode}
-            onToggle={setNightMode}
-          />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", gap: 16, minHeight: 48, borderBottom: `1px solid ${C.border}` }}>
+            <div>
+              <div style={{ fontFamily: FONT_SANS, fontSize: 15, fontWeight: 600, color: C.bright }}>Theme</div>
+              <div style={{ fontFamily: FONT_SANS, fontSize: 12, color: C.dim, marginTop: 2 }}>Day for sun, Dusk for low light, Night to protect dark vision</div>
+            </div>
+            <div style={{ display: "flex", gap: 4, background: C.surface, borderRadius: 8, padding: 4, border: `1px solid ${C.border}`, flexShrink: 0 }}>
+              {THEME_OPTIONS.map((o) => {
+                const on = theme === o.v;
+                return (
+                  <button key={o.v} onClick={() => setTheme(o.v)} style={{ minHeight: 40, padding: "0 14px", borderRadius: 6, border: "none", background: on ? C.borderLt : "transparent", color: on ? C.bright : C.dim, fontFamily: FONT_MONO, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    {o.l}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", gap: 16, minHeight: 48 }}>
             <div>
               <div style={{ fontFamily: FONT_SANS, fontSize: 15, fontWeight: 600, color: C.bright }}>Depth units</div>

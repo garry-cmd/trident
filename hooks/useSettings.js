@@ -15,15 +15,16 @@ export function SettingsProvider({ children }) {
   const [filterRange, setFilterRange] = useState(DEFAULT_SETTINGS.filterRange);
   const [viewRange, setViewRange] = useState(DEFAULT_SETTINGS.viewRange);
   const [paused, setPaused] = useState(DEFAULT_SETTINGS.paused);
-  const [nightMode, setNightMode] = useState(DEFAULT_SETTINGS.nightMode);
+  const [theme, setTheme] = useState(DEFAULT_SETTINGS.theme);
   const [alarmEnabled, setAlarmEnabled] = useState(DEFAULT_SETTINGS.alarmEnabled);
   const [depthUnit, setDepthUnit] = useState(DEFAULT_SETTINGS.depthUnit);
   const [thresholds, setThresholds] = useState(DEFAULT_SETTINGS.thresholds);
 
-  // Reflect night mode onto the document so the CSS token swap takes over.
+  // Reflect the theme onto the document so the CSS token swap takes over.
+  // "dusk" is the base :root, so it maps to no data-theme attribute.
   useEffect(() => {
-    document.documentElement.dataset.theme = nightMode ? "night" : "";
-  }, [nightMode]);
+    document.documentElement.dataset.theme = theme === "dusk" ? "" : theme;
+  }, [theme]);
 
   // Set one threshold, clamped to its bounds. The danger band must stay inside
   // the caution band, so the two CPA fields fence each other — you can't set a
@@ -43,7 +44,7 @@ export function SettingsProvider({ children }) {
     filterRange, setFilterRange,
     viewRange, setViewRange,
     paused, setPaused,
-    nightMode, setNightMode,
+    theme, setTheme,
     alarmEnabled, setAlarmEnabled,
     depthUnit, setDepthUnit,
     thresholds, setThreshold,

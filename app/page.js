@@ -43,9 +43,9 @@ export default function RadarPage() {
         <div style={{ minWidth: 36, textAlign: "center", fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: C.dim, lineHeight: "48px" }}>{viewRange}</div>
         <div onClick={() => setViewRange((r) => Math.min(6, r + 1))} style={zoomBtn}>{"\u2212"}</div>
       </div>
-      <div style={{ position: "absolute", bottom: 12, left: 12, fontSize: 8, color: "#1e2e3e" }}>tap background to reset</div>
+      <div style={{ position: "absolute", bottom: 12, left: 12, fontSize: 8, color: C.dim }}>tap background to reset</div>
     </WatchLayout>
   );
 }
 
-const zoomBtn = { width: 48, height: 48, background: "rgba(13,19,25,0.9)", border: "1px solid " + C.border, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT_MONO, fontSize: 22, fontWeight: 700, color: C.text, cursor: "pointer" };
+const zoomBtn = { width: 48, height: 48, background: C.raised, border: "1px solid " + C.border, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT_MONO, fontSize: 22, fontWeight: 700, color: C.bright, cursor: "pointer" };
