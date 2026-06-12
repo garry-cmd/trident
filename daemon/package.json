@@ -1,0 +1,23 @@
+{
+  "name": "trident-capture",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless Signal K capture daemon — records BoatState into a local SQLite buffer (track_points, capture_events, passages). Pi-only; never part of the Vercel app build.",
+  "scripts": {
+    "start": "tsx index.ts",
+    "sim": "tsx index.ts --sim",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.12.0",
+    "@types/ws": "^8.5.12",
+    "tsx": "^4.19.2",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,27 @@
+# Trident capture daemon — runs alongside signalk + caddy on the Pi.
+# Install:
+#   sudo cp /home/garry/trident/daemon/trident-capture.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now trident-capture
+# Logs:   journalctl -u trident-capture -f
+# Adjust User/paths if the repo isn't at /home/garry/trident.
+
+[Unit]
+Description=Trident capture daemon (Signal K -> local SQLite buffer)
+After=network-online.target signalk.service
+Wants=network-online.target
+# If signalk runs as a user service or under a different unit name, drop the
+# After=signalk.service above — the daemon reconnects on its own regardless.
+
+[Service]
+Type=simple
+User=garry
+WorkingDirectory=/home/garry/trident/daemon
+# tsx is installed in the daemon's own node_modules (npm install in daemon/).
+ExecStart=/home/garry/trident/daemon/node_modules/.bin/tsx index.ts
+Environment=TRIDENT_CAPTURE_DB=/home/garry/trident-data/capture.db
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
