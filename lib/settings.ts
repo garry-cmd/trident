@@ -4,6 +4,15 @@ import type { DisplayMode, LevelFilter, Thresholds } from "./types";
 
 export const DEFAULT_RANGE = 3; // nm
 
+// Dash — AIS/nav feed freshness bands (seconds). A feed that stops updating
+// means the collision watch is blind, so this is a real live-today alarm signal.
+export const FEED_STALE_SEC = 15;
+export const FEED_LOST_SEC = 60;
+
+// Anchor watch — drag-alarm radius default + stepper bounds (metres).
+export const DEFAULT_ANCHOR_RADIUS_M = 40;
+export const ANCHOR_RADIUS_BOUNDS = { min: 10, max: 150, step: 5 };
+
 export const DISPLAY_MODES: { v: DisplayMode; l: string }[] = [
   { v: "head-up", l: "HDG UP" },
   { v: "course-up", l: "CRS UP" },
