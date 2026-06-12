@@ -1,7 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
 import { C, FONT_MONO } from "@/lib/theme";
-import { DEFAULT_RANGE } from "@/lib/settings";
 import { useSettings } from "@/hooks/useSettings";
 import { useTargets } from "@/hooks/useTargets";
 import AisScope from "@/components/ais/AisScope";
@@ -16,14 +15,15 @@ export default function AisPage() {
   const { targets, own, self } = useTargets();
   const [selId, setSelId] = useState(null);
 
+  // Selection never touches zoom — the zoom is yours, changed only by the +/-
+  // buttons. Tapping a target just selects it; tapping it again, or the
+  // background, clears the selection. (Switching targets used to re-zoom, which
+  // meant constantly re-zooming by hand — gone.)
   const selectTarget = useCallback((id) => {
-    if (id === selId) { setSelId(null); setViewRange(DEFAULT_RANGE); return; }
-    setSelId(id);
-    const t = targets.find((x) => x.id === id);
-    if (t) setViewRange(Math.min(Math.max(1, Math.ceil(t.dist * 1.5)), DEFAULT_RANGE + 1));
-  }, [selId, targets, setViewRange]);
+    setSelId((cur) => (cur === id ? null : id));
+  }, []);
 
-  const resetView = useCallback(() => { setSelId(null); setViewRange(DEFAULT_RANGE); }, [setViewRange]);
+  const resetView = useCallback(() => { setSelId(null); }, []);
 
   return (
     <WatchLayout self={self} displayMode={displayMode} targets={targets} selId={selId} onSelect={selectTarget} onClose={resetView}>
@@ -44,7 +44,7 @@ export default function AisPage() {
         <div style={{ minWidth: 36, textAlign: "center", fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: C.dim, lineHeight: "48px" }}>{viewRange}</div>
         <div onClick={() => setViewRange((r) => Math.min(6, r + 1))} style={zoomBtn}>{"\u2212"}</div>
       </div>
-      <div style={{ position: "absolute", bottom: 12, left: 12, fontSize: 8, color: C.dim }}>tap background to reset</div>
+      <div style={{ position: "absolute", bottom: 12, left: 12, fontSize: 8, color: C.dim }}>tap background to deselect</div>
     </WatchLayout>
   );
 }

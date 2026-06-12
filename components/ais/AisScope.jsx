@@ -14,8 +14,10 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
   const nm2px = (nm) => (nm / viewRange) * RR;
   const brg2xy = (b, d) => { const rb = (rotBrg(b) * Math.PI) / 180; return [Math.sin(rb) * nm2px(d), -Math.cos(rb) * nm2px(d)]; };
 
-  const rings = [];
-  for (let i = 1; i <= viewRange; i++) rings.push(i);
+  // Always exactly two distance rings, independent of zoom: outer on the scope
+  // edge (= viewRange in nm), inner at half that. The nm labels move with zoom.
+  const ringNm = [viewRange, viewRange / 2];
+  const fmtNm = (n) => (Number.isInteger(n) ? `${n}` : n.toFixed(1));
 
   // Count reflects the active filters — vessels AND nav marks that pass both the
   // range and threat-level filter. Coloured by the worst level present so the
@@ -34,8 +36,8 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
         <filter id="dgl"><feGaussianBlur stdDeviation="4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
       </defs>
 
-      {rings.map((r) => <circle key={r} cx={CX} cy={CY} r={nm2px(r)} fill="none" strokeWidth="0.9" style={{ stroke: C.ring }} />)}
-      {rings.map((r) => <text key={`l${r}`} x={CX + 4} y={CY - nm2px(r) + 11} fontFamily="IBM Plex Mono" fontSize="8" style={{ fill: C.ringLabel }}>{r}</text>)}
+      {ringNm.map((r) => <circle key={r} cx={CX} cy={CY} r={nm2px(r)} fill="none" strokeWidth="0.9" style={{ stroke: C.ring }} />)}
+      {ringNm.map((r) => <text key={`l${r}`} x={CX + 4} y={CY - nm2px(r) + 11} fontFamily="IBM Plex Mono" fontSize="8" style={{ fill: C.ringLabel }}>{fmtNm(r)}</text>)}
 
       {/* Target count — "how many AIS targets around me" (vessels + nav marks). */}
       <g>
