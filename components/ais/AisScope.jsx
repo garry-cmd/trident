@@ -3,7 +3,6 @@ import { C } from "@/lib/theme";
 import { tColor, GUARD_NM } from "@/lib/ais";
 
 const CX = 350, CY = 280, RR = 230;
-const COMPASS = [{ l: "N", d: 0 }, { l: "E", d: 90 }, { l: "S", d: 180 }, { l: "W", d: 270 }];
 
 // Pure AIS scope display. Receives enriched targets + view state, draws the
 // scope. Colours are applied via `style` (not fill=/stroke= attributes) because
@@ -34,15 +33,6 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
 
       {rings.map((r) => <circle key={r} cx={CX} cy={CY} r={nm2px(r)} fill="none" strokeWidth="0.9" style={{ stroke: C.ring }} />)}
       {rings.map((r) => <text key={`l${r}`} x={CX + 4} y={CY - nm2px(r) + 11} fontFamily="IBM Plex Mono" fontSize="8" style={{ fill: C.ringLabel }}>{r}</text>)}
-
-      <line x1={CX} y1={CY - RR - 10} x2={CX} y2={CY + RR + 10} strokeWidth="0.5" style={{ stroke: C.ring }} />
-      <line x1={CX - RR - 10} y1={CY} x2={CX + RR + 10} y2={CY} strokeWidth="0.5" style={{ stroke: C.ring }} />
-
-      {COMPASS.map((c) => {
-        const rd = (rotBrg(c.d) * Math.PI) / 180;
-        const lx = CX + Math.sin(rd) * (RR + 16), ly = CY - Math.cos(rd) * (RR + 16);
-        return <text key={c.l} x={lx} y={ly + 3} textAnchor="middle" fontFamily="IBM Plex Mono" fontSize={c.l === "N" ? 10 : 9} fontWeight={c.l === "N" ? 600 : 400} style={{ fill: c.l === "N" ? C.compassN : C.compass }}>{c.l}</text>;
-      })}
 
       {/* Vessel count — "how many AIS targets around me", glanceable top-left. */}
       <g>
@@ -88,6 +78,8 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
 
         return (
           <g key={t.id} onClick={(e) => { e.stopPropagation(); onSelect(t.id); }} style={{ cursor: "pointer" }}>
+            {/* Invisible ~48px tap target — cold hands on a rolling boat. */}
+            <circle cx={ax} cy={ay} r={24} fill="transparent" style={{ pointerEvents: "all" }} />
             {/* SELECTED + closing: the collision line. Relative track from the
                 target through the CPA point, coloured by threat (red = on a
                 collision path, green = passing clear), plus the miss line from
@@ -116,16 +108,16 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
             {!isSel && !t.aton && <line x1={ax} y1={ay} x2={ax + Math.sin(cogR) * Math.min(nm2px((t.sog * 4) / 60), 16)} y2={ay - Math.cos(cogR) * Math.min(nm2px((t.sog * 4) / 60), 16)} strokeWidth="1.2" opacity="0.5" style={{ stroke: col }} />}
 
             {t.aton ? (
-              <g transform={`translate(${ax},${ay})`}><polygon points="0,-6 6,0 0,6 -6,0" fill="none" strokeWidth="1.2" style={{ stroke: C.aton }} /><circle r="1.5" style={{ fill: C.aton }} /></g>
+              <g transform={`translate(${ax},${ay})`}><polygon points="0,-9 9,0 0,9 -9,0" fill="none" strokeWidth="1.4" style={{ stroke: C.aton }} /><circle r="2" style={{ fill: C.aton }} /></g>
             ) : (
               <g transform={`translate(${ax},${ay})`} filter={t.level === "danger" ? "url(#dgl)" : ""}>
                 <g transform={`rotate(${rotBrg(t.cog)})`}>
-                  <polygon points="0,-7 -4,5 0,2 4,5" opacity={t.level === "safe" && !isSel ? 0.5 : 0.9} style={{ fill: col }} />
+                  <polygon points="0,-10 -6,7 0,3 6,7" opacity={t.level === "safe" && !isSel ? 0.5 : 0.9} style={{ fill: col }} />
                 </g>
               </g>
             )}
 
-            {isSel && <circle cx={ax} cy={ay} r={16} fill="none" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.6" style={{ stroke: col }} />}
+            {isSel && <circle cx={ax} cy={ay} r={19} fill="none" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.6" style={{ stroke: col }} />}
 
             {!t.aton && t.level !== "safe" && !isSel && t.name && (
               <text x={ax + 12} y={ay + 3} fontFamily="IBM Plex Sans" fontSize={9} fontWeight={600} opacity="0.8" style={{ fill: col }}>{t.name}</text>

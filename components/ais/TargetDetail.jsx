@@ -2,7 +2,9 @@
 import { C, FONT_MONO } from "@/lib/theme";
 import { tColor } from "@/lib/ais";
 
-// Expanded panel for the selected target. Dumb.
+// Compact panel for the selected target. Dumb. Kept short — on iPad it sits
+// above the list and shouldn't eat the screen. The three decision numbers
+// (CPA / TCPA / Range) stay prominent; supporting fields are one tight line.
 export default function TargetDetail({ target, onClose }) {
   if (!target) return null;
   const col = tColor(target.level);
@@ -21,26 +23,27 @@ export default function TargetDetail({ target, onClose }) {
   ];
 
   return (
-    <div style={{ padding: "14px", background: C.raised, borderBottom: `1px solid ${C.border}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <span style={{ fontSize: 15, fontWeight: 700, color: C.bright }}>{target.name || target.id}</span>
-        <span onClick={onClose} style={{ fontSize: 10, color: C.dim, cursor: "pointer", padding: "2px 8px", border: `1px solid ${C.border}`, borderRadius: 3 }}>✕</span>
+    <div style={{ padding: "8px 12px", background: C.raised, borderBottom: `1px solid ${C.border}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: C.bright }}>{target.name || target.id}</span>
+        <span onClick={onClose} style={{ fontSize: 11, color: C.dim, cursor: "pointer", padding: "1px 8px", border: `1px solid ${C.border}`, borderRadius: 3 }}>✕</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 6 }}>
         {big.map((m, i) => (
-          <div key={i} style={{ textAlign: "center", padding: 8, background: C.surface, borderRadius: 6, border: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 8, fontWeight: 600, textTransform: "uppercase", color: C.label }}>{m.l}</div>
-            <div style={{ fontFamily: FONT_MONO, fontSize: 22, fontWeight: 700, color: col, lineHeight: 1, margin: "4px 0 2px" }}>{m.v}</div>
-            <div style={{ fontSize: 9, color: C.dim }}>{m.u}</div>
+          <div key={i} style={{ textAlign: "center" }}>
+            <span style={{ fontSize: 8, fontWeight: 600, textTransform: "uppercase", color: C.label }}>{m.l}</span>
+            <div style={{ fontFamily: FONT_MONO, fontSize: 19, fontWeight: 700, color: col, lineHeight: 1.1 }}>
+              {m.v}<span style={{ fontSize: 9, fontWeight: 400, color: C.dim }}> {m.u}</span>
+            </div>
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", fontSize: 10 }}>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", fontSize: 9 }}>
         {small.map((m, i) => (
-          <div key={i} style={{ textAlign: "center" }}>
-            <span style={{ fontSize: 8, color: C.label, textTransform: "uppercase" }}>{m.l} </span>
+          <span key={i}>
+            <span style={{ color: C.label, textTransform: "uppercase" }}>{m.l} </span>
             <span style={{ fontFamily: FONT_MONO, color: C.value }}>{m.v}</span>
-          </div>
+          </span>
         ))}
       </div>
     </div>

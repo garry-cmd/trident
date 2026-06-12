@@ -14,8 +14,8 @@ export default function TargetList({ targets, selId, selTarget, onSelect, onClos
       </div>
       {selTarget && <TargetDetail target={selTarget} onClose={onClose} />}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {targets.map((t) => (
-          <TargetCard key={t.id} t={t} selected={selId === t.id} onSelect={onSelect} />
+        {targets.filter((t) => t.id !== selId).map((t) => (
+          <TargetCard key={t.id} t={t} selected={false} onSelect={onSelect} />
         ))}
       </div>
     </div>
