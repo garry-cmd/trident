@@ -39,6 +39,7 @@ export interface BoatState {
   contacts: Contact[];
   source: "sim" | "live"; // drives the SIM badge — never claim live when sim
   ts: number; // ms epoch of last update
+  telemetry?: Telemetry; // systems/environment telemetry (live SK or demo); optional so sim fixtures need not carry it
 }
 
 // User-tunable alert thresholds. Live (set in Settings), injected into the
@@ -112,3 +113,9 @@ export interface Telemetry {
   autopilot: AutopilotTelemetry | null;
   depthM: number | null;
 }
+
+export const EMPTY_TELEMETRY: Telemetry = {
+  battery: null, solar: null, shore: null, engineChargeA: null, loadsA: null,
+  baro: null, wind: null, airTempC: null, seaTempC: null,
+  pi: null, gps: null, vhf: null, autopilot: null, depthM: null,
+};

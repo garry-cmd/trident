@@ -3,7 +3,8 @@
 // against recorded deltas. connect() is a thin WebSocket shell around it (I/O,
 // not unit-tested). On June 12 useBoatState swaps initState/advanceState for
 // connect(piUrl); deriveTargets and everything downstream are unchanged.
-import type { BoatState, Contact, SelfState } from "./types";
+import type { BoatState, Contact, SelfState, Telemetry, PiTelemetry } from "./types";
+import { EMPTY_TELEMETRY } from "./types";
 
 const R2D = 180 / Math.PI;
 const MS_TO_KT = 1.943844;
@@ -20,6 +21,7 @@ export function emptyLiveState(): BoatState {
     contacts: [],
     source: "live",
     ts: 0,
+    telemetry: EMPTY_TELEMETRY,
   };
 }
 
@@ -65,6 +67,26 @@ function applyContact(c: Contact, path: string, value: unknown): Contact {
   }
 }
 
+const K_TO_C = (k: number) => k - 273.15;
+const EMPTY_PI: PiTelemetry = { cpuTempC: 0, loadPct: 0, ramPct: 0, diskFreePct: 0, undervolt: false };
+
+// Fold one environment.rpi.* path (from signalk-rpi-monitor) into telemetry.pi.
+// Temps arrive in Kelvin (SK SI), utilisations as 0..1 fractions. SD utilisation
+// is fraction *used*, so free = 1 - used. This plugin doesn't report an
+// undervolt/throttle flag, so it stays false — we don't invent a signal we
+// aren't given. Non-numeric values are ignored.
+function applyRpi(t: Telemetry, path: string, value: unknown): Telemetry {
+  if (typeof value !== "number" || !Number.isFinite(value)) return t;
+  const pi = t.pi ?? EMPTY_PI;
+  switch (path) {
+    case "environment.rpi.cpu.temperature": return { ...t, pi: { ...pi, cpuTempC: Math.round(K_TO_C(value)) } };
+    case "environment.rpi.cpu.utilisation": return { ...t, pi: { ...pi, loadPct: Math.round(value * 100) } };
+    case "environment.rpi.memory.utilisation": return { ...t, pi: { ...pi, ramPct: Math.round(value * 100) } };
+    case "environment.rpi.sd.utilisation": return { ...t, pi: { ...pi, diskFreePct: Math.round((1 - value) * 100) } };
+    default: return t; // gpu temperature etc. — not surfaced yet
+  }
+}
+
 // Pure: fold one SK delta into the state, returning a new BoatState.
 export function applyDelta(state: BoatState, delta: SKDelta): BoatState {
   const who = idOf(delta.context);
@@ -73,8 +95,12 @@ export function applyDelta(state: BoatState, delta: SKDelta): BoatState {
 
   if (who.self) {
     let self = state.self;
-    for (const { path, value } of pairs) self = applySelf(self, path, value);
-    return { ...state, self, ts: Date.now() };
+    let telemetry = state.telemetry ?? EMPTY_TELEMETRY;
+    for (const { path, value } of pairs) {
+      if (path.startsWith("environment.rpi.")) telemetry = applyRpi(telemetry, path, value);
+      else self = applySelf(self, path, value);
+    }
+    return { ...state, self, telemetry, ts: Date.now() };
   }
 
   const contacts = state.contacts.slice();

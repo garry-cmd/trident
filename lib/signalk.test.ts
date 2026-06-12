@@ -106,3 +106,41 @@ describe("applyDelta — real AIS delta shapes", () => {
     expect(c.sog).toBeCloseTo(9.719, 2);
   });
 });
+
+describe("applyDelta — rpi telemetry", () => {
+  it("folds environment.rpi.* into telemetry.pi with K->C and fraction->%", () => {
+    let s = applyDelta(emptyLiveState(), d(undefined, [
+      { path: "environment.rpi.cpu.temperature", value: 318.15 },   // 45 C
+      { path: "environment.rpi.cpu.utilisation", value: 0.37 },     // 37 %
+      { path: "environment.rpi.memory.utilisation", value: 0.42 },  // 42 %
+      { path: "environment.rpi.sd.utilisation", value: 0.12 },      // 12% used -> 88% free
+    ]));
+    expect(s.telemetry?.pi).toEqual({ cpuTempC: 45, loadPct: 37, ramPct: 42, diskFreePct: 88, undervolt: false });
+  });
+
+  it("accumulates across separate deltas (5s sample cadence)", () => {
+    let s = applyDelta(emptyLiveState(), d(undefined, [{ path: "environment.rpi.cpu.temperature", value: 323.15 }]));
+    s = applyDelta(s, d(undefined, [{ path: "environment.rpi.cpu.utilisation", value: 0.5 }]));
+    expect(s.telemetry?.pi?.cpuTempC).toBe(50);
+    expect(s.telemetry?.pi?.loadPct).toBe(50);
+  });
+
+  it("ignores non-numeric and unknown rpi paths; never invents undervolt", () => {
+    const s = applyDelta(emptyLiveState(), d(undefined, [
+      { path: "environment.rpi.cpu.temperature", value: 300 },
+      { path: "environment.rpi.gpu.temperature", value: 305 }, // unmapped, ignored
+      { path: "environment.rpi.cpu.utilisation", value: "bad" }, // non-numeric, ignored
+    ]));
+    expect(s.telemetry?.pi?.undervolt).toBe(false);
+    expect(s.telemetry?.pi?.loadPct).toBe(0);
+  });
+
+  it("does not disturb AIS/nav routing in the same delta", () => {
+    const s = applyDelta(emptyLiveState(), d(undefined, [
+      { path: "navigation.position", value: { latitude: 48, longitude: -122 } },
+      { path: "environment.rpi.cpu.temperature", value: 310.15 },
+    ]));
+    expect(s.self.position).toEqual({ lat: 48, lon: -122 });
+    expect(s.telemetry?.pi?.cpuTempC).toBe(37);
+  });
+});

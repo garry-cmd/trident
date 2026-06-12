@@ -5,12 +5,8 @@
 // and deterministic. When real sensors land, the live client fills the same
 // Telemetry shape from Signal K and these panels render unchanged.
 import type { Telemetry } from "./types";
-
-export const EMPTY_TELEMETRY: Telemetry = {
-  battery: null, solar: null, shore: null, engineChargeA: null, loadsA: null,
-  baro: null, wind: null, airTempC: null, seaTempC: null,
-  pi: null, gps: null, vhf: null, autopilot: null, depthM: null,
-};
+import { EMPTY_TELEMETRY } from "./types";
+export { EMPTY_TELEMETRY };
 
 // Smooth 0..1 oscillator mapped to [lo, hi] on a period (seconds), with phase.
 export function demoTelemetry(tMs: number): Telemetry {

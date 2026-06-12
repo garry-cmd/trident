@@ -48,7 +48,7 @@ function readDemo() {
 // each focus area is derived here; Power/Weather are "off" until their telemetry
 // exists — never faked.
 export function useDash() {
-  const { targets, self, source, ts } = useTargets();
+  const { targets, self, source, ts, telemetry: liveTelemetry } = useTargets();
   const [demo] = useState(readDemo);
   const [anchor, setAnchor] = useState(loadAnchor);
   const [maxSwing, setMaxSwing] = useState(0);
@@ -60,7 +60,12 @@ export function useDash() {
   }, []);
   useEffect(() => { saveAnchor(anchor); }, [anchor]);
 
-  const telemetry = useMemo(() => (demo ? demoTelemetry(now) : EMPTY_TELEMETRY), [demo, now]);
+  // Demo overlay wins (explicit ?demo=1); otherwise live telemetry from Signal K
+  // (Pi health today; Cerbo/NGX-1 later); otherwise empty/gated.
+  const telemetry = useMemo(
+    () => (demo ? demoTelemetry(now) : (liveTelemetry ?? EMPTY_TELEMETRY)),
+    [demo, now, liveTelemetry]
+  );
 
   const ageSec = feedAgeSec(now, ts);
   const feed = feedStatus(ageSec, FEED_STALE_SEC, FEED_LOST_SEC);
