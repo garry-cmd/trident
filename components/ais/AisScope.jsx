@@ -18,6 +18,11 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
   const rings = [];
   for (let i = 1; i <= viewRange; i++) rings.push(i);
 
+  // Count of actual vessels in range (AtoN are nav marks, not collision targets).
+  const vessels = targets.filter((t) => !t.aton && t.dist <= filterRange);
+  const dangerCount = vessels.filter((t) => t.level === "danger").length;
+  const countColor = dangerCount > 0 ? C.danger : C.value;
+
   const onBgClick = (e) => { if (e.target.tagName === "rect" || e.target.tagName === "svg") onResetBackground(); };
 
   return (
@@ -27,17 +32,24 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
         <filter id="dgl"><feGaussianBlur stdDeviation="4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
       </defs>
 
-      {rings.map((r) => <circle key={r} cx={CX} cy={CY} r={nm2px(r)} fill="none" strokeWidth="0.4" style={{ stroke: C.ring }} />)}
+      {rings.map((r) => <circle key={r} cx={CX} cy={CY} r={nm2px(r)} fill="none" strokeWidth="0.9" style={{ stroke: C.ring }} />)}
       {rings.map((r) => <text key={`l${r}`} x={CX + 4} y={CY - nm2px(r) + 11} fontFamily="IBM Plex Mono" fontSize="8" style={{ fill: C.ringLabel }}>{r}</text>)}
 
-      <line x1={CX} y1={CY - RR - 10} x2={CX} y2={CY + RR + 10} strokeWidth="0.3" style={{ stroke: C.ring }} />
-      <line x1={CX - RR - 10} y1={CY} x2={CX + RR + 10} y2={CY} strokeWidth="0.3" style={{ stroke: C.ring }} />
+      <line x1={CX} y1={CY - RR - 10} x2={CX} y2={CY + RR + 10} strokeWidth="0.5" style={{ stroke: C.ring }} />
+      <line x1={CX - RR - 10} y1={CY} x2={CX + RR + 10} y2={CY} strokeWidth="0.5" style={{ stroke: C.ring }} />
 
       {COMPASS.map((c) => {
         const rd = (rotBrg(c.d) * Math.PI) / 180;
         const lx = CX + Math.sin(rd) * (RR + 16), ly = CY - Math.cos(rd) * (RR + 16);
         return <text key={c.l} x={lx} y={ly + 3} textAnchor="middle" fontFamily="IBM Plex Mono" fontSize={c.l === "N" ? 10 : 9} fontWeight={c.l === "N" ? 600 : 400} style={{ fill: c.l === "N" ? C.compassN : C.compass }}>{c.l}</text>;
       })}
+
+      {/* Vessel count — "how many AIS targets around me", glanceable top-left. */}
+      <g>
+        <text x={18} y={30} fontFamily="IBM Plex Mono" fontSize="24" fontWeight="700" style={{ fill: countColor }}>{vessels.length}</text>
+        <text x={19} y={43} fontFamily="IBM Plex Sans" fontSize="9" fontWeight="600" letterSpacing="0.08em" style={{ fill: C.label }}>VESSEL{vessels.length === 1 ? "" : "S"}</text>
+        {dangerCount > 0 && <text x={19} y={55} fontFamily="IBM Plex Sans" fontSize="8" fontWeight="600" style={{ fill: C.danger }}>{dangerCount} CLOSING</text>}
+      </g>
 
       {guardNm <= viewRange && <circle cx={CX} cy={CY} r={nm2px(guardNm)} fill="none" strokeWidth="0.7" strokeDasharray="6 5" style={{ stroke: C.guard }} />}
 
@@ -56,28 +68,51 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
         const cogR = (rotBrg(t.cog) * Math.PI) / 180;
         const predPx = nm2px((t.sog * 30) / 60);
 
-        let cpaX = ax, cpaY = ay, showCpa = false;
-        if (!t.aton && isFinite(t.tcpa) && t.tcpa > 0 && t.tcpa < 200) {
-          const cn = Math.hypot(t.rx + t.vx * t.tcpa, t.ry + t.vy * t.tcpa);
-          const ca = (Math.atan2(t.rx + t.vx * t.tcpa, -(t.ry + t.vy * t.tcpa)) * 180) / Math.PI;
-          const [cx2, cy2] = brg2xy(ca, cn);
-          cpaX = CX + cx2; cpaY = CY + cy2; showCpa = true;
+        // Relative-motion point at time tt (min), mapped to screen px with the
+        // active rotation applied. The target traces this straight line RELATIVE
+        // to own; the point on it nearest own centre is the CPA.
+        const relXY = (tt) => {
+          const px = t.rx + t.vx * tt, py = t.ry + t.vy * tt;
+          const rng = Math.hypot(px, py);
+          const brg = (Math.atan2(px, -py) * 180) / Math.PI;
+          const [x, y] = brg2xy(brg, rng);
+          return [CX + x, CY + y];
+        };
+
+        const closing = !t.aton && isFinite(t.tcpa) && t.tcpa > 0 && t.tcpa < 200;
+        let cpaX = ax, cpaY = ay, endX = ax, endY = ay;
+        if (closing) {
+          [cpaX, cpaY] = relXY(t.tcpa);
+          [endX, endY] = relXY(t.tcpa * 1.8); // extend past CPA so the line reads as a path
         }
 
         return (
           <g key={t.id} onClick={(e) => { e.stopPropagation(); onSelect(t.id); }} style={{ cursor: "pointer" }}>
-            {isSel && !t.aton && <line x1={ax - Math.sin(cogR) * predPx * 0.2} y1={ay + Math.cos(cogR) * predPx * 0.2} x2={ax + Math.sin(cogR) * predPx * 1.5} y2={ay - Math.cos(cogR) * predPx * 1.5} strokeWidth="1.2" strokeDasharray="8 5" opacity="0.45" style={{ stroke: col }} />}
-
-            {showCpa && (isSel || t.level === "danger") && (
-              <line x1={ax} y1={ay} x2={cpaX} y2={cpaY} strokeWidth="0.6" strokeDasharray="3 3" opacity="0.25" style={{ stroke: col }} />
-            )}
-            {isSel && showCpa && (
+            {/* SELECTED + closing: the collision line. Relative track from the
+                target through the CPA point, coloured by threat (red = on a
+                collision path, green = passing clear), plus the miss line from
+                own boat to the closest-approach point. */}
+            {isSel && closing && (
               <>
-                <circle cx={cpaX} cy={cpaY} r={4} fill="none" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.6" style={{ stroke: col }} />
-                <text x={cpaX + 7} y={cpaY - 3} fontFamily="IBM Plex Mono" fontSize="8" opacity="0.7" style={{ fill: col }}>{t.cpa.toFixed(2)}</text>
+                <line x1={ax} y1={ay} x2={endX} y2={endY} strokeWidth="1.8" strokeDasharray="7 4" opacity="0.9" style={{ stroke: col }} />
+                <line x1={CX} y1={CY} x2={cpaX} y2={cpaY} strokeWidth="1" strokeDasharray="2 3" opacity="0.55" style={{ stroke: col }} />
+                <circle cx={cpaX} cy={cpaY} r={4.5} fill="none" strokeWidth="1.1" style={{ stroke: col }} />
+                <text x={cpaX + 8} y={cpaY - 4} fontFamily="IBM Plex Mono" fontSize="9" fontWeight="600" opacity="0.9" style={{ fill: col }}>{t.cpa.toFixed(2)} nm</text>
               </>
             )}
 
+            {/* SELECTED but opening/receding: no collision path — show its true
+                heading faintly so selection still reads. */}
+            {isSel && !closing && !t.aton && (
+              <line x1={ax} y1={ay} x2={ax + Math.sin(cogR) * predPx * 0.8} y2={ay - Math.cos(cogR) * predPx * 0.8} strokeWidth="1.2" strokeDasharray="8 5" opacity="0.4" style={{ stroke: col }} />
+            )}
+
+            {/* Non-selected danger: keep a faint CPA hint without the full line. */}
+            {!isSel && closing && t.level === "danger" && (
+              <line x1={ax} y1={ay} x2={cpaX} y2={cpaY} strokeWidth="0.6" strokeDasharray="3 3" opacity="0.25" style={{ stroke: col }} />
+            )}
+
+            {/* Every vessel: short true-heading tick (unless selected). */}
             {!isSel && !t.aton && <line x1={ax} y1={ay} x2={ax + Math.sin(cogR) * Math.min(nm2px((t.sog * 4) / 60), 16)} y2={ay - Math.cos(cogR) * Math.min(nm2px((t.sog * 4) / 60), 16)} strokeWidth="1.2" opacity="0.5" style={{ stroke: col }} />}
 
             {t.aton ? (
