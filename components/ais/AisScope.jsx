@@ -1,6 +1,6 @@
 "use client";
 import { C } from "@/lib/theme";
-import { tColor, GUARD_NM } from "@/lib/ais";
+import { tColor, passesLevel, GUARD_NM } from "@/lib/ais";
 
 const CX = 350, CY = 280, RR = 230;
 
@@ -8,7 +8,7 @@ const CX = 350, CY = 280, RR = 230;
 // scope. Colours are applied via `style` (not fill=/stroke= attributes) because
 // SVG presentation attributes can't resolve CSS var() — this keeps the scope on
 // the same token system (lib/theme.ts -> globals.css) as the rest of the app.
-export default function AisScope({ targets, selId, viewRange, displayMode, own, filterRange, guardNm = GUARD_NM, onSelect, onResetBackground }) {
+export default function AisScope({ targets, selId, viewRange, displayMode, own, filterRange, levelFilter = "all", guardNm = GUARD_NM, onSelect, onResetBackground }) {
   const rotOff = displayMode === "head-up" ? -own.heading : displayMode === "course-up" ? -own.cog : 0;
   const rotBrg = (b) => { let r = b + rotOff; while (r < 0) r += 360; while (r >= 360) r -= 360; return r; };
   const nm2px = (nm) => (nm / viewRange) * RR;
@@ -17,11 +17,13 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
   const rings = [];
   for (let i = 1; i <= viewRange; i++) rings.push(i);
 
-  // Count of everything in range — vessels AND nav marks. A buoy dead ahead is
-  // a hazard too; AtoN get a real CPA against own motion, so danger applies.
-  const inRange = targets.filter((t) => t.dist <= filterRange);
-  const dangerCount = inRange.filter((t) => t.level === "danger").length;
-  const countColor = dangerCount > 0 ? C.danger : C.value;
+  // Count reflects the active filters — vessels AND nav marks that pass both the
+  // range and threat-level filter. Coloured by the worst level present so the
+  // number itself reads as amber/red when something needs watching.
+  const visible = targets.filter((t) => t.dist <= filterRange && passesLevel(t.level, levelFilter));
+  const dangerCount = visible.filter((t) => t.level === "danger").length;
+  const cautionCount = visible.filter((t) => t.level === "caution").length;
+  const countColor = dangerCount > 0 ? C.danger : cautionCount > 0 ? C.cautionBr : C.value;
 
   const onBgClick = (e) => { if (e.target.tagName === "rect" || e.target.tagName === "svg") onResetBackground(); };
 
@@ -37,8 +39,8 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
 
       {/* Target count — "how many AIS targets around me" (vessels + nav marks). */}
       <g>
-        <text x={18} y={30} fontFamily="IBM Plex Mono" fontSize="24" fontWeight="700" style={{ fill: countColor }}>{inRange.length}</text>
-        <text x={19} y={43} fontFamily="IBM Plex Sans" fontSize="9" fontWeight="600" letterSpacing="0.08em" style={{ fill: C.label }}>TARGET{inRange.length === 1 ? "" : "S"}</text>
+        <text x={18} y={30} fontFamily="IBM Plex Mono" fontSize="24" fontWeight="700" style={{ fill: countColor }}>{visible.length}</text>
+        <text x={19} y={43} fontFamily="IBM Plex Sans" fontSize="9" fontWeight="600" letterSpacing="0.08em" style={{ fill: C.label }}>TARGET{visible.length === 1 ? "" : "S"}</text>
         {dangerCount > 0 && <text x={19} y={55} fontFamily="IBM Plex Sans" fontSize="8" fontWeight="600" style={{ fill: C.danger }}>{dangerCount} DANGER</text>}
       </g>
 
@@ -50,12 +52,14 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
       </g>
 
       {targets.map((t) => {
-        if (t.dist > filterRange) return null;
+        const isSel = selId === t.id;
+        // The selected target is always drawn (you explicitly chose it); others
+        // are gated by both the range filter and the threat-level filter.
+        if (!isSel && (t.dist > filterRange || !passesLevel(t.level, levelFilter))) return null;
         const [tx, ty] = brg2xy(t.brg, t.dist);
         const ax = CX + tx, ay = CY + ty;
         if (ax < -50 || ax > 750 || ay < -50 || ay > 630) return null;
         const col = tColor(t.level);
-        const isSel = selId === t.id;
         const cogR = (rotBrg(t.cog) * Math.PI) / 180;
         const predPx = nm2px((t.sog * 30) / 60);
 

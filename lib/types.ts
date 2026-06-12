@@ -1,6 +1,10 @@
 // Shared data shapes for the whole app.
 
 export type ThreatLevel = "safe" | "caution" | "danger";
+// Threat-level display filter. "all" shows everything; "caution" shows
+// caution+danger; "danger" shows danger only. Each mode shows its level AND
+// everything more dangerous, so a danger target can never be filtered out.
+export type LevelFilter = "all" | "caution" | "danger";
 export type DisplayMode = "head-up" | "course-up" | "north-up";
 
 // ── Canonical world model (lat/lon native) ──────────────────────────────────

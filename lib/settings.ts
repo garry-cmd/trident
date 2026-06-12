@@ -1,6 +1,6 @@
 // Default settings + option lists. Pure config, no React.
 // Single source of truth for ranges + alert thresholds shared across the app.
-import type { DisplayMode, Thresholds } from "./types";
+import type { DisplayMode, LevelFilter, Thresholds } from "./types";
 
 export const DEFAULT_RANGE = 3; // nm
 
@@ -15,6 +15,14 @@ export const FILTER_OPTIONS: { v: number; l: string }[] = [
   { v: 2, l: "\u22642nm" },
   { v: 3, l: "\u22643nm" },
   { v: 6, l: "ALL" },
+];
+
+// Threat-level filter — declutters scope, list, and the count to the levels you
+// care about. Each option shows its level and everything more dangerous.
+export const LEVEL_FILTER_OPTIONS: { v: LevelFilter; l: string }[] = [
+  { v: "all", l: "All" },
+  { v: "caution", l: "Watch +" },
+  { v: "danger", l: "Danger" },
 ];
 
 export const TIMER_OPTIONS = [5, 10, 15, 20, 30]; // minutes
@@ -63,6 +71,7 @@ export const THRESHOLD_FIELDS: {
 export const DEFAULT_SETTINGS = {
   displayMode: "head-up" as DisplayMode,
   filterRange: DEFAULT_RANGE,
+  levelFilter: "all" as LevelFilter,
   viewRange: DEFAULT_RANGE,
   paused: false,
   theme: "day" as "day" | "dusk" | "night",

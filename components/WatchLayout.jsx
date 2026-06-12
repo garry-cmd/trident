@@ -2,6 +2,7 @@
 import { useMemo, useEffect } from "react";
 import { C } from "@/lib/theme";
 import { useSettings } from "@/hooks/useSettings";
+import { passesLevel } from "@/lib/ais";
 import { useAlerts } from "@/hooks/useAlerts";
 import InstrumentStrip from "./InstrumentStrip";
 import SidebarHeading from "./ais/SidebarHeading";
@@ -17,10 +18,13 @@ import TargetList from "./ais/TargetList";
 // (Previously shared with a chart view; that view was dropped — Trident is an
 // AIS + systems monitor, not a chartplotter.)
 export default function WatchLayout({ self, displayMode, targets, selId, onSelect, onClose, children }) {
-  const { filterRange, depthUnit, thresholds } = useSettings();
+  const { filterRange, levelFilter, depthUnit, thresholds } = useSettings();
   const { setDangers } = useAlerts();
 
-  const filtered = useMemo(() => targets.filter((t) => t.dist <= filterRange), [targets, filterRange]);
+  const filtered = useMemo(
+    () => targets.filter((t) => t.dist <= filterRange && passesLevel(t.level, levelFilter)),
+    [targets, filterRange, levelFilter]
+  );
   const sorted = useMemo(
     () => [...filtered].sort((a, b) => (a.aton ? 1 : b.aton ? -1 : a.cpa - b.cpa)),
     [filtered]

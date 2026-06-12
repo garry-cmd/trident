@@ -14,6 +14,7 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 export function SettingsProvider({ children }) {
   const [displayMode, setDisplayMode] = useState(DEFAULT_SETTINGS.displayMode);
   const [filterRange, setFilterRange] = useState(DEFAULT_SETTINGS.filterRange);
+  const [levelFilter, setLevelFilter] = useState(DEFAULT_SETTINGS.levelFilter);
   const [viewRange, setViewRange] = useState(DEFAULT_SETTINGS.viewRange);
   const [paused, setPaused] = useState(DEFAULT_SETTINGS.paused);
   const [theme, setTheme] = useState(DEFAULT_SETTINGS.theme);
@@ -36,6 +37,7 @@ export function SettingsProvider({ children }) {
     const s = loadSettings();
     if (s.displayMode !== undefined) setDisplayMode(s.displayMode);
     if (s.filterRange !== undefined) setFilterRange(s.filterRange);
+    if (s.levelFilter !== undefined) setLevelFilter(s.levelFilter);
     if (s.theme !== undefined) setTheme(s.theme);
     if (s.alarmEnabled !== undefined) setAlarmEnabled(s.alarmEnabled);
     if (s.depthUnit !== undefined) setDepthUnit(s.depthUnit);
@@ -47,8 +49,8 @@ export function SettingsProvider({ children }) {
   const firstSave = useRef(true);
   useEffect(() => {
     if (firstSave.current) { firstSave.current = false; return; }
-    saveSettings({ displayMode, filterRange, theme, alarmEnabled, depthUnit, thresholds });
-  }, [displayMode, filterRange, theme, alarmEnabled, depthUnit, thresholds]);
+    saveSettings({ displayMode, filterRange, levelFilter, theme, alarmEnabled, depthUnit, thresholds });
+  }, [displayMode, filterRange, levelFilter, theme, alarmEnabled, depthUnit, thresholds]);
 
   // Set one threshold, clamped to its bounds. The danger band must stay inside
   // the caution band, so the two CPA fields fence each other — you can't set a
@@ -66,6 +68,7 @@ export function SettingsProvider({ children }) {
   const value = {
     displayMode, setDisplayMode,
     filterRange, setFilterRange,
+    levelFilter, setLevelFilter,
     viewRange, setViewRange,
     paused, setPaused,
     theme, setTheme,

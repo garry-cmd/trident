@@ -10,6 +10,7 @@ import {
   cpaTcpa,
   threat,
   tColor,
+  passesLevel,
   relativeVelocity,
   enrichTarget,
   enrichTargets,
@@ -94,6 +95,29 @@ describe("tColor — threat to token", () => {
     expect(tColor("danger")).toBe("var(--danger-br)");
     expect(tColor("caution")).toBe("var(--caution-br)");
     expect(tColor("safe")).toBe("var(--safe-br)");
+  });
+});
+
+describe("passesLevel — threat-level filter (level and above)", () => {
+  it("all shows every level", () => {
+    expect(passesLevel("safe", "all")).toBe(true);
+    expect(passesLevel("caution", "all")).toBe(true);
+    expect(passesLevel("danger", "all")).toBe(true);
+  });
+  it("caution shows caution + danger, hides safe", () => {
+    expect(passesLevel("safe", "caution")).toBe(false);
+    expect(passesLevel("caution", "caution")).toBe(true);
+    expect(passesLevel("danger", "caution")).toBe(true);
+  });
+  it("danger shows danger only", () => {
+    expect(passesLevel("safe", "danger")).toBe(false);
+    expect(passesLevel("caution", "danger")).toBe(false);
+    expect(passesLevel("danger", "danger")).toBe(true);
+  });
+  it("danger is never hidden by any filter", () => {
+    for (const f of ["all", "caution", "danger"] as const) {
+      expect(passesLevel("danger", f)).toBe(true);
+    }
   });
 });
 

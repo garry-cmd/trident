@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { C, FONT_MONO } from "@/lib/theme";
-import { DISPLAY_MODES, FILTER_OPTIONS, DEFAULT_RANGE } from "@/lib/settings";
+import { DISPLAY_MODES, FILTER_OPTIONS, LEVEL_FILTER_OPTIONS, DEFAULT_RANGE } from "@/lib/settings";
 import { useSettings } from "@/hooks/useSettings";
 import { useAlerts } from "@/hooks/useAlerts";
 import Timer from "./Timer";
@@ -17,7 +17,7 @@ const TABS = [
 // state from context, so it never remounts on route change.
 export default function TopBar() {
   const pathname = usePathname();
-  const { displayMode, setDisplayMode, filterRange, setFilterRange, viewRange, setViewRange, paused, setPaused } = useSettings();
+  const { displayMode, setDisplayMode, filterRange, setFilterRange, levelFilter, setLevelFilter, viewRange, setViewRange, paused, setPaused } = useSettings();
   const { anyDangerAcked } = useAlerts();
 
   const onFilter = (v) => {
@@ -49,6 +49,10 @@ export default function TopBar() {
 
       <select value={filterRange} onChange={(e) => onFilter(Number(e.target.value))} style={selectStyle}>
         {FILTER_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+      </select>
+
+      <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)} style={selectStyle}>
+        {LEVEL_FILTER_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
       </select>
 
       <Timer />

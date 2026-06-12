@@ -3,7 +3,7 @@
 // Relative velocity is derived from absolute COG/SOG (target minus own), which
 // is how real AIS works — targets broadcast their own course/speed, never a
 // pre-computed relative vector.
-import type { Target, OwnVessel, EnrichedTarget, ThreatLevel, Thresholds } from "./types";
+import type { Target, OwnVessel, EnrichedTarget, ThreatLevel, LevelFilter, Thresholds } from "./types";
 import { C } from "./theme";
 import { DEFAULT_THRESHOLDS } from "./settings";
 
@@ -32,6 +32,15 @@ export function threat(cpa: number, th: Thresholds = DEFAULT_THRESHOLDS): Threat
 
 export function tColor(level: ThreatLevel): string {
   return level === "danger" ? C.dangerBr : level === "caution" ? C.cautionBr : C.safeBr;
+}
+
+// Threat-level display filter. Each mode shows its level AND everything more
+// dangerous, so a danger target is visible in every mode — you can only ever
+// hide lower-threat traffic, never a danger.
+const LEVEL_RANK: Record<ThreatLevel, number> = { safe: 0, caution: 1, danger: 2 };
+export function passesLevel(level: ThreatLevel, filter: LevelFilter): boolean {
+  if (filter === "all") return true;
+  return LEVEL_RANK[level] >= (filter === "danger" ? 2 : 1);
 }
 
 // Velocity of `mover` relative to `own`, in the math frame (East, North),

@@ -12,7 +12,7 @@ import WatchLayout from "@/components/WatchLayout";
 // danger->alarm registration; this page owns only the scope, its zoom, and
 // scope-specific selection (selecting a target auto-zooms the scope).
 export default function AisPage() {
-  const { displayMode, filterRange, viewRange, setViewRange, thresholds } = useSettings();
+  const { displayMode, filterRange, levelFilter, viewRange, setViewRange, thresholds } = useSettings();
   const { targets, own, self } = useTargets();
   const [selId, setSelId] = useState(null);
 
@@ -34,6 +34,7 @@ export default function AisPage() {
         displayMode={displayMode}
         own={own}
         filterRange={filterRange}
+        levelFilter={levelFilter}
         guardNm={thresholds.guardNm}
         onSelect={selectTarget}
         onResetBackground={resetView}
