@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTargets } from "./useTargets";
+import { useSettings } from "./useSettings";
 import {
   feedAgeSec, feedStatus, hasGpsFix, systemsStatus, anchorBoatStatus,
   worstStatus, batteryStatus, baroStatus, piStatus,
 } from "@/lib/dash";
 import { anchorStatus, maxSwingM } from "@/lib/anchor";
 import { demoTelemetry, EMPTY_TELEMETRY } from "@/lib/demo";
-import { FEED_STALE_SEC, FEED_LOST_SEC, DEFAULT_ANCHOR_RADIUS_M } from "@/lib/settings";
+import { DEFAULT_ANCHOR_RADIUS_M } from "@/lib/settings";
 
 // Anchor watch is operational state (a dropped hook), not a UI preference, so it
 // persists under its own key — reloading the tab at 2 a.m. must not lose the
@@ -49,6 +50,7 @@ function readDemo() {
 // exists — never faked.
 export function useDash() {
   const { targets, self, source, ts, telemetry: liveTelemetry } = useTargets();
+  const { alarms } = useSettings();
   const [demo] = useState(readDemo);
   const [anchor, setAnchor] = useState(loadAnchor);
   const [maxSwing, setMaxSwing] = useState(0);
@@ -68,7 +70,7 @@ export function useDash() {
   );
 
   const ageSec = feedAgeSec(now, ts);
-  const feed = feedStatus(ageSec, FEED_STALE_SEC, FEED_LOST_SEC);
+  const feed = feedStatus(ageSec, alarms.feedStaleSec, alarms.feedLostSec);
   const gpsFix = hasGpsFix(self.position);
   const aStat = anchorStatus(self.position, anchor);
 
@@ -87,15 +89,15 @@ export function useDash() {
   const setRadius = useCallback((m) => setAnchor((a) => ({ ...a, alarmRadiusM: m })), []);
 
   return {
-    self, source, demo, targets, telemetry,
+    self, source, demo, targets, telemetry, alarms,
     feed, ageSec, gpsFix,
     anchor: aStat, anchorRadiusM: anchor.alarmRadiusM, setAt: anchor.setAt, maxSwing,
     mode: aStat.set ? "anchor" : "underway",
     setAnchorHere, clearAnchor, setRadius,
     status: {
-      systems: worstStatus(systemsStatus(feed, gpsFix), piStatus(telemetry.pi)),
-      power: batteryStatus(telemetry.battery),
-      weather: baroStatus(telemetry.baro ? telemetry.baro.trend3h : null),
+      systems: worstStatus(systemsStatus(feed, gpsFix), piStatus(telemetry.pi, alarms.piTempCaution)),
+      power: batteryStatus(telemetry.battery, alarms.battMinV, alarms.battLowSoc),
+      weather: baroStatus(telemetry.baro ? telemetry.baro.trend3h : null, alarms.baroFallCaution, alarms.baroFallDanger),
       boat: anchorBoatStatus(aStat.set, aStat.dragging, aStat.noFix),
     },
   };

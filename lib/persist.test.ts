@@ -55,3 +55,18 @@ describe("sanitize", () => {
     expect(s.thresholds?.cpaCaution).toBe(DEFAULT_THRESHOLDS.cpaCaution);
   });
 });
+
+describe("sanitize — alarms", () => {
+  it("merges onto defaults, clamps to bounds, fences lost>stale and danger>=caution", () => {
+    const s = sanitize({ alarms: { piTempCaution: 999, feedStaleSec: 40, feedLostSec: 20, baroFallCaution: 5, baroFallDanger: 2 } });
+    expect(s.alarms?.piTempCaution).toBe(90); // clamped to max
+    expect(s.alarms?.feedStaleSec).toBe(40);
+    expect(s.alarms!.feedLostSec).toBeGreaterThan(s.alarms!.feedStaleSec); // fenced
+    expect(s.alarms!.baroFallDanger).toBeGreaterThanOrEqual(s.alarms!.baroFallCaution); // fenced
+  });
+  it("fills missing alarm keys from defaults", () => {
+    const s = sanitize({ alarms: { battMinV: 12.5 } });
+    expect(s.alarms?.battMinV).toBe(12.5);
+    expect(s.alarms?.piTempCaution).toBe(80); // default
+  });
+});

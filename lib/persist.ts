@@ -6,12 +6,17 @@
 // the AIS feed frozen — so both are excluded on purpose.
 import {
   DEFAULT_THRESHOLDS,
+  DEFAULT_ALARMS,
   THEME_OPTIONS,
   DEPTH_UNITS,
   DISPLAY_MODES,
   THRESHOLD_FIELDS,
+  ALARM_FIELDS,
+  fenceAlarms,
 } from "./settings";
 import type { DisplayMode, Thresholds } from "./types";
+
+type Alarms = typeof DEFAULT_ALARMS;
 
 export const STORAGE_KEY = "trident.settings.v1";
 
@@ -22,6 +27,7 @@ export interface PersistedSettings {
   alarmEnabled: boolean;
   depthUnit: "ft" | "m";
   thresholds: Thresholds;
+  alarms: Alarms;
 }
 
 const has = <T extends { v: unknown }>(opts: T[], v: unknown) => opts.some((o) => o.v === v);
@@ -53,6 +59,16 @@ export function sanitize(raw: unknown): Partial<PersistedSettings> {
     if (merged.cpaDanger > merged.cpaCaution) merged.cpaDanger = merged.cpaCaution;
     out.thresholds = merged;
   }
+
+  if (r.alarms && typeof r.alarms === "object") {
+    const a = r.alarms as Record<string, unknown>;
+    const clean: Partial<Alarms> = {};
+    for (const f of ALARM_FIELDS) {
+      const v = a[f.key];
+      if (typeof v === "number" && Number.isFinite(v)) clean[f.key] = clamp(v, f.min, f.max);
+    }
+    out.alarms = fenceAlarms({ ...DEFAULT_ALARMS, ...clean });
+  }
   return out;
 }
 
@@ -79,6 +95,7 @@ export function saveSettings(s: PersistedSettings): void {
       alarmEnabled: s.alarmEnabled,
       depthUnit: s.depthUnit,
       thresholds: s.thresholds,
+      alarms: s.alarms,
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(out));
   } catch {

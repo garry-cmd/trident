@@ -1,11 +1,12 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
-import { DEFAULT_SETTINGS, THRESHOLD_FIELDS } from "@/lib/settings";
+import { DEFAULT_SETTINGS, THRESHOLD_FIELDS, ALARM_FIELDS, fenceAlarms } from "@/lib/settings";
 import { loadSettings, saveSettings } from "@/lib/persist";
 
 const SettingsContext = createContext(null);
 
 const FIELD = Object.fromEntries(THRESHOLD_FIELDS.map((f) => [f.key, f]));
+const ALARM_FIELD = Object.fromEntries(ALARM_FIELDS.map((f) => [f.key, f]));
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 // Global display/UI settings + live alert thresholds, shared across all views
@@ -21,6 +22,7 @@ export function SettingsProvider({ children }) {
   const [alarmEnabled, setAlarmEnabled] = useState(DEFAULT_SETTINGS.alarmEnabled);
   const [depthUnit, setDepthUnit] = useState(DEFAULT_SETTINGS.depthUnit);
   const [thresholds, setThresholds] = useState(DEFAULT_SETTINGS.thresholds);
+  const [alarms, setAlarms] = useState(DEFAULT_SETTINGS.alarms);
 
   // Reflect the theme onto the document so the CSS token swap takes over.
   // "dusk" is the base :root, so it maps to no data-theme attribute.
@@ -42,6 +44,7 @@ export function SettingsProvider({ children }) {
     if (s.alarmEnabled !== undefined) setAlarmEnabled(s.alarmEnabled);
     if (s.depthUnit !== undefined) setDepthUnit(s.depthUnit);
     if (s.thresholds !== undefined) setThresholds(s.thresholds);
+    if (s.alarms !== undefined) setAlarms(s.alarms);
   }, []);
 
   // Persist on change. Skip the first run so we don't write defaults over the
@@ -49,8 +52,8 @@ export function SettingsProvider({ children }) {
   const firstSave = useRef(true);
   useEffect(() => {
     if (firstSave.current) { firstSave.current = false; return; }
-    saveSettings({ displayMode, filterRange, levelFilter, theme, alarmEnabled, depthUnit, thresholds });
-  }, [displayMode, filterRange, levelFilter, theme, alarmEnabled, depthUnit, thresholds]);
+    saveSettings({ displayMode, filterRange, levelFilter, theme, alarmEnabled, depthUnit, thresholds, alarms });
+  }, [displayMode, filterRange, levelFilter, theme, alarmEnabled, depthUnit, thresholds, alarms]);
 
   // Set one threshold, clamped to its bounds. The danger band must stay inside
   // the caution band, so the two CPA fields fence each other — you can't set a
@@ -65,6 +68,14 @@ export function SettingsProvider({ children }) {
     });
   }, []);
 
+  const setAlarm = useCallback((key, value) => {
+    setAlarms((prev) => {
+      const f = ALARM_FIELD[key];
+      const v = clamp(Number(value.toFixed ? value.toFixed(4) : value), f.min, f.max);
+      return fenceAlarms({ ...prev, [key]: v });
+    });
+  }, []);
+
   const value = {
     displayMode, setDisplayMode,
     filterRange, setFilterRange,
@@ -75,6 +86,7 @@ export function SettingsProvider({ children }) {
     alarmEnabled, setAlarmEnabled,
     depthUnit, setDepthUnit,
     thresholds, setThreshold,
+    alarms, setAlarm,
   };
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

@@ -7,7 +7,7 @@ import { piStatus } from "@/lib/dash";
 // Pi health, VHF and Victron light up from telemetry when present (demo, or the
 // real plugins/Cerbo later); otherwise they're gated — absent, not faulted.
 export default function SystemsPanel({ dash }) {
-  const { source, feed, ageSec, gpsFix, telemetry } = dash;
+  const { source, feed, ageSec, gpsFix, telemetry, alarms } = dash;
   const age = Math.round(ageSec);
   const feedStat =
     source === "live"
@@ -17,7 +17,7 @@ export default function SystemsPanel({ dash }) {
   const pi = telemetry.pi;
   const gps = telemetry.gps;
   const vhf = telemetry.vhf;
-  const ps = piStatus(pi);
+  const ps = piStatus(pi, alarms ? alarms.piTempCaution : undefined);
 
   return (
     <Panel>

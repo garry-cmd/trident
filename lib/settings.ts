@@ -76,6 +76,68 @@ export const THRESHOLD_FIELDS: {
   { key: "tcpaAlert", label: "TCPA alert", desc: "Alarm when a closing target is this many minutes from CPA", unit: "min", min: 1, max: 30, step: 1 },
 ];
 
+// ── Alarm / watch thresholds, grouped by domain ─────────────────────────────
+// Every threshold is real persisted config — a rule the app WILL apply. A group
+// is "active" when its sensor is reporting (the rule fires now); otherwise it's
+// saved and arms itself the moment the sensor is connected. Never faked: an
+// inactive group's status stays "off" until real data exists.
+export const DEFAULT_ALARMS = {
+  piTempCaution: 80,  // °C — CPU temp caution
+  feedStaleSec: FEED_STALE_SEC,
+  feedLostSec: FEED_LOST_SEC,
+  battMinV: 12.2,     // V — bank low-voltage alarm
+  battLowSoc: 30,     // % — state-of-charge caution
+  baroFallCaution: 1.5, // mb/3h fall — caution
+  baroFallDanger: 4,    // mb/3h fall — alarm
+};
+export type AlarmKey = keyof typeof DEFAULT_ALARMS;
+
+export interface AlarmField { key: AlarmKey; label: string; desc: string; unit: string; min: number; max: number; step: number; }
+export interface AlarmGroup { domain: string; active: boolean; note: string; fields: AlarmField[]; }
+
+export const ALARM_GROUPS: AlarmGroup[] = [
+  {
+    domain: "System", active: true,
+    note: "Live — Pi health and the Signal K feed are reporting now",
+    fields: [
+      { key: "piTempCaution", label: "Pi over-temp caution", desc: "Amber when the Pi CPU reaches this temperature", unit: "\u00B0C", min: 60, max: 90, step: 1 },
+      { key: "feedStaleSec", label: "Feed stale after", desc: "Amber when no Signal K data arrives for this long", unit: "s", min: 5, max: 60, step: 5 },
+      { key: "feedLostSec", label: "Feed lost alarm", desc: "Red when the feed is silent this long — the watch is blind", unit: "s", min: 20, max: 300, step: 10 },
+    ],
+  },
+  {
+    domain: "Power", active: false,
+    note: "Saved — arms when the Victron Cerbo GX is connected",
+    fields: [
+      { key: "battMinV", label: "Battery low-voltage alarm", desc: "Red alarm when bank voltage drops below this", unit: "V", min: 11, max: 13, step: 0.1 },
+      { key: "battLowSoc", label: "Battery low-charge caution", desc: "Amber when state of charge falls below this", unit: "%", min: 10, max: 60, step: 5 },
+    ],
+  },
+  {
+    domain: "Weather", active: false,
+    note: "Saved — arms when the NGX-1 barometer is connected",
+    fields: [
+      { key: "baroFallCaution", label: "Barometer fall — caution", desc: "Amber when pressure falls at least this much over 3 h", unit: "mb", min: 0.5, max: 5, step: 0.5 },
+      { key: "baroFallDanger", label: "Barometer fall — alarm", desc: "Red when the 3 h fall reaches this", unit: "mb", min: 2, max: 10, step: 0.5 },
+    ],
+  },
+];
+
+// Flat list for clamping/persistence. Fencing rules (lost>stale, danger>=caution
+// fall) live in fenceAlarms below, used by both useSettings and persist sanitize,
+// mirroring the CPA-band fencing.
+export const ALARM_FIELDS: AlarmField[] = ALARM_GROUPS.flatMap((g) => g.fields);
+
+// Keep alarm bands self-consistent so a 2am fat-finger can't invert them: the
+// lost timeout must exceed the stale one, and the danger fall must be at least
+// the caution fall.
+export function fenceAlarms(a: typeof DEFAULT_ALARMS): typeof DEFAULT_ALARMS {
+  const out = { ...a };
+  if (out.feedLostSec <= out.feedStaleSec) out.feedLostSec = out.feedStaleSec + 5;
+  if (out.baroFallDanger < out.baroFallCaution) out.baroFallDanger = out.baroFallCaution;
+  return out;
+}
+
 export const DEFAULT_SETTINGS = {
   displayMode: "head-up" as DisplayMode,
   filterRange: DEFAULT_RANGE,
@@ -86,4 +148,5 @@ export const DEFAULT_SETTINGS = {
   alarmEnabled: true,
   depthUnit: "ft" as "ft" | "m",
   thresholds: DEFAULT_THRESHOLDS,
+  alarms: DEFAULT_ALARMS,
 };

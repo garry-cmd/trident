@@ -61,27 +61,28 @@ export function worstStatus(...s: Status[]): Status {
 
 // ── Telemetry-driven status (live when the sensor exists, else "off") ────────
 // Battery: voltage below the minimum is the alarm; a low SOC is a caution.
-export function batteryStatus(b: { soc: number; voltage: number } | null, minVoltage = 12.2): Status {
+export function batteryStatus(b: { soc: number; voltage: number } | null, minVoltage = 12.2, lowSoc = 30): Status {
   if (!b) return "off";
   if (b.voltage < minVoltage) return "danger";
-  if (b.soc < 30) return "caution";
+  if (b.soc < lowSoc) return "caution";
   return "ok";
 }
 
 // Weather: a falling barometer is the seamanship signal — caution on a steady
-// fall, danger on a rapid one. Rising/steady reads calm.
-export function baroStatus(trend3h: number | null): Status {
+// fall, danger on a rapid one. Bands are configurable (mb fallen over 3h).
+// Rising/steady reads calm.
+export function baroStatus(trend3h: number | null, fallCaution = 1.5, fallDanger = 4): Status {
   if (trend3h == null) return "off";
-  if (trend3h <= -4) return "danger";
-  if (trend3h <= -1.5) return "caution";
+  if (trend3h <= -fallDanger) return "danger";
+  if (trend3h <= -fallCaution) return "caution";
   return "ok";
 }
 
 // Pi: an undervolt/throttle flag on a boat with marginal 12 V is the thing to
-// catch; a hot SoC is a caution.
-export function piStatus(pi: { undervolt: boolean; cpuTempC: number } | null): Status {
+// catch; a hot SoC is a caution (threshold configurable).
+export function piStatus(pi: { undervolt: boolean; cpuTempC: number } | null, tempCaution = 80): Status {
   if (!pi) return "off";
   if (pi.undervolt) return "danger";
-  if (pi.cpuTempC >= 80) return "caution";
+  if (pi.cpuTempC >= tempCaution) return "caution";
   return "ok";
 }

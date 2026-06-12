@@ -91,3 +91,19 @@ describe("piStatus", () => {
     expect(piStatus({ undervolt: false, cpuTempC: 82 })).toBe("caution");
   });
 });
+
+describe("configurable alarm thresholds", () => {
+  it("batteryStatus honors custom low-SOC", () => {
+    expect(batteryStatus({ soc: 45, voltage: 12.6 }, 12.2, 50)).toBe("caution");
+    expect(batteryStatus({ soc: 45, voltage: 12.6 }, 12.2, 30)).toBe("ok");
+  });
+  it("baroStatus honors custom fall bands", () => {
+    expect(baroStatus(-2, 1, 3)).toBe("caution");
+    expect(baroStatus(-3, 1, 3)).toBe("danger");
+    expect(baroStatus(-0.5, 1, 3)).toBe("ok");
+  });
+  it("piStatus honors custom temp caution", () => {
+    expect(piStatus({ undervolt: false, cpuTempC: 70 }, 65)).toBe("caution");
+    expect(piStatus({ undervolt: false, cpuTempC: 70 }, 80)).toBe("ok");
+  });
+});
