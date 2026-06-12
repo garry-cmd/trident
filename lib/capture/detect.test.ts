@@ -158,3 +158,31 @@ describe("track points", () => {
     expect(points.every((p) => p.sog === 6)).toBe(true);
   });
 });
+
+describe("GPS-fix guard", () => {
+  it("captures nothing while self is at null-island (0,0)", () => {
+    // sog says underway, but no fix yet — must not open a passage at (0,0)
+    const { st, events, points, ops } = run([
+      boat({ ts: 0, sog: 6, pos: { lat: 0, lon: 0 } }),
+      boat({ ts: 30_000, sog: 6, pos: { lat: 0, lon: 0 } }),
+      boat({ ts: 60_000, sog: 6, pos: { lat: 0, lon: 0 } }),
+    ]);
+    expect(st.motion).toBe("unknown");
+    expect(ops).toHaveLength(0);
+    expect(events).toHaveLength(0);
+    expect(points).toHaveLength(0);
+  });
+
+  it("begins capturing once a real fix arrives", () => {
+    const { st, ops } = run(
+      [
+        boat({ ts: 0, sog: 6, pos: { lat: 0, lon: 0 } }), // ignored
+        boat({ ts: 30_000, sog: 6 }), // fix lands (ORIGIN) → candidate starts here
+        boat({ ts: 60_000, sog: 6 }), // 30s sustained → commit
+      ],
+      ["FIX-1"],
+    );
+    expect(st.motion).toBe("underway");
+    expect(ops).toEqual([{ op: "open", id: "FIX-1", ts: 60_000, lat: ORIGIN.lat, lon: ORIGIN.lon }]);
+  });
+});

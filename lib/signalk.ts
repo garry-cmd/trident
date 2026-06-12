@@ -44,6 +44,17 @@ function applySelf(self: SelfState, path: string, value: unknown): SelfState {
 }
 
 function applyContact(c: Contact, path: string, value: unknown): Contact {
+  // SK's NMEA0183 AIS parser delivers static data (from VDM type 5/24) as
+  // empty-path subtree merges, e.g. { path: "", value: { name: "MARIANNE" } }
+  // — NOT { path: "name", value: "MARIANNE" }. Without this branch every AIS
+  // target renders nameless. (Verified against @signalk/nmea0183-signalk output.)
+  if (path === "") {
+    if (value && typeof value === "object") {
+      const v = value as { name?: unknown };
+      if (typeof v.name === "string") return { ...c, name: v.name };
+    }
+    return c;
+  }
   switch (path) {
     case "navigation.position": { const v = value as { latitude: number; longitude: number }; return { ...c, position: { lat: v.latitude, lon: v.longitude } }; }
     case "navigation.courseOverGroundTrue": return { ...c, cog: norm((value as number) * R2D) };

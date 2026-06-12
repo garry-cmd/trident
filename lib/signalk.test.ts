@@ -56,3 +56,53 @@ describe("applyDelta — contacts", () => {
     expect(after).toBe(before);
   });
 });
+
+// Real-world AIS shapes. These mirror the exact deltas @signalk/nmea0183-signalk
+// emits from a Vesper's VDM stream — the format the boat actually produces. The
+// static report (VDM type 5) delivers name + mmsi as EMPTY-PATH subtree merges,
+// which a naive path switch silently drops. See the "no ship-names" gotcha.
+describe("applyDelta — real AIS delta shapes", () => {
+  const ctx = "vessels.urn:mrn:imo:mmsi:244830550";
+
+  it("reads a contact name from an empty-path subtree merge", () => {
+    const s = applyDelta(emptyLiveState(), d(ctx, [{ path: "", value: { name: "MARIANNE" } }]));
+    expect(s.contacts).toHaveLength(1);
+    expect(s.contacts[0].id).toBe("244830550");
+    expect(s.contacts[0].name).toBe("MARIANNE");
+  });
+
+  it("ignores an empty-path mmsi subtree without clobbering the contact", () => {
+    let s = applyDelta(emptyLiveState(), d(ctx, [{ path: "", value: { name: "MARIANNE" } }]));
+    s = applyDelta(s, d(ctx, [{ path: "", value: { mmsi: "244830550" } }]));
+    expect(s.contacts).toHaveLength(1);
+    expect(s.contacts[0].name).toBe("MARIANNE"); // not wiped by the mmsi merge
+  });
+
+  it("sets vessel type from design.aisShipType {id,name}", () => {
+    const s = applyDelta(emptyLiveState(), d(ctx, [
+      { path: "design.aisShipType", value: { id: 79, name: "Cargo ship (no additional information)" } },
+    ]));
+    expect(s.contacts[0].type).toBe("Cargo ship (no additional information)");
+  });
+
+  it("builds a complete named target from a static report then a position report", () => {
+    // VDM type 5 (static): empty-path name + ship type
+    let s = applyDelta(emptyLiveState(), d(ctx, [
+      { path: "", value: { name: "MARIANNE" } },
+      { path: "design.aisShipType", value: { id: 79, name: "Cargo" } },
+    ]));
+    // VDM type 1 (position): leaf paths, SI units
+    s = applyDelta(s, d(ctx, [
+      { path: "navigation.position", value: { latitude: 48.1, longitude: -122.9 } },
+      { path: "navigation.courseOverGroundTrue", value: Math.PI }, // 180°
+      { path: "navigation.speedOverGround", value: 5 }, // 9.72 kt
+    ]));
+    expect(s.contacts).toHaveLength(1);
+    const c = s.contacts[0];
+    expect(c.name).toBe("MARIANNE");
+    expect(c.type).toBe("Cargo");
+    expect(c.position).toEqual({ lat: 48.1, lon: -122.9 });
+    expect(c.cog).toBeCloseTo(180, 6);
+    expect(c.sog).toBeCloseTo(9.719, 2);
+  });
+});

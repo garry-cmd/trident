@@ -65,6 +65,12 @@ export function detectCapture(
   const { lat, lon } = boat.self.position;
   const sog = boat.self.sog;
 
+  // GPS-fix guard. emptyLiveState() seeds self at (0,0); before the first
+  // navigation.position delta lands, any speed/course delta would otherwise
+  // open a passage or drop an anchor ref at null-island. No vessel is ever
+  // legitimately at exactly 0,0 — wait for a real fix.
+  if (lat === 0 && lon === 0) return { state: prev, events: [] };
+
   // ── Motion state machine (hysteresis + sustain window) ────────────────────
   // Desired state only from clearly-out-of-band SOG; in-band is no opinion and
   // cancels any pending transition, so a commit needs sustainMs of contiguous
