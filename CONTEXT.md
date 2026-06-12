@@ -39,16 +39,24 @@ Every design decision passes one test: would a solo sailor, cold, tired, half-as
 - **Internet:** Starlink (intermittent, hourly for weather/comms) — **no internet at sea; the app must run fully offline**
 
 ## Current State
-- **Phase:** **The Pi is built; Trident is now an AIS watch + systems monitor (chart view dropped).** Deployed on real hardware at `trident.local` (static export served by Caddy) with Signal K running and verified to survive reboot. **AIS** (collision watch) and **Settings** are real and modular; **Dash** is a gated stub (needs Victron data). Data is still **simulated** — the simulator emits the canonical lat/lon `BoatState` the live feed produces, so live AIS is a one-line source swap in `useBoatState` once the Pi is aboard Irene. `lib/` has vitest coverage (**59 tests**).
-- **Target:** Deploy on Irene by August 24, 2026
+- **Phase:** **The Pi is built; Trident is an AIS watch + systems monitor + capture node (chart view dropped).** Deployed on real hardware at `trident.local` (static export served by Caddy) with Signal K running and verified to survive reboot. **AIS** (collision watch) and **Settings** are real and modular; **Dash** is a gated stub (needs Victron data). The **headless capture daemon is built and proven on the Pi** (sim → SQLite). Data is still **simulated** in the UI — the simulator emits the canonical lat/lon `BoatState` the live feed produces, so live AIS is a URL flag (`?source=live`) swap in `useBoatState` once the Pi is in range of the Vesper. `lib/` has vitest coverage (**80 tests**).
+- **Target:** Deploy on Irene by August 24, 2026 (Aug 24 = when on-the-water *testing* starts, not a hard must-work date — no deadline pressure)
 - **Prototype live at:** `trident.keeply.boats`
-- **Shipped this session (session 6 — dropped the chart, became an AIS+systems watch, set the Keeply convergence):**
-  - **Dropped the chart/map view entirely.** Deleted `app/chart/`, `components/chart/`, `hooks/useChartData.js`, `hooks/useTrack.js`, `lib/chartvectors.ts` (+test); removed the `maplibre-gl` dependency; nav is now **AIS · DASH · SETTINGS** with **AIS as home (`/`)**. tsc clean, 59/59 tests. (commit `c67c5dc`)
-  - **Renamed radar → AIS** across the app: `components/radar/` → `components/ais/`, `RadarSVG.jsx` → `AisScope.jsx`, `RadarPage` → `AisPage`, nav label, settings copy. The collision-math file was already `lib/ais.ts` (no rename). (part of commit `f86cb3e`)
-  - **Fixed the simulator's test location** to open Pacific (`SELF_START` in `lib/simulate.ts`) — it had seeded the boat on the Quimper Peninsula. (commit `6c0af17`)
-  - **Settled the Keeply convergence (option 3)** and authored the integration contract — now committed to the **Keeply repo** as `INTEGRATION-TRIDENT.md`. (see the dedicated section below)
-  - Marked the **chartplotter feature audit** (`trident-chartplotter-feature-audit.html`) **scope-obsolete** — it scored Trident against B&G plotters; we're no longer trying to be one.
-- **No hardware changes this session** — `HARDWARE.md` is unchanged (software/architecture session only).
+- **Shipped this session (session 7 — capture daemon + live-AIS correctness + a full AIS UX overhaul):**
+  - **Headless Signal K capture daemon (Keeply-convergence groundwork) — built + proven on the Pi.** Pure tested detector in `lib/capture/` (`types.ts`, `detect.ts` state machine, `downsample.ts`), I/O shell in `daemon/` (`db.ts`, `sk.ts`, `index.ts`, systemd unit, README) as an **isolated package** so `better-sqlite3`/`ws` never touch the Vercel app build. Append-only local SQLite (`track_points`, `capture_events`, `passages`) at `~/trident-data/capture.db` (outside the repo, override `TRIDENT_CAPTURE_DB`). v1 detectors: underway start/stop (+ passage origination via client UUID, never auto-closed), anchor-drag (ref auto-set on underway→stop, ~50 m circle), CPA-danger crossings (reuses `lib/ais` math, AtoN excluded). Run with `tsx`; `--sim` flag for bench. On the Pi: `npm install` pulled the `better-sqlite3` **arm64 prebuild** (no compile), sim wrote rows. (commits `4f35164` → fixed by `adbcff4`)
+  - **Build fix — daemon excluded from the app tsconfig.** First daemon push **ERRORED on Vercel**: the root `tsconfig` globbed `daemon/*.ts`, which import `better-sqlite3`/`ws` (absent from the Vercel tree). Added `"daemon"` to `exclude`. **Lesson banked:** validate the root `tsc` with `daemon/node_modules` *absent* (mimics Vercel) or the failure is masked. (commit `adbcff4`)
+  - **Live-AIS correctness (real bug fixed).** Signal K delivers AIS vessel names as **empty-path subtree merges** (`{path:"", value:{name:"…"}}`), not `{path:"name"}` — `applyDelta` only matched the explicit `"name"` path, so every AIS target would have rendered **nameless** on the boat. Fixed `applyContact` to read the empty-path subtree; verified against real `@signalk/nmea0183-signalk` output. Wired the **live source** (`?source=live` → `connect(ws://<host>:3000/signalk/v1/stream?subscribe=all)`; default stays sim — go-live is a URL flag, not new code). Added a **null-island GPS guard** in capture (skip when self is at 0,0). (commit `17c9537`)
+  - **AIS UX overhaul (the bulk of the session):**
+    - **Selected-target collision viz → TRUE-MOTION dual projection.** Own boat's line and the target's line each extend to where each will be at the **CPA time**; ghost rings at both future spots; the dashed gap between them **is** the miss distance (= CPA, labelled nm). Replaced the relative/ARPA line, which didn't match Garry's mental model ("my line should extend"). (`52ae455` built the relative line; `b44487c` replaced it with true-motion)
+    - **Threat-level filter** (TopBar select: **All / Watch+ / Danger**, persisted) driving scope, list, and count together. Each mode shows its level **and everything more dangerous**, so a danger is visible in every mode — you can only ever hide lower-threat traffic. Count is coloured by the worst visible level. New: `LevelFilter` type, `LEVEL_FILTER_OPTIONS`, `DEFAULT_SETTINGS.levelFilter`, `passesLevel()` (+tests), `useSettings.levelFilter`. (`dc4806c`)
+    - **Filtered-view safety banner.** Because the threat filter can silently hide ALL traffic (a shift-change hazard), whenever it's on a caution-amber banner sits at the top of the scope ("FILTERED · WATCH+/DANGER ONLY"); the whole 48px banner is a button → **one-tap SHOW ALL**. New themed `--caution-dim` token (3 themes) + `C.cautionDim`. Keys off the threat filter only (range filtering is expected/visible). (`ad76e61`)
+    - **Acknowledge selects the target.** Acking a collision warning (or tapping the now-**tappable** ACK chip) puts that vessel on the scope — big detail readout + projection — instead of parking a dead chip. Wired across the shell↔page boundary via `selectRequest` in `useAlerts`. (`7356469`)
+    - **Selected detail → big-tile readout.** Name + threat word, then **CPA/TCPA large (30px)**, then **BRG/COG/SOG/Range/Type** as readable labelled tiles. The list **collapses to only the selected card** when one is selected (✕ restores). (`9605a2a`, `6b7c6a7`, `b44487c`, `27d6ef9`)
+    - **Two fixed distance rings** (outer = zoom edge, inner = half), **independent of zoom** (was one ring per nm). nm labels still move with zoom. (`b6ac64c`)
+    - **Zoom decoupled from selection.** Selecting/switching targets **no longer auto-zooms** (was re-framing on every tap, distracting); zoom changes only via the +/- buttons; background tap deselects only. (`b6ac64c`)
+    - **Removed the dashed guard ring** + its now-orphaned **"Guard zone" Settings stepper** (it was cosmetic-only — no alarm logic; `guardNm` stays in the type/defaults harmlessly). Removed scope cardinals + crosshairs. Enlarged target icons (~+20%) with ~48px tap circles. (`9605a2a`, `e8063ee`, `ad76e61`)
+    - **Max-loudness collision alarm** — soft sine → near-max-gain square-wave warble (1.7–2.4 kHz) with two detuned oscillators through a compressor, ~1.6 s sustain (loop every 2 s ≈ continuous). Capped by iPad system volume; the **GPIO horn** remains the true loud floor. (`6b7c6a7`)
+- **No hardware changes this session** — `HARDWARE.md` is unchanged (software session). KKSB Tall enclosure still on order; 12V horn still not ordered (gates the GPIO horn layer).
 
 ## Hardware (summary — full detail in `HARDWARE.md`)
 - **Amazon hardware ordered** June 7, 2026 — $322.71 — arriving June 12: Raspberry Pi 5 8GB, Official Active Cooler, Seengreat 3-CH Relay HAT, PlusRoc 12V→5V converter, SanDisk High Endurance 256GB, (Argon NEO 5 — now retired/spare; enclosure is the **KKSB Tall**, on order).
@@ -78,7 +86,8 @@ trident/
   components/
     AppShell.jsx         <- Client shell: context providers + persistent bottom nav + AlertModal + audio unlock
     TopBar.jsx           <- Persistent nav bar at the BOTTOM (thumb zone): view tabs (AIS·DASH·SETTINGS),
-                            display mode, range filter, pause, alert badge
+                            display mode, RANGE filter + THREAT-LEVEL filter (All/Watch+/Danger),
+                            pause, tappable ACK chip (re-selects the acked target)
     WatchLayout.jsx      <- Shell for the AIS watch: top InstrumentStrip + centre scope slot
                             (children) + sidebar (TargetList + SidebarHeading). Owns range filter,
                             CPA sort, selected-target resolution, danger->alarm registration.
@@ -89,21 +98,28 @@ trident/
     AlertModal.jsx       <- Full-screen CPA warning (useAlerts); dark scrim is intentional in every theme
     ais/                 (was radar/ — renamed session 6)
       AisScope.jsx       <- SVG AIS scope display only (was RadarSVG.jsx). Colours via style={{}}
-                            (NOT fill=/stroke=) so var() resolves. No background rect — the slot
+                            (NOT fill=/stroke=) so var() resolves. Two fixed rings (outer+half),
+                            true-motion projection on the selected target, range+level filtering,
+                            count coloured by worst visible level. No background rect — the slot
                             carries the scope gradient.
       SidebarHeading.jsx <- Orientation-truthful heading block in the sidebar (lib/orient.ts)
       TargetCard.jsx     <- Single target row
-      TargetDetail.jsx   <- Expanded selected-target panel
-      TargetList.jsx     <- Sidebar container: header + detail + sorted cards
+      TargetDetail.jsx   <- Big-tile readout for the selected target (CPA/TCPA large; BRG/COG/SOG/
+                            Range/Type tiles); floating threat-coloured card
+      TargetList.jsx     <- Sidebar container: header + (when selected) ONLY the detail card,
+                            else the sorted cards
     settings/
       ThresholdStepper.jsx <- One tunable threshold; stepper only (no free-text), 48px buttons
       Toggle.jsx           <- On/off switch, whole row is a >=48px hit target
 
   hooks/  (React, context-backed)
-    useSettings.js       <- Global context: displayMode, filterRange, viewRange, paused, theme,
-                            alarmEnabled, depthUnit, + live thresholds. setThreshold clamps + fences
-                            danger inside caution. Syncs document data-theme; loads/saves via lib/persist.
-    useAlerts.js         <- Global context: danger registration, ack, escalation, alarm loop (gated by alarmEnabled)
+    useSettings.js       <- Global context: displayMode, filterRange, levelFilter (threat filter),
+                            viewRange, paused, theme, alarmEnabled, depthUnit, + live thresholds.
+                            setThreshold clamps + fences danger inside caution. Syncs document
+                            data-theme; loads/saves via lib/persist (levelFilter persisted).
+    useAlerts.js         <- Global context: danger registration, ack, escalation, alarm loop (gated by
+                            alarmEnabled). ack(id) + tappable chip set a selectRequest the AIS page
+                            consumes to select that target on the scope (shell↔page seam).
     useBoatState.js      <- Owns the data source + lifecycle. Today: sim interval. THE live swap
                             point — replace with connect(piUrl, setState) from signalk.ts
     useTargets.js        <- Pure composition: useBoatState -> deriveTargets -> enrichTargets (memoized)
@@ -113,20 +129,33 @@ trident/
     theme.ts             <- Token map onto CSS vars (C.danger === "var(--danger)"); FONT_MONO/SANS;
                             scope palette tokens (gradient, ring labels, compass)
     geo.ts               <- Spherical math: distanceNm, bearingDeg, project (round-trips exactly)
-    ais.ts               <- cpaTcpa, threat(cpa, th?), tColor, relativeVelocity, enrichTarget(s).
-                            Thresholds injected. THE collision-critical file.
+    ais.ts               <- cpaTcpa, threat(cpa, th?), tColor, passesLevel(level, filter),
+                            relativeVelocity, enrichTarget(s). Thresholds injected. THE collision file.
     state.ts             <- deriveTargets(BoatState) -> { targets, own }. lat/lon -> brg/range. Pure.
-    signalk.ts           <- applyDelta(state, delta) pure SK-delta folding; connect(url, onState) WS shell
+    signalk.ts           <- applyDelta(state, delta) pure SK-delta folding (AIS names read from the
+                            empty-path subtree merge); connect(url, onState) WS shell
     simulate.ts          <- Sim source: initState/advanceState emit canonical BoatState; nmPerTick();
-                            SELF_START seeds the boat in the open Pacific (fixed session 6)
+                            SELF_START seeds the boat in the open Pacific
     orient.ts            <- describeOrientation() — orientation-truthful heading label for the sidebar
     units.ts             <- formatDepth (ft/m), formatLatLon — display formatting off the metric model
     persist.ts           <- localStorage load/save + pure sanitize() validator (tested)
-    audio.ts             <- Alarm tones, timer beeps, singleton AudioContext (unlocked on gesture)
-    settings.ts          <- DEFAULT_RANGE, modes, FILTER/DEPTH/THEME options, DEFAULT_THRESHOLDS,
-                            THRESHOLD_FIELDS, DEFAULT_SETTINGS
-    types.ts             <- Display types + canonical model (LatLon, SelfState, Contact, BoatState)
-    {ais,geo,state,signalk,simulate,persist,units}.test.ts  <- vitest, 59 tests
+    audio.ts             <- Max-loudness collision alarm (square warble + compressor), timer beeps,
+                            singleton AudioContext (unlocked on gesture)
+    settings.ts          <- DEFAULT_RANGE, modes, FILTER/LEVEL_FILTER/DEPTH/THEME options,
+                            DEFAULT_THRESHOLDS, THRESHOLD_FIELDS (Guard-zone field removed), DEFAULT_SETTINGS
+    types.ts             <- Display types (incl LevelFilter) + canonical model (LatLon, SelfState, Contact, BoatState)
+    capture/             <- PURE capture logic (no React, no I/O): types.ts, detect.ts (underway/
+                            anchor-drag/CPA state machine), downsample.ts (+ vitest)
+    {ais,geo,state,signalk,simulate,persist,units,capture/*}.test.ts  <- vitest, 80 tests
+
+  daemon/  (ISOLATED Node package — better-sqlite3 + ws + tsx; EXCLUDED from the app tsconfig so it
+            never enters the Vercel build. Runs on the Pi only.)
+    db.ts                <- append-only SQLite (WAL): track_points / capture_events / passages,
+                            at ~/trident-data/capture.db (override TRIDENT_CAPTURE_DB)
+    sk.ts                <- Signal K WS client + reconnect backoff (reuses applyDelta)
+    index.ts             <- entrypoint; --sim flag for bench
+    trident-capture.service <- systemd unit (built; NOT yet installed — bench-only until SK has a Vesper feed)
+    README.md
 
   Phase-2 stub remaining: app/dash/page.js (Dash needs the BMV-712 + Cerbo data to be honest).
 ```
@@ -140,35 +169,37 @@ trident/
 - **Avoid server-only Next features.** Everything is client-side over (eventually) a Signal K WebSocket — no SSR benefit. This keeps the static export (`output: 'export'`) a one-line switch for the Pi.
 
 ## Trident App — Three Surfaces
-1. **AIS** — Head-up situational awareness, guard zones, CPA/TCPA, auto-zoom on target select. The home view. *(built)*
+1. **AIS** — Head-up situational awareness, CPA/TCPA, true-motion projection on the selected target, range + threat-level filtering. Manual zoom. The home view. *(built)*
 2. **Dash** — KPI cards: system status (GPS/AIS/connected clients), battery, solar *(Phase 2 — gated on Victron data, won't be faked)*
 3. **Settings** — Live collision thresholds, Day/Dusk/Night theme, depth unit, alarm controls, all persisted *(built)*. Per-crew profiles + power/nav-sensor rules deferred until their sensors exist.
 
 ### Why no chart view (decision, session 6)
 We built Q1 chart features (course/CPA vector layer, scale bar, north arrow, track trail) and then removed the whole view. Reasoning: a chart is only worth shipping if it can show an **honest, offline** nav chart at sea, and that source doesn't exist for Irene's waters. NOAA discontinued all raster charts (Dec 2024); its NCDS replacement is US-waters only. For Mexico (SEMAR), Central America, and the Caribbean, every usable chart (O-Charts oeSENC/oeRNC, Navionics, C-MAP) is **DRM-locked** to OpenCPN/MFDs and can't render in MapLibre; Navionics' web API is online-only. The only MapLibre-compatible offline option is satellite-derived imagery — not a substitute for a real chart, and a weak, semi-dishonest core feature. So per "no aspirational features," the chart is gone and Trident is a companion to the user's real plotter, not a plotter. (The dropped chart was always online-tiles-only in the prototype anyway.)
 
-## AIS View — Design Decisions (v4, built)
+## AIS View — Design Decisions (v5, built)
 - Layout is the Watch Shell: top instrument read-strip (COG/SOG/Depth/Position), the scope filling the centre slot edge-to-edge, a right sidebar (target list + heading block), and the persistent nav bar at the BOTTOM (thumb zone).
 - Heading lives in the sidebar (`SidebarHeading`), not over the scope centre — orientation-truthful (reads "N" in north-up). Big value, one glance.
-- Alert modal shows ONLY vessel name and TCPA ("minutes to act")
-- Nav/controls minimum 44px touch targets
-- Unselected target = short heading tick; selected = extended predicted track + CPA point
-- Safe targets dim (50% opacity), no labels unless selected; threats labelled
-- Click target -> auto-zoom + predicted track; click background -> reset/deselect
-- Target cards sorted by CPA (closest first), AtoN sorted to bottom
-- Display mode (head-up/course-up/north-up) rotates all scope elements
-- Range filter visually drops targets from both scope and list
-- Watch timer with selectable duration + alarm beep
-- AtoN (Nav Aid) targets as yellow diamonds
-- DSC Call button on target detail card — NOT built yet (pending GX1850 verification, Phase 3)
+- Alert modal shows ONLY vessel name and TCPA ("minutes to act"). **Acknowledging selects that target on the scope** (big detail + projection); the ACK chip in the TopBar is tappable to re-select.
+- Nav/controls minimum 44px touch targets.
+- **Two fixed distance rings** — outer on the scope edge, inner at half radius, *independent of zoom*. nm labels move with zoom. (No cardinals, no centre crosshairs, no guard ring — all removed.)
+- **Selected-target collision viz is TRUE-MOTION:** own and target lines each extend to where each will be at the CPA time, ghost rings at both, and the dashed gap between them = the miss distance (= CPA, labelled). Unselected vessels show a short true-heading tick only.
+- Safe targets dim (50% opacity), no labels unless selected; threats labelled. Selected target enlarges into a big-tile readout (CPA/TCPA big; BRG/COG/SOG/Range/Type tiles), and the list **collapses to just that card** (✕ restores).
+- **Zoom is manual only** (+/- buttons). Selecting/switching targets does NOT change zoom; background tap deselects (no zoom reset). A selected target always renders even outside the filters.
+- Target cards sorted by CPA (closest first), AtoN sorted to bottom.
+- Display mode (head-up/course-up/north-up) rotates all scope elements.
+- **Two filters:** the **range** filter (outer bound, TopBar select) drops distant targets from scope + list; the **threat-level** filter (All / Watch+ / Danger, TopBar select, persisted) shows a level *and everything more dangerous* across scope + list + count. Because the threat filter can hide ALL traffic, a **caution-amber "FILTERED" banner** sits on the scope whenever it's active with a one-tap SHOW ALL (shift-change safety). Count is coloured by the worst visible level.
+- Watch timer with selectable duration + alarm beep. Collision alarm is a max-loudness square-wave warble (iPad-volume capped; GPIO horn is the real floor).
+- AtoN (Nav Aid) targets as yellow diamonds.
+- DSC Call button on target detail card — NOT built yet (pending GX1850 verification, Phase 3).
 
-> **Parked decision — predicted-track reference frame.** Investigated a case where a selected target's long predicted-track line (its **true COG**, a 30-min true-motion vector) diverged ~66° from the faint line to its **relative-frame CPA point**. This is correct, not a bug: own ≈ target speed maximises the gap between true and relative motion, and the sim speed has no effect on the frozen-frame geometry (verified numerically). The scope currently mixes frames — a true-motion track + a relative-motion CPA marker. The ARPA-standard fix is to make the bold predicted-track line follow the **relative** vector so it points straight through the CPA dot (icon still oriented to true COG). **Deferred** — left as-is for now by choice; revisit if the dual-frame display proves confusing on the water.
+> **Resolved (session 7) — predicted-track reference frame.** The earlier dual-frame mix (true-motion track + relative-motion CPA marker) is gone. The selected-target collision viz is now a **true-motion dual projection**: own and target each projected forward to the CPA time, with the gap between the two future positions drawn as the miss distance (= CPA). The ARPA-standard relative-vector line was built and then rejected — it didn't match the on-the-water mental model ("my line should extend to where I'll be"). Per-target heading ticks remain true-heading. No frame-mixing remains on the selected target.
 
 ## CPA / Collision Math (important)
 `lib/ais.ts` is the one place where a bug means a *missed collision warning*. It is pure and isolated.
 - Real AIS gives each vessel an **absolute** COG/SOG. Relative velocity = target vector − own vector, computed in `relativeVelocity()` and shared by both display enrichment and the simulator so they model identical physics.
 - Output `rx,ry,vx,vy` are in the **screen frame** (x = East, y = −North) the scope renderer expects.
-- **Tested (vitest):** head-on, crossing, opening, parallel/zero-velocity, oblique, and half-open threat boundaries (0.5 → caution, 1.0 → safe). 19 tests in `ais.test.ts`. This is the file where a bug = a missed warning, so it has the deepest coverage.
+- **Tested (vitest):** head-on, crossing, opening, parallel/zero-velocity, oblique, and half-open threat boundaries (0.5 → caution, 1.0 → safe), plus `passesLevel` threat-filter ordering (danger never hidden). ~23 tests in `ais.test.ts`. This is the file where a bug = a missed warning, so it has the deepest coverage.
+- **Threat-level display filter** lives here too: `passesLevel(level, filter)` ("level and above"), reused by the scope, the list (`WatchLayout`), and the count so all three agree.
 - **Thresholds are now live**, not constants. `threat()` and `enrichTarget()` take an optional `Thresholds` arg defaulting to `DEFAULT_THRESHOLDS`; `useTargets` injects the Settings values so changing a CPA stepper re-bands every target instantly. The old `CPA_DANGER`/`CPA_CAUTION`/`GUARD_NM` exports remain as the defaults.
 
 ## Data Model — Canonical lat/lon `BoatState`
@@ -191,7 +222,7 @@ The whole app hangs off one source-agnostic world model (`lib/types.ts`), lat/lo
 1. **Physical horn** (GPIO relay) — safety floor, no WiFi/phone/internet dependency
 2. **Browser audio** — any open Trident tab plays alarm tone (current: `useAlerts` plays the tone as a side-effect, gated by the **master alarm** setting; a TCPA-window alarm fires alongside the CPA-distance danger band)
 3. **Push notifications** (PWA) — requires internet, convenience layer
-4. **Visual** — alert modal takes over screen, requires ACKNOWLEDGE tap
+4. **Visual** — alert modal takes over screen, requires ACKNOWLEDGE tap. **ACK now also selects that target on the AIS scope** (via `selectRequest` in `useAlerts`, consumed by the AIS page) instead of leaving a dead chip; the TopBar ACK chip is tappable to re-select.
 
 > When building layers 1/3, separate **alert state** (in `useAlerts`) from **alert output** (a single effect that fans out to horn/audio/push). Multi-client ACK sync is parked — the physical horn makes independent per-client browser alarms acceptable for now.
 
@@ -204,6 +235,8 @@ GX1850 is on N2K. CALL button on target detail cards. Flow: tap Call -> confirm 
 ## Pi Box — As Built (session 4)
 - **Access:** `ssh garry@trident.local` (password auth, bench WiFi). App at `http://trident.local` (Caddy :80). Signal K admin at `http://trident.local:3000`.
 - **App:** repo cloned at `~/trident` on the Pi. Rebuild after a push: `cd ~/trident && git pull && npm run build:static` — Caddy serves the new `out/` immediately, no restart.
+- **Capture daemon (session 7):** lives in `daemon/`, run with `tsx`. `npm install` in `daemon/` pulled the `better-sqlite3` **arm64 prebuild** (no compile). Writes `~/trident-data/capture.db` (append-only SQLite, outside the repo). Proven on the bench via `--sim`. The `trident-capture.service` systemd unit is **built but not installed** — it would idle until Signal K has a real Vesper feed. Install it once the Pi is aboard and AIS is flowing.
+- **Live AIS:** the UI defaults to the simulator; add `?source=live` to point `useBoatState` at `ws://trident.local:3000/signalk/v1/stream?subscribe=all`. Scope stays empty until SK is wired to the Vesper (`192.168.15.1:39150`).
 - **Services:** `signalk` + `caddy` are systemd units, enabled on boot (`systemctl is-active caddy signalk` → both `active`). `sudo systemctl reload caddy` after a Caddyfile change.
 - **Gotchas banked:** Pi OS Lite ships without `git` (apt-install it); Caddy's `caddy` user needs `o+x` on `/home/garry` to traverse to `out/` (the 403 fix — traverse only, not list); the Pi's USB-C port is power-only (the Mac never sees the Pi over it).
 - **MMSI:** Irene's MMSI is set in Signal K — kept out of this public repo by choice.
@@ -232,7 +265,7 @@ GX1850 is on N2K. CALL button on target detail cards. Flow: tap Call -> confirm 
   - **Auth: device pairing, scoped + revocable, never service-role.** Pair dockside → durable offline credential RLS-scoped to that vessel's capture tables.
   - **Reads: capture-first**, read-cached `vessels`/`vessel_members` + active-passage ref; **zero live-read dependency at sea**. The Pi **originates a passage offline** with a client-generated UUID that reconciles on sync (settles voyage auto-start on underway-detection; manual override in the app).
 - **Merge trigger:** when Keeply's spike picks PowerSync, Trident's capture daemon plugs into it and **both the repos and the Claude projects merge** along that seam (home = the Keeply project). Until then, the two stay separate and coordinate through `INTEGRATION-TRIDENT.md` + the shared Supabase schema.
-- **Trident's stack-independent next step:** build the **headless Signal K capture into a local buffer** — needed no matter which sync layer wins.
+- **Trident's stack-independent step — DONE (session 7):** the **headless Signal K capture into a local SQLite buffer** is built and bench-proven (`daemon/` + `lib/capture/`). Append-only `track_points`/`capture_events`/`passages`, downsample-on-sync, offline passage origination via client UUID. It plugs into PowerSync when Keeply's spike lands.
 
 ## Key Documents (in repo /docs)
 - `trident-requirements-v2.html` — Full requirements & build spec *(predates the chart drop — partially stale)*
@@ -244,17 +277,17 @@ GX1850 is on N2K. CALL button on target detail cards. Flow: tap Call -> confirm 
 - **Scope-obsolete:** `trident-chartplotter-feature-audit.html` (project file) — scored Trident vs B&G plotters; we are no longer a chartplotter.
 
 ## What's Next
-1. **Live AIS (dockside, Pi aboard Irene) — the payoff.** Add a Signal K connection to the Vesper NMEA stream at `192.168.15.1:39150` (NMEA 0183 over TCP), then flip `useBoatState` from the sim interval to `connect(piUrl, setState)` (the shell in `lib/signalk.ts` is built + tested). The AIS watch runs on live AIS, UI unchanged. **Verify `applyDelta` against the real delta stream** — check position/COG/SOG (RMC/VTG) and AIS (VDM/VDO) paths first, then AtoN / `design.aisShipType`. Needs the Pi in range of the Vesper's WiFi + a GPS fix + AIS traffic. Depth/wind/instruments + Victron stay dark until the **NGX-1-USB** and **Cerbo** are ordered/installed.
-2. **Headless capture daemon (Keeply convergence groundwork).** Capture the live `BoatState` into a local SQLite buffer on the Pi — append-only, with source-side downsampling for the future synced `track_points` and event detection for `capture_events`. Stack-independent of the PowerSync decision; start here.
+1. **Live AIS (dockside, Pi aboard Irene) — the payoff.** The name-parsing bug is fixed and the **live source is wired** (`?source=live` → `connect()`); what remains is to point Signal K at the Vesper NMEA stream (`192.168.15.1:39150`, NMEA 0183 over TCP) and **verify `applyDelta` against the real delta stream** — position/COG/SOG (RMC/VTG) and AIS (VDM/VDO) first, then AtoN / `design.aisShipType`. Needs the Pi in range of the Vesper's WiFi + a GPS fix + AIS traffic. Depth/wind/instruments + Victron stay dark until the **NGX-1-USB** and **Cerbo** are installed.
+2. **Run the capture daemon as a service aboard.** The daemon is built + bench-proven; once live AIS flows, install the `trident-capture.service` systemd unit so capture runs on boot. Then wire it into **PowerSync** when Keeply's spike lands (see Convergence).
 3. **Low power:** pause rendering/animation when the tab is hidden (Page Visibility API).
 4. **Dash view** — system status / battery / solar. Gated on real Victron data (BMV-712 + Cerbo); won't be built with fake gauges.
 5. **Offline/PWA:** service worker for true offline.
-6. **GPIO horn alarm layer** — wire the Relay HAT + 12V horn (both pending), then the safety-floor output (`useAlerts` state → horn), keeping alert state separate from output.
+6. **GPIO horn alarm layer** — wire the Relay HAT + 12V horn (both pending), then the safety-floor output (`useAlerts` state → horn), keeping alert state separate from output. (This is the real "loud" floor; the browser alarm is volume-capped.)
 7. **DSC calling** — CALL button → PGN 129808 to the GX1850, pending hardware verification (Phase 3).
-8. **(Parked)** Predicted-track relative-vector option (see AIS Design Decisions) — revisit if the dual-frame display confuses on the water.
-9. **(When triggered)** Merge with Keeply — repos + Claude projects — once Keeply's spike picks PowerSync.
+8. **(When triggered)** Merge with Keeply — repos + Claude projects — once Keeply's spike picks PowerSync.
 
 ## Session Log
+- **2026-06-11 (session 7):** **Built the headless capture daemon + fixed the live-AIS path + a full AIS UX overhaul.** **Capture daemon** (Keeply-convergence groundwork): pure tested detector in `lib/capture/` (underway/anchor-drag/CPA) + isolated `daemon/` I/O shell (better-sqlite3 + ws + tsx) writing append-only SQLite (`track_points`/`capture_events`/`passages`) at `~/trident-data/capture.db`; proven on the Pi via `--sim` (arm64 prebuild, no compile). First push ERRORED on Vercel (root tsconfig globbed `daemon/*.ts`) → fixed by excluding `daemon` (`4f35164`→`adbcff4`); **lesson:** validate root tsc with `daemon/node_modules` absent. **Live-AIS correctness:** fixed a real bug — SK delivers AIS names as empty-path subtree merges, `applyDelta` was dropping them (verified vs `nmea0183-signalk`); wired the live source (`?source=live`); null-island GPS guard in capture (`17c9537`). **AIS UX:** replaced the relative/ARPA collision line with a **true-motion dual projection** (own + target to CPA time, gap = miss distance — un-parked the frame decision); added a **threat-level filter** (All/Watch+/Danger) across scope/list/count with danger never hidden; added a **filtered-view safety banner** (one-tap SHOW ALL) for the shift-change hazard; **ack now selects the target** on the scope (+ tappable ACK chip); **big-tile selected-detail readout** with the list collapsing to just that card; **two fixed rings** (outer+half) independent of zoom; **decoupled zoom from selection** (manual only); **removed the dashed guard ring** + its orphaned Settings stepper (cosmetic-only); removed cardinals/crosshairs; enlarged targets/tap areas; **max-loudness collision alarm** (square warble + compressor, iPad-volume capped — GPIO horn is the real floor). 80 tests, all green. **No hardware changes** (HARDWARE.md unchanged). Pushed to the Pi (`git pull && build:static`). Docs swept at session end (this commit).
 - **2026-06-11 (session 6):** **Dropped the chart view and refocused Trident as an AIS collision watch + systems monitor + capture node — not a chartplotter.** Built Q1 chart features (vector layer, scale bar, north arrow, track trail) then removed the entire chart view after a chart-source deep-dive concluded a DRM-free offline nav chart is unachievable for Mexico/Central America/Caribbean (NOAA killed rasters Dec 2024; SEMAR/O-Charts/Navionics/C-MAP all DRM-locked to OpenCPN/MFDs; only satellite-derived offline path exists). Deleted `app/chart/`, `components/chart/`, `hooks/useChartData.js`, `hooks/useTrack.js`, `lib/chartvectors.ts`(+test); removed `maplibre-gl`; nav now AIS·DASH·SETTINGS with AIS home (`c67c5dc`). **Renamed radar → AIS** (`components/ais/`, `AisScope.jsx`, `AisPage`, nav/settings copy; `f86cb3e`). **Fixed sim test location** to open Pacific (`6c0af17`). **Settled the Keeply convergence (option 3)** and authored the integration contract, now `INTEGRATION-TRIDENT.md` in the Keeply repo: append-only capture (`track_points` + `capture_events`), downsample-on-sync (~0.4% of PowerSync free tier), device-pairing scoped/revocable auth, offline passage origination via client UUID; merge trigger = Keeply's spike picks PowerSync → merge repos + Claude projects. Marked the chartplotter feature audit scope-obsolete. 59 tests. No hardware changes. Docs swept at session end (this commit).
 - **2026-06-11 (session 5):** **Self-hosted the fonts** — vendored IBM Plex Mono/Sans (latin woff2, 9 weights) into `public/fonts/` and swapped the Google Fonts `@import` for `@font-face` in `globals.css`. Offline-safe at sea with zero build-time network; CSS re-validated through PostCSS. **Settled the physical build and created `HARDWARE.md`** as its source of truth (pushed mid-session by request, commit `736f814`). Hardware decisions banked there: exact HAT is the **Seengreat 3-CH** (HF3FF/005-1ZS relays, 15.5mm tall; pinout CH1/CH2/CH3 = GPIO **26/19/13**, opto-isolated — *not* the Waveshare 26/20/21); the **official Active Cooler stays ON**; enclosure changed to the **KKSB Tall Aluminum Enclosure for Dual HATs** (on order) because the Seengreat relays put the stacked board ~37mm tall; the HAT **stacks on the GPIO** via the KKSB-supplied tall stackable header + 18/20mm spacers. **Argon NEO 5 retired** (kept as spare). Process note: the fonts deploy block wasn't run mid-session (only the HARDWARE.md one was), caught at session end via `git ls-remote` — fonts + that CONTEXT update shipped together in the session-end commit.
 - **2026-06-11 (session 4):** **Built the Pi.** Assembled Pi 5 (Active Cooler + Argon NEO 5 base; **Relay HAT deferred**). Flashed **Raspberry Pi OS Lite 64-bit** headless via Pi Imager — booted and SSH'd first try. Installed **Node 20.20.2** + **Signal K 2.23.0** (vessel Irene, port 3000, auto-start on boot). **Decided the OS/serving stack:** Pi OS Lite + SK + **Caddy**, not OpenPlotter. Shipped the **conditional static export** (`STATIC_EXPORT=true` → `output:'export'`; commit `00332a5`). Cloned the repo on the Pi, `build:static` → `out/`, served by **Caddy** on :80. Fixed a **403** — `chmod o+x /home/garry`. **Verified reboot survival**. Live AIS is now one dockside step (SK → Vesper `192.168.15.1:39150`, flip `useBoatState` to `connect()`).
