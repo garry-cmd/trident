@@ -59,38 +59,38 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
         const cogR = (rotBrg(t.cog) * Math.PI) / 180;
         const predPx = nm2px((t.sog * 30) / 60);
 
-        // Relative-motion point at time tt (min), mapped to screen px with the
-        // active rotation applied. The target traces this straight line RELATIVE
-        // to own; the point on it nearest own centre is the CPA.
-        const relXY = (tt) => {
-          const px = t.rx + t.vx * tt, py = t.ry + t.vy * tt;
-          const rng = Math.hypot(px, py);
-          const brg = (Math.atan2(px, -py) * 180) / Math.PI;
-          const [x, y] = brg2xy(brg, rng);
-          return [CX + x, CY + y];
-        };
-
         const closing = !t.aton && isFinite(t.tcpa) && t.tcpa > 0 && t.tcpa < 200;
-        let cpaX = ax, cpaY = ay, endX = ax, endY = ay;
+
+        // True-motion projection to the CPA time: where BOTH vessels will be when
+        // closest. Own from the centre along its COG; the target from its mark
+        // along its COG. The gap between the two future points IS the CPA.
+        const projectPx = (cx, cy, cogDeg, sogKt) => {
+          const r = (rotBrg(cogDeg) * Math.PI) / 180;
+          const dpx = nm2px((sogKt * t.tcpa) / 60);
+          return [cx + Math.sin(r) * dpx, cy - Math.cos(r) * dpx];
+        };
+        let ownFut = null, tgtFut = null;
         if (closing) {
-          [cpaX, cpaY] = relXY(t.tcpa);
-          [endX, endY] = relXY(t.tcpa * 1.8); // extend past CPA so the line reads as a path
+          ownFut = projectPx(CX, CY, own.cog, own.sog);
+          tgtFut = projectPx(ax, ay, t.cog, t.sog);
         }
 
         return (
           <g key={t.id} onClick={(e) => { e.stopPropagation(); onSelect(t.id); }} style={{ cursor: "pointer" }}>
             {/* Invisible ~48px tap target — cold hands on a rolling boat. */}
             <circle cx={ax} cy={ay} r={24} fill="transparent" style={{ pointerEvents: "all" }} />
-            {/* SELECTED + closing: the collision line. Relative track from the
-                target through the CPA point, coloured by threat (red = on a
-                collision path, green = passing clear), plus the miss line from
-                own boat to the closest-approach point. */}
+            {/* SELECTED + closing: TRUE-MOTION projection. My boat's line and the
+                target's line each extend to where we'll be at the CPA time; the
+                dashed gap between those two future positions is the miss distance
+                (= CPA), coloured by threat — short red gap = collision. */}
             {isSel && closing && (
               <>
-                <line x1={ax} y1={ay} x2={endX} y2={endY} strokeWidth="1.8" strokeDasharray="7 4" opacity="0.9" style={{ stroke: col }} />
-                <line x1={CX} y1={CY} x2={cpaX} y2={cpaY} strokeWidth="1" strokeDasharray="2 3" opacity="0.55" style={{ stroke: col }} />
-                <circle cx={cpaX} cy={cpaY} r={4.5} fill="none" strokeWidth="1.1" style={{ stroke: col }} />
-                <text x={cpaX + 8} y={cpaY - 4} fontFamily="IBM Plex Mono" fontSize="9" fontWeight="600" opacity="0.9" style={{ fill: col }}>{t.cpa.toFixed(2)} nm</text>
+                <line x1={CX} y1={CY} x2={ownFut[0]} y2={ownFut[1]} strokeWidth="1.7" strokeDasharray="7 4" opacity="0.85" style={{ stroke: C.own }} />
+                <circle cx={ownFut[0]} cy={ownFut[1]} r={5} fill="none" strokeWidth="1.3" style={{ stroke: C.own }} />
+                <line x1={ax} y1={ay} x2={tgtFut[0]} y2={tgtFut[1]} strokeWidth="1.7" strokeDasharray="7 4" opacity="0.85" style={{ stroke: col }} />
+                <circle cx={tgtFut[0]} cy={tgtFut[1]} r={5} fill="none" strokeWidth="1.3" style={{ stroke: col }} />
+                <line x1={ownFut[0]} y1={ownFut[1]} x2={tgtFut[0]} y2={tgtFut[1]} strokeWidth="1.4" strokeDasharray="2 3" opacity="0.95" style={{ stroke: col }} />
+                <text x={(ownFut[0] + tgtFut[0]) / 2 + 6} y={(ownFut[1] + tgtFut[1]) / 2 - 4} fontFamily="IBM Plex Mono" fontSize="9" fontWeight="600" opacity="0.95" style={{ fill: col }}>{t.cpa.toFixed(2)} nm</text>
               </>
             )}
 
@@ -98,11 +98,6 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
                 heading faintly so selection still reads. */}
             {isSel && !closing && !t.aton && (
               <line x1={ax} y1={ay} x2={ax + Math.sin(cogR) * predPx * 0.8} y2={ay - Math.cos(cogR) * predPx * 0.8} strokeWidth="1.2" strokeDasharray="8 5" opacity="0.4" style={{ stroke: col }} />
-            )}
-
-            {/* Non-selected danger: keep a faint CPA hint without the full line. */}
-            {!isSel && closing && t.level === "danger" && (
-              <line x1={ax} y1={ay} x2={cpaX} y2={cpaY} strokeWidth="0.6" strokeDasharray="3 3" opacity="0.25" style={{ stroke: col }} />
             )}
 
             {/* Every vessel: short true-heading tick (unless selected). */}

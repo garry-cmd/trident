@@ -12,12 +12,15 @@ export default function TargetList({ targets, selId, selTarget, onSelect, onClos
         <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: C.label }}>Targets</span>
         <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: C.dim }}>{targets.length}</span>
       </div>
-      {selTarget && <TargetDetail target={selTarget} onClose={onClose} />}
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        {targets.filter((t) => t.id !== selId).map((t) => (
-          <TargetCard key={t.id} t={t} selected={false} onSelect={onSelect} />
-        ))}
-      </div>
+      {selTarget ? (
+        <TargetDetail target={selTarget} onClose={onClose} />
+      ) : (
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {targets.map((t) => (
+            <TargetCard key={t.id} t={t} selected={false} onSelect={onSelect} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
