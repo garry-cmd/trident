@@ -40,10 +40,14 @@ export function systemsStatus(feed: Status, gpsFix: boolean): Status {
 }
 
 // Boat-area status. When anchored it tracks drag; underway it's informational
+// Boat-area status from the anchor watch. Dragging is the alarm; a set anchor
+// with no GPS fix is a caution (the watch is blind, not safe); otherwise calm.
 // (depth/other alarms are gated rules added when their sensors land).
-export function anchorBoatStatus(set: boolean, dragging: boolean): Status {
+export function anchorBoatStatus(set: boolean, dragging: boolean, noFix = false): Status {
   if (!set) return "ok";
-  return dragging ? "danger" : "ok";
+  if (dragging) return "danger";
+  if (noFix) return "caution";
+  return "ok";
 }
 
 // Worst of a set of statuses. "off" (a gated/absent sensor) is NOT worse than

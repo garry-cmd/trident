@@ -60,3 +60,18 @@ describe("maxSwingM", () => {
     expect(m).toBe(21);
   });
 });
+
+describe("anchorStatus — no fix", () => {
+  it("reports set+noFix (never a false drag) when position is null-island", () => {
+    const s = anchorStatus({ lat: 0, lon: 0 }, base());
+    expect(s.set).toBe(true);
+    expect(s.noFix).toBe(true);
+    expect(s.dragging).toBe(false);
+    expect(s.distanceM).toBe(0);
+  });
+  it("treats non-finite position as no fix", () => {
+    const s = anchorStatus({ lat: NaN, lon: NaN }, base());
+    expect(s.noFix).toBe(true);
+    expect(s.dragging).toBe(false);
+  });
+});

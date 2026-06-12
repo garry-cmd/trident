@@ -35,11 +35,11 @@ function weatherCard(d) {
   return { value: `${w.mb}mb`, sub: `${w.trend3h < 0 ? "\u25BC falling" : "\u25B2 rising"} ${w.trend3h > 0 ? "+" : ""}${w.trend3h}/3h` };
 }
 function boatValue(d) {
-  if (d.mode === "anchor") return d.anchor.dragging ? "DRAGGING" : "HOLDING";
+  if (d.mode === "anchor") return d.anchor.noFix ? "NO FIX" : d.anchor.dragging ? "DRAGGING" : "HOLDING";
   return `${d.self.sog.toFixed(1)} kt`;
 }
 function boatSub(d) {
-  if (d.mode === "anchor") return `${round(d.anchor.distanceM)} m from set`;
+  if (d.mode === "anchor") return d.anchor.noFix ? "anchored \u00B7 GPS dropout" : `${round(d.anchor.distanceM)} m from set`;
   return `COG ${round(d.self.cog)}\u00B0`;
 }
 

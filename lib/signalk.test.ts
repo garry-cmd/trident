@@ -144,3 +144,16 @@ describe("applyDelta — rpi telemetry", () => {
     expect(s.telemetry?.pi?.cpuTempC).toBe(37);
   });
 });
+
+describe("applyDelta — self via MMSI URN (rpi-monitor / own transponder)", () => {
+  const SELF = "vessels.urn:mrn:imo:mmsi:368297360";
+  it("routes the self MMSI-URN context to self telemetry when selfId is known", () => {
+    const s = applyDelta(emptyLiveState(), { context: SELF, updates: [{ values: [{ path: "environment.rpi.cpu.temperature", value: 315.15 }] }] }, SELF);
+    expect(s.telemetry?.pi?.cpuTempC).toBe(42);
+    expect(s.contacts.length).toBe(0); // no phantom contact
+  });
+  it("without selfId, an MMSI-URN context is still a contact (back-compat)", () => {
+    const s = applyDelta(emptyLiveState(), d(SELF, [{ path: "navigation.position", value: { latitude: 1, longitude: 2 } }]));
+    expect(s.contacts.length).toBe(1);
+  });
+});

@@ -96,7 +96,7 @@ export function useDash() {
       systems: worstStatus(systemsStatus(feed, gpsFix), piStatus(telemetry.pi)),
       power: batteryStatus(telemetry.battery),
       weather: baroStatus(telemetry.baro ? telemetry.baro.trend3h : null),
-      boat: anchorBoatStatus(aStat.set, aStat.dragging),
+      boat: anchorBoatStatus(aStat.set, aStat.dragging, aStat.noFix),
     },
   };
 }

@@ -25,10 +25,12 @@ export function emptyLiveState(): BoatState {
   };
 }
 
-// Identify the vessel a delta refers to. Self deltas omit context or use
-// "vessels.self"; others are "vessels.urn:...:<mmsi>" or "atons.<id>".
-function idOf(context?: string): { self: boolean; id: string; aton: boolean } {
-  if (!context || context === "vessels.self") return { self: true, id: "self", aton: false };
+// Identify the vessel a delta refers to. Self deltas may omit context, use
+// "vessels.self", OR carry self's own MMSI URN (e.g. signalk-rpi-monitor and a
+// boat's own AIS transponder do this) — so we match the self URN learned from
+// the SK hello frame. Others are "vessels.urn:...:<mmsi>" or "atons.<id>".
+function idOf(context: string | undefined, selfId?: string): { self: boolean; id: string; aton: boolean } {
+  if (!context || context === "vessels.self" || (selfId !== undefined && context === selfId)) return { self: true, id: "self", aton: false };
   const aton = context.startsWith("atons.");
   const id = context.split(":").pop() || context.split(".").pop() || context;
   return { self: false, id, aton };
@@ -87,9 +89,11 @@ function applyRpi(t: Telemetry, path: string, value: unknown): Telemetry {
   }
 }
 
-// Pure: fold one SK delta into the state, returning a new BoatState.
-export function applyDelta(state: BoatState, delta: SKDelta): BoatState {
-  const who = idOf(delta.context);
+// Pure: fold one SK delta into the state, returning a new BoatState. selfId is
+// self's MMSI URN (from the SK hello frame); when known, deltas in that context
+// route to self rather than a phantom contact.
+export function applyDelta(state: BoatState, delta: SKDelta, selfId?: string): BoatState {
+  const who = idOf(delta.context, selfId);
   const pairs = (delta.updates ?? []).flatMap((u) => u.values ?? []);
   if (pairs.length === 0) return state;
 
@@ -118,12 +122,14 @@ export function applyDelta(state: BoatState, delta: SKDelta): BoatState {
 export function connect(url: string, onState: (s: BoatState) => void, onError?: (e: unknown) => void): () => void {
   if (typeof WebSocket === "undefined") return () => {};
   let state = emptyLiveState();
+  let selfId: string | undefined; // self's MMSI URN, learned from the hello frame
   const ws = new WebSocket(url);
   ws.onmessage = (ev) => {
     try {
-      const delta = JSON.parse(ev.data as string) as SKDelta;
-      if (!delta.updates) return; // skip hello/meta frames
-      state = applyDelta(state, delta);
+      const msg = JSON.parse(ev.data as string) as SKDelta & { self?: string };
+      if (typeof msg.self === "string") { selfId = msg.self; return; } // SK hello frame
+      if (!msg.updates) return; // skip other meta frames
+      state = applyDelta(state, msg, selfId);
       onState(state);
     } catch (e) { onError?.(e); }
   };

@@ -20,10 +20,13 @@ export default function BoatPanel({ dash }) {
 function AnchorFace({ dash }) {
   const { anchor, anchorRadiusM, setAt, maxSwing, clearAnchor, setRadius, telemetry } = dash;
   const dragging = anchor.dragging;
+  const noFix = anchor.noFix;
   const depth = telemetry.depthM;
   const wind = telemetry.wind;
   const mins = setAt ? Math.max(0, Math.floor((Date.now() - setAt) / 60000)) : 0;
   const elapsed = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+  const headColor = dragging ? C.dangerBr : noFix ? C.cautionBr : C.safeBr;
+  const headText = noFix ? "NO FIX" : dragging ? "DRAGGING" : "HOLDING";
 
   return (
     <Panel alarm={dragging}>
@@ -31,21 +34,21 @@ function AnchorFace({ dash }) {
       <div style={{ display: "flex", gap: 22, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
         <AnchorScope fraction={anchor.fraction} bearingToSetDeg={anchor.bearingToSetDeg} dragging={dragging} set />
         <div style={{ minWidth: 160 }}>
-          <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 32, color: dragging ? C.dangerBr : C.safeBr }}>
-            {dragging ? "DRAGGING" : "HOLDING"}
+          <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 32, color: headColor }}>
+            {headText}
           </div>
           <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 46, color: C.value, lineHeight: 1, marginTop: 8 }}>
-            {round(anchor.distanceM)}<span style={{ fontSize: 18, color: C.label }}> m</span>
+            {noFix ? "\u2014" : round(anchor.distanceM)}<span style={{ fontSize: 18, color: C.label }}> m</span>
           </div>
           <div style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.text, marginTop: 4 }}>
-            from set point · alarm at {anchorRadiusM} m · at anchor {elapsed}
+            {noFix ? `no GPS fix · alarm at ${anchorRadiusM} m · at anchor ${elapsed}` : `from set point · alarm at ${anchorRadiusM} m · at anchor ${elapsed}`}
           </div>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 14 }}>
         <Tile label="Max swing" value={round(maxSwing)} unit="m" />
-        <Tile label="Bearing to set" value={`${round(anchor.bearingToSetDeg)}\u00B0`} />
+        <Tile label="Bearing to set" value={noFix ? "\u2014" : `${round(anchor.bearingToSetDeg)}\u00B0`} />
         {depth != null ? <Tile label="Depth" value={depth} unit="m" /> : <Tile label="Depth" hw="NGX-1" off />}
         {wind ? <Tile label="Wind" value={`${wind.speedKt} kt`} sub={`${wind.dirDeg}\u00B0`} /> : <Tile label="Wind" hw="NGX-1" off />}
       </div>
