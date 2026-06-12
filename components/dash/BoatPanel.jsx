@@ -18,8 +18,10 @@ export default function BoatPanel({ dash }) {
 }
 
 function AnchorFace({ dash }) {
-  const { anchor, anchorRadiusM, setAt, maxSwing, clearAnchor, setRadius } = dash;
+  const { anchor, anchorRadiusM, setAt, maxSwing, clearAnchor, setRadius, telemetry } = dash;
   const dragging = anchor.dragging;
+  const depth = telemetry.depthM;
+  const wind = telemetry.wind;
   const mins = setAt ? Math.max(0, Math.floor((Date.now() - setAt) / 60000)) : 0;
   const elapsed = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
 
@@ -44,8 +46,8 @@ function AnchorFace({ dash }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 14 }}>
         <Tile label="Max swing" value={round(maxSwing)} unit="m" />
         <Tile label="Bearing to set" value={`${round(anchor.bearingToSetDeg)}\u00B0`} />
-        <Tile label="Depth" hw="NGX-1" off />
-        <Tile label="Wind" hw="NGX-1" off />
+        {depth != null ? <Tile label="Depth" value={depth} unit="m" /> : <Tile label="Depth" hw="NGX-1" off />}
+        {wind ? <Tile label="Wind" value={`${wind.speedKt} kt`} sub={`${wind.dirDeg}\u00B0`} /> : <Tile label="Wind" hw="NGX-1" off />}
       </div>
 
       <RadiusStepper value={anchorRadiusM} onChange={setRadius} />
@@ -55,8 +57,10 @@ function AnchorFace({ dash }) {
 }
 
 function UnderwayFace({ dash }) {
-  const { self } = dash;
+  const { self, telemetry } = dash;
   const [lat, lon] = formatLatLon(self.position.lat, self.position.lon).split(" ");
+  const depth = telemetry.depthM;
+  const ap = telemetry.autopilot;
   return (
     <Panel>
       <PanelHead title="Boat" q="where am I going, how fast, how deep?" />
@@ -70,8 +74,8 @@ function UnderwayFace({ dash }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 14 }}>
         <Tile label="Heading" value={`${round(self.heading)}\u00B0`} />
-        <Tile label="Depth" hw="NGX-1" off />
-        <Tile label="Autopilot" hw="N2K" off />
+        {depth != null ? <Tile label="Depth" value={depth} unit="m" big /> : <Tile label="Depth" hw="NGX-1" off />}
+        {ap ? <Tile label="Autopilot" value={ap.engaged ? `AUTO ${ap.targetHdg}\u00B0` : "STANDBY"} sub={ap.engaged ? `rudder ${Math.abs(ap.rudderDeg)}\u00B0${ap.rudderDeg < 0 ? "P" : ap.rudderDeg > 0 ? "S" : ""}` : undefined} /> : <Tile label="Autopilot" hw="N2K" off />}
         <Tile label="Position" value={lat} sub={lon} />
       </div>
       <button onClick={dash.setAnchorHere} style={btn(true)}>{"\u2693"} DROP ANCHOR HERE — START WATCH</button>

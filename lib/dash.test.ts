@@ -6,6 +6,9 @@ import {
   systemsStatus,
   anchorBoatStatus,
   worstStatus,
+  batteryStatus,
+  baroStatus,
+  piStatus,
 } from "./dash";
 
 describe("feedAgeSec", () => {
@@ -58,5 +61,33 @@ describe("worstStatus", () => {
     expect(worstStatus("off", "ok")).toBe("ok"); // a gated sensor isn't a fault
     expect(worstStatus("off", "off")).toBe("off"); // all absent = absent
     expect(worstStatus()).toBe("off");
+  });
+});
+
+describe("batteryStatus", () => {
+  it("is off without data, danger below min voltage, caution on low SOC", () => {
+    expect(batteryStatus(null)).toBe("off");
+    expect(batteryStatus({ soc: 80, voltage: 12.6 })).toBe("ok");
+    expect(batteryStatus({ soc: 80, voltage: 12.1 })).toBe("danger");
+    expect(batteryStatus({ soc: 20, voltage: 12.6 })).toBe("caution");
+    expect(batteryStatus({ soc: 80, voltage: 12.3 }, 12.4)).toBe("danger"); // custom min
+  });
+});
+
+describe("baroStatus", () => {
+  it("bands a falling barometer", () => {
+    expect(baroStatus(null)).toBe("off");
+    expect(baroStatus(0.5)).toBe("ok");
+    expect(baroStatus(-2.1)).toBe("caution");
+    expect(baroStatus(-5)).toBe("danger");
+  });
+});
+
+describe("piStatus", () => {
+  it("flags undervolt and heat", () => {
+    expect(piStatus(null)).toBe("off");
+    expect(piStatus({ undervolt: false, cpuTempC: 55 })).toBe("ok");
+    expect(piStatus({ undervolt: true, cpuTempC: 55 })).toBe("danger");
+    expect(piStatus({ undervolt: false, cpuTempC: 82 })).toBe("caution");
   });
 });

@@ -1,8 +1,12 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTargets } from "./useTargets";
-import { feedAgeSec, feedStatus, hasGpsFix, systemsStatus, anchorBoatStatus } from "@/lib/dash";
+import {
+  feedAgeSec, feedStatus, hasGpsFix, systemsStatus, anchorBoatStatus,
+  worstStatus, batteryStatus, baroStatus, piStatus,
+} from "@/lib/dash";
 import { anchorStatus, maxSwingM } from "@/lib/anchor";
+import { demoTelemetry, EMPTY_TELEMETRY } from "@/lib/demo";
 import { FEED_STALE_SEC, FEED_LOST_SEC, DEFAULT_ANCHOR_RADIUS_M } from "@/lib/settings";
 
 // Anchor watch is operational state (a dropped hook), not a UI preference, so it
@@ -29,13 +33,23 @@ function saveAnchor(a) {
   try { window.localStorage.setItem(ANCHOR_KEY, JSON.stringify(a)); } catch { /* private mode */ }
 }
 
+// DEMO mode fills the gated panels with synthetic telemetry so the whole Dash
+// can be exercised before the Cerbo / NGX-1 exist. Explicit URL flag (?demo=1),
+// badged in the UI — the default stays gated and honest.
+function readDemo() {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("demo") === "1";
+}
+
 // Single composition point for the Dash view model. Reuses the same data
 // pipeline as the AIS view (useTargets) so sim/live behave identically, adds a
-// 1 s wall clock so feed age advances even when no new delta arrives, and owns
-// the anchor set-point. Status for each focus area is derived here; Power and
-// Weather are "off" (gated) until the Cerbo / NGX-1 exist — never faked.
+// 1 s wall clock so feed age advances even when no new delta arrives, owns the
+// anchor set-point, and threads telemetry (demo now, Signal K later). Status for
+// each focus area is derived here; Power/Weather are "off" until their telemetry
+// exists — never faked.
 export function useDash() {
   const { targets, self, source, ts } = useTargets();
+  const [demo] = useState(readDemo);
   const [anchor, setAnchor] = useState(loadAnchor);
   const [maxSwing, setMaxSwing] = useState(0);
   const [now, setNow] = useState(() => Date.now());
@@ -46,12 +60,13 @@ export function useDash() {
   }, []);
   useEffect(() => { saveAnchor(anchor); }, [anchor]);
 
+  const telemetry = useMemo(() => (demo ? demoTelemetry(now) : EMPTY_TELEMETRY), [demo, now]);
+
   const ageSec = feedAgeSec(now, ts);
   const feed = feedStatus(ageSec, FEED_STALE_SEC, FEED_LOST_SEC);
   const gpsFix = hasGpsFix(self.position);
   const aStat = anchorStatus(self.position, anchor);
 
-  // Accumulate the widest swing observed since the hook went down.
   useEffect(() => {
     if (aStat.set) setMaxSwing((m) => maxSwingM(m, aStat.distanceM));
   }, [aStat.set, aStat.distanceM]);
@@ -67,15 +82,15 @@ export function useDash() {
   const setRadius = useCallback((m) => setAnchor((a) => ({ ...a, alarmRadiusM: m })), []);
 
   return {
-    self, source, targets,
+    self, source, demo, targets, telemetry,
     feed, ageSec, gpsFix,
     anchor: aStat, anchorRadiusM: anchor.alarmRadiusM, setAt: anchor.setAt, maxSwing,
     mode: aStat.set ? "anchor" : "underway",
     setAnchorHere, clearAnchor, setRadius,
     status: {
-      systems: systemsStatus(feed, gpsFix),
-      power: "off",   // gated — no BMV/Cerbo yet
-      weather: "off", // gated — no NGX-1 yet
+      systems: worstStatus(systemsStatus(feed, gpsFix), piStatus(telemetry.pi)),
+      power: batteryStatus(telemetry.battery),
+      weather: baroStatus(telemetry.baro ? telemetry.baro.trend3h : null),
       boat: anchorBoatStatus(aStat.set, aStat.dragging),
     },
   };

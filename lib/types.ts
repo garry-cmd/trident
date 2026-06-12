@@ -81,3 +81,34 @@ export interface EnrichedTarget extends Target {
   tcpa: number; // min
   level: ThreatLevel;
 }
+
+// ── Systems / environment telemetry (beyond the AIS/nav model) ──────────────
+// Each block is null until its sensor exists — gated in the UI, never faked in
+// the default view. DEMO mode (?demo=1) synthesizes them; the live client will
+// fold the matching Signal K paths here when the Cerbo / NGX-1 are installed.
+export interface BatteryTelemetry { soc: number; voltage: number; current: number; timeToGoMin: number | null; }
+export interface SolarTelemetry { watts: number; yieldAh: number; }
+export interface ShoreTelemetry { connected: boolean; amps: number; }
+export interface BaroTelemetry { mb: number; trend3h: number; history: number[]; }
+export interface WindTelemetry { speedKt: number; dirDeg: number; backing: boolean; }
+export interface PiTelemetry { cpuTempC: number; loadPct: number; ramPct: number; diskFreePct: number; undervolt: boolean; }
+export interface GpsTelemetry { sats: number; hdop: number; }
+export interface VhfTelemetry { channel: string; dscWatch: boolean; }
+export interface AutopilotTelemetry { engaged: boolean; targetHdg: number; rudderDeg: number; }
+
+export interface Telemetry {
+  battery: BatteryTelemetry | null;
+  solar: SolarTelemetry | null;
+  shore: ShoreTelemetry | null;
+  engineChargeA: number | null;
+  loadsA: number | null;
+  baro: BaroTelemetry | null;
+  wind: WindTelemetry | null;
+  airTempC: number | null;
+  seaTempC: number | null;
+  pi: PiTelemetry | null;
+  gps: GpsTelemetry | null;
+  vhf: VhfTelemetry | null;
+  autopilot: AutopilotTelemetry | null;
+  depthM: number | null;
+}
