@@ -18,7 +18,7 @@ const TABS = [
 export default function TopBar() {
   const pathname = usePathname();
   const { displayMode, setDisplayMode, filterRange, setFilterRange, levelFilter, setLevelFilter, viewRange, setViewRange, paused, setPaused } = useSettings();
-  const { anyDangerAcked } = useAlerts();
+  const { anyDangerAcked, requestSelect } = useAlerts();
 
   const onFilter = (v) => {
     setFilterRange(v);
@@ -60,10 +60,10 @@ export default function TopBar() {
       <div style={{ flex: 1 }} />
 
       {anyDangerAcked && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, background: C.dangerDim, border: `1px solid ${C.danger}`, borderRadius: 6, padding: "8px 14px", fontSize: 12, fontWeight: 600, color: C.dangerBr, textTransform: "uppercase", minHeight: 44 }}>
+        <button onClick={() => requestSelect(anyDangerAcked.id)} style={{ display: "flex", alignItems: "center", gap: 6, background: C.dangerDim, border: `1px solid ${C.danger}`, borderRadius: 6, padding: "8px 14px", fontSize: 12, fontWeight: 600, color: C.dangerBr, textTransform: "uppercase", minHeight: 44, cursor: "pointer" }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.dangerBr, animation: "blink 1s step-end infinite" }} />
           {anyDangerAcked.name || anyDangerAcked.id} — ACK
-        </div>
+        </button>
       )}
 
       <button onClick={() => setPaused(!paused)} style={{ fontSize: 14, fontWeight: 700, padding: "10px 18px", borderRadius: 6, border: `1px solid ${C.borderLt}`, background: paused ? "rgba(196,146,48,0.12)" : C.raised, color: paused ? C.cautionBr : C.dim, cursor: "pointer", minHeight: 44, minWidth: 44 }}>

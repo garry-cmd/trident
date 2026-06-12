@@ -13,9 +13,18 @@ export function AlertsProvider({ children }) {
   const { alarmEnabled } = useSettings();
   const [dangers, setDangersState] = useState([]); // [{id,name,tcpa}]
   const [acked, setAcked] = useState({});
+  // When a danger is acknowledged (or the ACK chip is tapped) we ask the AIS
+  // view to select that target, so the scope frames it instead of the ack just
+  // parking a chip in the corner. The AIS page consumes + clears this.
+  const [selectRequest, setSelectRequest] = useState(null);
 
   const setDangers = useCallback((list) => setDangersState(list), []);
-  const ack = useCallback((id) => setAcked((a) => ({ ...a, [id]: true })), []);
+  const ack = useCallback((id) => {
+    setAcked((a) => ({ ...a, [id]: true }));
+    setSelectRequest(id);
+  }, []);
+  const requestSelect = useCallback((id) => setSelectRequest(id), []);
+  const clearSelectRequest = useCallback(() => setSelectRequest(null), []);
 
   const ids = dangers.map((d) => d.id);
   const idsKey = ids.join(",");
@@ -41,7 +50,7 @@ export function AlertsProvider({ children }) {
     return () => clearInterval(iv);
   }, [unacked?.id, alarmEnabled]);
 
-  const value = { dangers, setDangers, acked, ack, unacked, anyDangerAcked };
+  const value = { dangers, setDangers, acked, ack, unacked, anyDangerAcked, selectRequest, requestSelect, clearSelectRequest };
   return <AlertsContext.Provider value={value}>{children}</AlertsContext.Provider>;
 }
 

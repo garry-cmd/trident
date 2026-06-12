@@ -1,7 +1,8 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { C, FONT_MONO } from "@/lib/theme";
 import { useSettings } from "@/hooks/useSettings";
+import { useAlerts } from "@/hooks/useAlerts";
 import { useTargets } from "@/hooks/useTargets";
 import AisScope from "@/components/ais/AisScope";
 import WatchLayout from "@/components/WatchLayout";
@@ -13,7 +14,17 @@ import WatchLayout from "@/components/WatchLayout";
 export default function AisPage() {
   const { displayMode, filterRange, levelFilter, setLevelFilter, viewRange, setViewRange } = useSettings();
   const { targets, own, self } = useTargets();
+  const { selectRequest, clearSelectRequest } = useAlerts();
   const [selId, setSelId] = useState(null);
+
+  // Acknowledging a collision warning (or tapping the ACK chip) asks us to put
+  // that vessel on the scope. Consume the request and clear it.
+  useEffect(() => {
+    if (selectRequest != null) {
+      setSelId(selectRequest);
+      clearSelectRequest();
+    }
+  }, [selectRequest, clearSelectRequest]);
 
   // Selection never touches zoom — the zoom is yours, changed only by the +/-
   // buttons. Tapping a target just selects it; tapping it again, or the
