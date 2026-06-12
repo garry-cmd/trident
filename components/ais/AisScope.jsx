@@ -17,9 +17,10 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
   const rings = [];
   for (let i = 1; i <= viewRange; i++) rings.push(i);
 
-  // Count of actual vessels in range (AtoN are nav marks, not collision targets).
-  const vessels = targets.filter((t) => !t.aton && t.dist <= filterRange);
-  const dangerCount = vessels.filter((t) => t.level === "danger").length;
+  // Count of everything in range — vessels AND nav marks. A buoy dead ahead is
+  // a hazard too; AtoN get a real CPA against own motion, so danger applies.
+  const inRange = targets.filter((t) => t.dist <= filterRange);
+  const dangerCount = inRange.filter((t) => t.level === "danger").length;
   const countColor = dangerCount > 0 ? C.danger : C.value;
 
   const onBgClick = (e) => { if (e.target.tagName === "rect" || e.target.tagName === "svg") onResetBackground(); };
@@ -34,11 +35,11 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
       {rings.map((r) => <circle key={r} cx={CX} cy={CY} r={nm2px(r)} fill="none" strokeWidth="0.9" style={{ stroke: C.ring }} />)}
       {rings.map((r) => <text key={`l${r}`} x={CX + 4} y={CY - nm2px(r) + 11} fontFamily="IBM Plex Mono" fontSize="8" style={{ fill: C.ringLabel }}>{r}</text>)}
 
-      {/* Vessel count — "how many AIS targets around me", glanceable top-left. */}
+      {/* Target count — "how many AIS targets around me" (vessels + nav marks). */}
       <g>
-        <text x={18} y={30} fontFamily="IBM Plex Mono" fontSize="24" fontWeight="700" style={{ fill: countColor }}>{vessels.length}</text>
-        <text x={19} y={43} fontFamily="IBM Plex Sans" fontSize="9" fontWeight="600" letterSpacing="0.08em" style={{ fill: C.label }}>VESSEL{vessels.length === 1 ? "" : "S"}</text>
-        {dangerCount > 0 && <text x={19} y={55} fontFamily="IBM Plex Sans" fontSize="8" fontWeight="600" style={{ fill: C.danger }}>{dangerCount} CLOSING</text>}
+        <text x={18} y={30} fontFamily="IBM Plex Mono" fontSize="24" fontWeight="700" style={{ fill: countColor }}>{inRange.length}</text>
+        <text x={19} y={43} fontFamily="IBM Plex Sans" fontSize="9" fontWeight="600" letterSpacing="0.08em" style={{ fill: C.label }}>TARGET{inRange.length === 1 ? "" : "S"}</text>
+        {dangerCount > 0 && <text x={19} y={55} fontFamily="IBM Plex Sans" fontSize="8" fontWeight="600" style={{ fill: C.danger }}>{dangerCount} DANGER</text>}
       </g>
 
       {guardNm <= viewRange && <circle cx={CX} cy={CY} r={nm2px(guardNm)} fill="none" strokeWidth="0.7" strokeDasharray="6 5" style={{ stroke: C.guard }} />}
@@ -108,16 +109,16 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
             {!isSel && !t.aton && <line x1={ax} y1={ay} x2={ax + Math.sin(cogR) * Math.min(nm2px((t.sog * 4) / 60), 16)} y2={ay - Math.cos(cogR) * Math.min(nm2px((t.sog * 4) / 60), 16)} strokeWidth="1.2" opacity="0.5" style={{ stroke: col }} />}
 
             {t.aton ? (
-              <g transform={`translate(${ax},${ay})`}><polygon points="0,-9 9,0 0,9 -9,0" fill="none" strokeWidth="1.4" style={{ stroke: C.aton }} /><circle r="2" style={{ fill: C.aton }} /></g>
+              <g transform={`translate(${ax},${ay})`}><polygon points="0,-11 11,0 0,11 -11,0" fill="none" strokeWidth="1.5" style={{ stroke: C.aton }} /><circle r="2.5" style={{ fill: C.aton }} /></g>
             ) : (
               <g transform={`translate(${ax},${ay})`} filter={t.level === "danger" ? "url(#dgl)" : ""}>
                 <g transform={`rotate(${rotBrg(t.cog)})`}>
-                  <polygon points="0,-10 -6,7 0,3 6,7" opacity={t.level === "safe" && !isSel ? 0.5 : 0.9} style={{ fill: col }} />
+                  <polygon points="0,-12 -7,8 0,4 7,8" opacity={t.level === "safe" && !isSel ? 0.5 : 0.9} style={{ fill: col }} />
                 </g>
               </g>
             )}
 
-            {isSel && <circle cx={ax} cy={ay} r={19} fill="none" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.6" style={{ stroke: col }} />}
+            {isSel && <circle cx={ax} cy={ay} r={22} fill="none" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.6" style={{ stroke: col }} />}
 
             {!t.aton && t.level !== "safe" && !isSel && t.name && (
               <text x={ax + 12} y={ay + 3} fontFamily="IBM Plex Sans" fontSize={9} fontWeight={600} opacity="0.8" style={{ fill: col }}>{t.name}</text>
