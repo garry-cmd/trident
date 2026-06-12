@@ -17,6 +17,7 @@ export const C = {
   safeBr: "var(--safe-br)",
   caution: "var(--caution)",
   cautionBr: "var(--caution-br)",
+  cautionDim: "var(--caution-dim)",
   danger: "var(--danger)",
   dangerBr: "var(--danger-br)",
   dangerDim: "var(--danger-dim)",

@@ -48,6 +48,7 @@
   --danger: #c44040;
   --danger-br: #e04848;
   --danger-dim: rgba(196, 64, 64, 0.15);
+  --caution-dim: rgba(196, 146, 48, 0.16);
 
   /* accents */
   --blue: #3a7abd;
@@ -93,6 +94,7 @@
   --danger: #c41f29;
   --danger-br: #e22531;
   --danger-dim: rgba(196, 31, 41, 0.12);
+  --caution-dim: rgba(154, 103, 0, 0.14);
 
   --blue: #1565c0;
   --own: #135ab0;
@@ -129,6 +131,7 @@
   --danger: #e83030;
   --danger-br: #ff4038;
   --danger-dim: rgba(232, 48, 48, 0.18);
+  --caution-dim: rgba(192, 90, 48, 0.20);
 
   --blue: #a04040;
   --own: #ff6a55;

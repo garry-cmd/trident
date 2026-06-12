@@ -64,7 +64,6 @@ export const THRESHOLD_FIELDS: {
 }[] = [
   { key: "cpaCaution", label: "CPA caution", desc: "Amber band — target getting close", unit: "nm", min: 0.5, max: 3, step: 0.1 },
   { key: "cpaDanger", label: "CPA danger", desc: "Red band — fires the collision alarm", unit: "nm", min: 0.1, max: 1.5, step: 0.1 },
-  { key: "guardNm", label: "Guard zone", desc: "Ring radius drawn on the radar", unit: "nm", min: 0.5, max: 6, step: 0.5 },
   { key: "tcpaAlert", label: "TCPA alert", desc: "Alarm when a closing target is this many minutes from CPA", unit: "min", min: 1, max: 30, step: 1 },
 ];
 

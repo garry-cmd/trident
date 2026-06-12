@@ -1,6 +1,6 @@
 "use client";
 import { C } from "@/lib/theme";
-import { tColor, passesLevel, GUARD_NM } from "@/lib/ais";
+import { tColor, passesLevel } from "@/lib/ais";
 
 const CX = 350, CY = 280, RR = 230;
 
@@ -8,7 +8,7 @@ const CX = 350, CY = 280, RR = 230;
 // scope. Colours are applied via `style` (not fill=/stroke= attributes) because
 // SVG presentation attributes can't resolve CSS var() — this keeps the scope on
 // the same token system (lib/theme.ts -> globals.css) as the rest of the app.
-export default function AisScope({ targets, selId, viewRange, displayMode, own, filterRange, levelFilter = "all", guardNm = GUARD_NM, onSelect, onResetBackground }) {
+export default function AisScope({ targets, selId, viewRange, displayMode, own, filterRange, levelFilter = "all", onSelect, onResetBackground }) {
   const rotOff = displayMode === "head-up" ? -own.heading : displayMode === "course-up" ? -own.cog : 0;
   const rotBrg = (b) => { let r = b + rotOff; while (r < 0) r += 360; while (r >= 360) r -= 360; return r; };
   const nm2px = (nm) => (nm / viewRange) * RR;
@@ -45,8 +45,6 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
         <text x={19} y={43} fontFamily="IBM Plex Sans" fontSize="9" fontWeight="600" letterSpacing="0.08em" style={{ fill: C.label }}>TARGET{visible.length === 1 ? "" : "S"}</text>
         {dangerCount > 0 && <text x={19} y={55} fontFamily="IBM Plex Sans" fontSize="8" fontWeight="600" style={{ fill: C.danger }}>{dangerCount} DANGER</text>}
       </g>
-
-      {guardNm <= viewRange && <circle cx={CX} cy={CY} r={nm2px(guardNm)} fill="none" strokeWidth="0.7" strokeDasharray="6 5" style={{ stroke: C.guard }} />}
 
       <g transform={`translate(${CX},${CY}) rotate(${rotBrg(own.heading)})`} filter="url(#gl)">
         <line x1={0} y1={-14} x2={0} y2={-32} strokeWidth="0.8" opacity="0.4" style={{ stroke: C.own }} />

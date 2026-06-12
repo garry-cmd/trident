@@ -11,7 +11,7 @@ import WatchLayout from "@/components/WatchLayout";
 // danger->alarm registration; this page owns only the scope, its zoom, and
 // scope-specific selection (selecting a target auto-zooms the scope).
 export default function AisPage() {
-  const { displayMode, filterRange, levelFilter, viewRange, setViewRange, thresholds } = useSettings();
+  const { displayMode, filterRange, levelFilter, setLevelFilter, viewRange, setViewRange } = useSettings();
   const { targets, own, self } = useTargets();
   const [selId, setSelId] = useState(null);
 
@@ -35,7 +35,6 @@ export default function AisPage() {
         own={own}
         filterRange={filterRange}
         levelFilter={levelFilter}
-        guardNm={thresholds.guardNm}
         onSelect={selectTarget}
         onResetBackground={resetView}
       />
@@ -45,8 +44,35 @@ export default function AisPage() {
         <div onClick={() => setViewRange((r) => Math.min(6, r + 1))} style={zoomBtn}>{"\u2212"}</div>
       </div>
       <div style={{ position: "absolute", bottom: 12, left: 12, fontSize: 8, color: C.dim }}>tap background to deselect</div>
+
+      {/* Filtered-view safety banner. The threat-level filter can silently hide
+          traffic (even hide ALL of it) — a new watch could read an empty scope
+          as "all clear". Whenever the filter is on, this stays up, says what's
+          hidden, and clears to All in one tap. */}
+      {levelFilter !== "all" && (
+        <button onClick={() => setLevelFilter("all")} style={filterBanner}>
+          <span style={{ fontSize: 15, lineHeight: 1 }}>{"\u26A0"}</span>
+          <span>FILTERED · {levelFilter === "danger" ? "DANGER" : "WATCH+"} ONLY</span>
+          <span style={filterBannerCta}>SHOW ALL</span>
+        </button>
+      )}
     </WatchLayout>
   );
 }
+
+const filterBanner = {
+  position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
+  zIndex: 6, display: "flex", alignItems: "center", gap: 10,
+  minHeight: 48, padding: "0 12px 0 14px",
+  background: C.cautionDim, border: `1.5px solid ${C.caution}`, borderRadius: 8,
+  color: C.cautionBr, fontFamily: FONT_MONO, fontSize: 12, fontWeight: 700,
+  letterSpacing: "0.04em", whiteSpace: "nowrap", cursor: "pointer",
+  boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+};
+
+const filterBannerCta = {
+  border: `1px solid ${C.cautionBr}`, borderRadius: 5, padding: "6px 10px",
+  fontSize: 11, fontWeight: 700, color: C.cautionBr,
+};
 
 const zoomBtn = { width: 48, height: 48, background: C.raised, border: "1px solid " + C.border, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT_MONO, fontSize: 22, fontWeight: 700, color: C.bright, cursor: "pointer" };
