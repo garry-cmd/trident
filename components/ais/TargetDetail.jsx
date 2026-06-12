@@ -23,7 +23,7 @@ export default function TargetDetail({ target, onClose }) {
   ];
 
   return (
-    <div style={{ padding: "6px 10px", background: C.raised, borderBottom: `1px solid ${C.border}` }}>
+    <div style={{ margin: "8px", padding: "8px 10px", background: C.raised, border: `1.5px solid ${col}`, borderLeft: `4px solid ${col}`, borderRadius: 6, boxShadow: "0 3px 12px rgba(0,0,0,0.4)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.bright }}>{target.name || target.id}</span>
         <span onClick={onClose} style={{ fontSize: 11, color: C.dim, cursor: "pointer", padding: "0 7px", border: `1px solid ${C.border}`, borderRadius: 3 }}>✕</span>
