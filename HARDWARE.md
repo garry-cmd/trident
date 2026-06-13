@@ -17,9 +17,9 @@ to `CONTEXT.md` (which owns the software/app state). Read both at session start.
 |------|-------------|--------|-------|
 | SBC | Raspberry Pi 5, 8GB | in hand, running | headless, `trident.local`; SK + `signalk-rpi-monitor` running — **verified serving live system-health** (CPU/GPU temp, CPU/mem/SD utilisation) to the Dash |
 | Cooling | **Official Raspberry Pi 5 Active Cooler** | in hand, **stays ON** | clips to the SoC, 4-pin fan header. This *is* the cooling. |
-| Relay | **Seengreat 3-CH Relay HAT** | in hand | HF3FF/005-1ZS relays (15.5mm tall), board 65 × 56mm, opto-isolated (LTV-357T-B-IN). Drives the horn. |
+| Relay | **Seengreat 3-CH Relay HAT** | in hand, **mounted** | HF3FF/005-1ZS relays (15.5mm tall), board 65 × 56mm, opto-isolated (LTV-357T-B-IN). Drives the horn. Bench-verified active-low + boot-safe (session 9). |
 | microSD | SanDisk High Endurance 256GB | in hand, **flashed & running** | do NOT re-image on reassembly |
-| Enclosure | **KKSB Tall Aluminum Enclosure for Dual HATs & NVMe HATs** | **on order** | ships the tall 40-pin stackable header + 18/20mm M2.5 spacers |
+| Enclosure | **KKSB Tall Aluminum Enclosure for Dual HATs & NVMe HATs** | **in hand, assembled** | stack built & cased up (session 9); ships the tall 40-pin stackable header + 18/20mm M2.5 spacers |
 | Boat power | PlusRoc 12V→5V 25W USB-C converter | in hand | boat 12V → Pi 5V (bench uses any USB-C PD charger) |
 | Alarm horn | 12V marine horn | **not ordered** | one relay channel drives it; order before wiring the relay |
 
@@ -48,6 +48,9 @@ Bottom to top, all inside the KKSB Tall case:
 6. Lid on; wall-mount through the case's bottom keyholes
 
 The Active Cooler is the *only* cooling — the case is passive aluminum, no fan of its own.
+
+> **Built (session 9):** this stack is assembled and cased up — Pi + Active Cooler + tall
+> stackable header + Seengreat HAT inside the KKSB Tall, lid on. Wall-mount still pending a spot.
 
 ---
 
@@ -91,9 +94,9 @@ Pinout (BCM), opto-isolated:
 | CH2 | GPIO19 |
 | CH3 | GPIO13 |
 
-- **Polarity:** these opto-isolated boards are typically **active-low** (drive the pin
-  LOW to energise / close the NO contact) — confirm against the Seengreat demo code
-  before wiring.
+- **Polarity: CONFIRMED active-low (bench, session 9).** Drive the pin LOW to energise
+  (close the NO contact → horn sounds); HIGH de-energises (silent). Verified via the
+  per-channel status LED (lit only at LOW). The driver in `daemon/relay.ts` encodes this.
 - **Power:** the board runs off 5V from the GPIO header; a single relay's draw is
   negligible for the Pi 5.
 - **Horn on one channel (e.g. CH1):** 12V+ → fuse → relay **COM**; relay **NO** → horn +;
@@ -113,11 +116,20 @@ Pinout (BCM), opto-isolated:
   tall stackable header (the wrong-length generic standoffs were the bench snag).
 - The Pi's USB-C port is power-only — the Mac never sees the Pi over it; use
   `ssh garry@trident.local`.
+- **Relay is boot-safe (bench, session 9):** at power-on the GPIO sits input + pull-down
+  (LOW), but the board's own input pull to 3V3 dominates → the relay stays **de-energized**
+  through boot. No self-energize, no boot chirp, **no pull-up resistor needed**. (Confirmed:
+  status LED dark with the pin in `ip pd`.) The daemon still claims the line at HIGH on
+  start to avoid any claim-time glitch.
+- **No polarity jumper exists.** The board's only header besides the 40-pin is the 3×2
+  **GPIO-select** header (maps GPIO → channel); active-low is hardwired in the opto stage.
 
 ---
 
 ## Physical Build — What's Next
 
-1. **KKSB Tall case arrives** → assemble the stack above, close it up, wall-mount.
-2. **Order the 12V horn** + wire / fuses / terminals before any relay wiring.
-3. **Boat install:** NGX-1, Cerbo, Peplink, and the relay → horn wiring.
+1. ~~KKSB Tall case arrives → assemble the stack~~ **DONE (session 9)** — stack assembled,
+   cased up. (Wall-mount through the bottom keyholes still pending a mounting spot.)
+2. **Order the 12V horn** + wire / fuses / terminals before any relay wiring. The horn
+   *software* layer is built & bench-proven — only the physical horn + 12V wiring remain.
+3. **Boat install:** NGX-1, Cerbo, Peplink, and the relay → horn wiring (CH1 / BCM26, active-low).
