@@ -1,4 +1,5 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { C, FONT_MONO } from "@/lib/theme";
@@ -17,6 +18,21 @@ const TABS = [
 // state from context, so it never remounts on route change.
 export default function TopBar() {
   const pathname = usePathname();
+
+  // Preserve source/demo across tab nav. Link drops the query string, so
+  // ?source=live (or ?source=sim / ?demo=1) would silently revert to the build
+  // default on every hop. Read once on mount — the shell never remounts.
+  const [qs, setQs] = useState("");
+  useEffect(() => {
+    const cur = new URLSearchParams(window.location.search);
+    const keep = new URLSearchParams();
+    for (const k of ["source", "demo"]) {
+      const v = cur.get(k);
+      if (v) keep.set(k, v);
+    }
+    const s = keep.toString();
+    setQs(s ? `?${s}` : "");
+  }, []);
   const { displayMode, setDisplayMode, filterRange, setFilterRange, levelFilter, setLevelFilter, viewRange, setViewRange, paused, setPaused } = useSettings();
   const { anyDangerAcked, requestSelect } = useAlerts();
 
@@ -36,7 +52,7 @@ export default function TopBar() {
         {TABS.map((t) => {
           const active = pathname === t.href;
           return (
-            <Link key={t.label} href={t.href} style={{ textDecoration: "none", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", padding: "10px 16px", borderRadius: 6, color: active ? C.bright : C.dim, background: active ? C.borderLt : "transparent", minHeight: 44, display: "flex", alignItems: "center" }}>
+            <Link key={t.label} href={t.href + qs} style={{ textDecoration: "none", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", padding: "10px 16px", borderRadius: 6, color: active ? C.bright : C.dim, background: active ? C.borderLt : "transparent", minHeight: 44, display: "flex", alignItems: "center" }}>
               {t.label}
             </Link>
           );

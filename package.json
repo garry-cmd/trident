@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:static": "STATIC_EXPORT=true next build",
+    "build:static": "STATIC_EXPORT=true NEXT_PUBLIC_LIVE_DEFAULT=true next build",
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest"

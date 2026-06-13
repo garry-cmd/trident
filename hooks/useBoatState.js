@@ -6,15 +6,24 @@ import { useSettings } from "./useSettings";
 
 // Owns the canonical BoatState and its source lifecycle.
 //
-// Source is chosen by the URL: default is the simulator; `?source=live`
-// connects to the Pi's Signal K WebSocket and feeds the SAME applyDelta path
-// the daemon uses. Everything downstream is identical because the emitted
+// Source default is build-keyed: the Pi static export sets
+// NEXT_PUBLIC_LIVE_DEFAULT=true (via build:static) so the boat box shows real
+// Signal K data with no magic URL param. Vercel/dev default to the simulator —
+// that's the design surface. `?source=live` / `?source=sim` always override,
+// both ways. Live connects to the Pi's Signal K WS and feeds the SAME applyDelta
+// path the daemon uses; everything downstream is identical because the emitted
 // BoatState shape is identical — the SIM badge keys off state.source, so live
-// data never shows as sim. On the boat, going live is this flag flip; SK must
-// have the Vesper feed (192.168.15.1:39150) wired first or the scope stays empty.
+// data never shows as sim. SK must have the Vesper feed (192.168.15.1:39150)
+// wired or the scope stays empty (Pi system-health flows regardless).
+const LIVE_DEFAULT = process.env.NEXT_PUBLIC_LIVE_DEFAULT === "true";
+
 function readSource() {
-  if (typeof window === "undefined") return "sim";
-  return new URLSearchParams(window.location.search).get("source") === "live" ? "live" : "sim";
+  const fallback = LIVE_DEFAULT ? "live" : "sim";
+  if (typeof window === "undefined") return fallback;
+  const p = new URLSearchParams(window.location.search).get("source");
+  if (p === "live") return "live";
+  if (p === "sim") return "sim";
+  return fallback;
 }
 
 // SK stream on the same host the app is served from (trident.local:3000 on the
