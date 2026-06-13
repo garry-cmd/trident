@@ -15,7 +15,7 @@ to `CONTEXT.md` (which owns the software/app state). Read both at session start.
 
 | Part | Exact model | Status | Notes |
 |------|-------------|--------|-------|
-| SBC | Raspberry Pi 5, 8GB | in hand, running | headless, `trident.local` |
+| SBC | Raspberry Pi 5, 8GB | in hand, running | headless, `trident.local`; SK + `signalk-rpi-monitor` running — **verified serving live system-health** (CPU/GPU temp, CPU/mem/SD utilisation) to the Dash |
 | Cooling | **Official Raspberry Pi 5 Active Cooler** | in hand, **stays ON** | clips to the SoC, 4-pin fan header. This *is* the cooling. |
 | Relay | **Seengreat 3-CH Relay HAT** | in hand | HF3FF/005-1ZS relays (15.5mm tall), board 65 × 56mm, opto-isolated (LTV-357T-B-IN). Drives the horn. |
 | microSD | SanDisk High Endurance 256GB | in hand, **flashed & running** | do NOT re-image on reassembly |
