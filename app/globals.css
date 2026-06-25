@@ -64,6 +64,15 @@
   --compass: #2a3a48;
   --radar-info: #1e2e3e;
   --label-bg: rgba(13, 19, 25, 0.85);
+
+  /* elevation + glow — HQ-derived premium finish. Cards lift off the bg with a
+     two-layer shadow (tight contact + soft deep) and a 1px top inset highlight;
+     caution/danger add a soft halo so an alarm state reads across the cabin
+     while calm cards stay flat. Calm-until-attention, in box-shadow form. */
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 28px -14px rgba(0, 0, 0, 0.7);
+  --card-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --glow-caution: 0 0 20px -8px rgba(218, 168, 64, 0.5);
+  --glow-danger: 0 0 22px -6px rgba(224, 72, 72, 0.6);
 }
 
 /* Night-vision mode — red-on-black to protect dark adaptation on watch.
@@ -108,6 +117,14 @@
   --compass: #8492a0;
   --radar-info: #a6b2be;
   --label-bg: rgba(238, 242, 246, 0.92);
+
+  /* elevation + glow — on a light ground the shadow is cool and soft, the top
+     highlight is a crisp near-white edge, and the glows tighten so they read
+     against the bright bg. */
+  --card-shadow: 0 1px 2px rgba(20, 32, 43, 0.10), 0 8px 22px -12px rgba(20, 32, 43, 0.20);
+  --card-inset: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --glow-caution: 0 0 16px -6px rgba(192, 132, 0, 0.4);
+  --glow-danger: 0 0 18px -5px rgba(226, 37, 49, 0.45);
 }
 
 :root[data-theme="night"] {
@@ -145,6 +162,14 @@
   --compass: #4a1818;
   --radar-info: #401818;
   --label-bg: rgba(21, 3, 3, 0.85);
+
+  /* elevation + glow — shadow stays neutral-black (shadow is absence of light,
+     not red), the top highlight is a faint warm edge to stay in the long-
+     wavelength band, and danger glows brightest of any state on the screen. */
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 10px 28px -14px rgba(0, 0, 0, 0.78);
+  --card-inset: inset 0 1px 0 rgba(255, 140, 122, 0.06);
+  --glow-caution: 0 0 20px -7px rgba(224, 120, 64, 0.5);
+  --glow-danger: 0 0 24px -5px rgba(255, 64, 56, 0.65);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

@@ -4,7 +4,7 @@ import { C, FONT_MONO } from "@/lib/theme";
 // Full-width detail panel shell + its header. Dumb.
 export function Panel({ children, alarm }) {
   return (
-    <section style={{ background: C.raised, border: `1px solid ${alarm ? C.danger : C.borderLt}`, borderRadius: 14, padding: 20 }}>
+    <section style={{ background: C.raised, border: `1px solid ${alarm ? C.danger : C.borderLt}`, borderRadius: 14, padding: 20, boxShadow: alarm ? `${C.cardInset}, ${C.cardShadow}, ${C.glowDanger}` : `${C.cardInset}, ${C.cardShadow}` }}>
       {children}
     </section>
   );

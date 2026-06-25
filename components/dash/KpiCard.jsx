@@ -1,21 +1,37 @@
 "use client";
 import { C, FONT_MONO } from "@/lib/theme";
-import { statusColor, statusBorder } from "./status";
+import { statusColor, statusBorder, statusGlow } from "./status";
 
-// One KPI status card — the one-glance answer for a focus area. Tappable; the
-// whole card is the hit target. Active shows a brighter chrome + flipped chevron.
+// One KPI status card — the one-glance answer for a focus area. The whole card
+// is the hit target. Elevation (two-layer shadow + a 1px top inset highlight)
+// lifts it off the bg; caution/danger add a soft halo so an alarm state reads
+// from across the cabin while calm cards stay flat. Active shows brighter
+// chrome, an accent ring, and a flipped chevron.
 export default function KpiCard({ name, status, value, sub, active, onClick }) {
+  const glow = statusGlow(status);
+  const boxShadow =
+    `${C.cardInset}, ${C.cardShadow}` +
+    (glow ? `, ${glow}` : "") +
+    (active ? `, 0 0 0 1px ${C.own}` : "");
   return (
     <button
       onClick={onClick}
-      style={{ textAlign: "left", width: "100%", display: "block", background: active ? C.raised : C.surface, border: `1px solid ${active ? C.borderLt : C.border}`, borderLeft: `4px solid ${statusBorder(status)}`, borderRadius: 13, padding: 16, cursor: "pointer", minHeight: 112 }}
+      style={{
+        textAlign: "left", width: "100%", display: "block",
+        background: active ? C.raised : C.surface,
+        border: `1px solid ${active ? C.borderLt : C.border}`,
+        borderLeft: `4px solid ${statusBorder(status)}`,
+        borderRadius: 14, padding: 18, cursor: "pointer", minHeight: 116,
+        boxShadow,
+        transition: "box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease",
+      }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: "0.16em", color: C.label, textTransform: "uppercase" }}>{name}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", color: C.label, textTransform: "uppercase" }}>{name}</span>
         <span style={{ marginLeft: "auto", color: active ? C.text : C.dim, fontSize: 12, transform: active ? "rotate(180deg)" : "none", transition: "transform 0.18s" }}>▾</span>
       </div>
-      <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 28, lineHeight: 1, color: status === "off" ? C.dim : statusColor(status) }}>{value}</div>
-      <div style={{ fontFamily: FONT_MONO, fontSize: 11, color: status === "off" ? C.dim : C.text, marginTop: 6 }}>{sub}</div>
+      <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 30, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: status === "off" ? C.dim : statusColor(status) }}>{value}</div>
+      <div style={{ fontFamily: FONT_MONO, fontSize: 11, color: status === "off" ? C.dim : C.text, marginTop: 7 }}>{sub}</div>
     </button>
   );
 }

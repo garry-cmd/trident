@@ -34,6 +34,11 @@ export const C = {
   compass: "var(--compass)",
   radarInfo: "var(--radar-info)",
   labelBg: "var(--label-bg)",
+  // elevation + glow (premium finish)
+  cardShadow: "var(--card-shadow)",
+  cardInset: "var(--card-inset)",
+  glowCaution: "var(--glow-caution)",
+  glowDanger: "var(--glow-danger)",
 } as const;
 
 export const FONT_MONO = "var(--font-mono)";
