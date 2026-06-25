@@ -7,10 +7,16 @@ export default function TargetCard({ t, selected, onSelect }) {
   const col = tColor(t.level);
   const closing = !t.aton && t.dist > t.cpa;
   const tcpaTxt = isFinite(t.tcpa) && t.tcpa < 999 ? Math.round(t.tcpa) + "m" : "\u2014";
+  // Row-safe finish: selected gets the inset top-highlight; a danger row gets an
+  // inner left-edge glow (inset, so it never haloes the rows above/below).
+  const boxShadow = [
+    selected ? C.cardInset : null,
+    t.level === "danger" ? `inset 6px 0 16px -10px ${C.danger}` : null,
+  ].filter(Boolean).join(", ") || undefined;
 
   return (
     <div onClick={() => onSelect(t.id)}
-      style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, borderLeft: t.level === "danger" ? `3px solid ${C.danger}` : t.level === "caution" ? `3px solid ${C.caution}` : "3px solid transparent", background: t.level === "danger" ? C.dangerDim : selected ? C.raised : "transparent", cursor: "pointer" }}>
+      style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, borderLeft: t.level === "danger" ? `3px solid ${C.danger}` : t.level === "caution" ? `3px solid ${C.caution}` : "3px solid transparent", background: t.level === "danger" ? C.dangerDim : selected ? C.raised : "transparent", cursor: "pointer", boxShadow }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: t.name ? C.bright : C.dim }}>{t.name || (t.aton ? "Nav Aid" : t.id)}</span>
         {!t.aton && <span style={{ fontSize: 9, fontWeight: 600, color: closing ? C.dangerBr : C.safeBr }}>{closing ? "CLOSING" : "opening"}</span>}

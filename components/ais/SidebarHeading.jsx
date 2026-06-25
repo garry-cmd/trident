@@ -17,7 +17,7 @@ export default function SidebarHeading({ own, displayMode }) {
     </span>
   );
   return (
-    <div style={{ borderTop: `1px solid ${C.border}`, background: C.raised, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flexShrink: 0 }}>
+    <div style={{ borderTop: `1px solid ${C.border}`, background: C.raised, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flexShrink: 0, boxShadow: C.cardInset }}>
       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", color: C.compassN }}>{"\u25B2 "}{o.mode}</div>
       <div style={{ fontFamily: FONT_MONO, fontSize: 42, fontWeight: 700, color: o.big === "N" ? C.compassN : C.value, lineHeight: 1 }}>{o.big}</div>
       <div style={{ display: "flex", gap: 14, marginTop: 1 }}>

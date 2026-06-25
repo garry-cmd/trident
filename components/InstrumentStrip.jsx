@@ -23,7 +23,7 @@ export default function InstrumentStrip({ self, depthUnit }) {
   const zone = { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", background: C.surface, borderBottom: `1px solid ${C.border}`, boxShadow: C.cardInset }}>
       {nums.map((c, i) => (
         <div key={c.l} style={{ ...cell, borderRight: `1px solid ${C.border}` }}>
           <Label>{c.l}</Label>

@@ -72,7 +72,7 @@
   --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 28px -14px rgba(0, 0, 0, 0.7);
   --card-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   --glow-caution: 0 0 20px -8px rgba(218, 168, 64, 0.5);
-  --glow-danger: 0 0 22px -6px rgba(224, 72, 72, 0.6);
+  --glow-danger: 0 0 26px -4px rgba(224, 72, 72, 0.82);
 }
 
 /* Night-vision mode — red-on-black to protect dark adaptation on watch.
@@ -124,7 +124,7 @@
   --card-shadow: 0 1px 2px rgba(20, 32, 43, 0.10), 0 8px 22px -12px rgba(20, 32, 43, 0.20);
   --card-inset: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   --glow-caution: 0 0 16px -6px rgba(192, 132, 0, 0.4);
-  --glow-danger: 0 0 18px -5px rgba(226, 37, 49, 0.45);
+  --glow-danger: 0 0 20px -4px rgba(226, 37, 49, 0.6);
 }
 
 :root[data-theme="night"] {
@@ -169,7 +169,7 @@
   --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 10px 28px -14px rgba(0, 0, 0, 0.78);
   --card-inset: inset 0 1px 0 rgba(255, 140, 122, 0.06);
   --glow-caution: 0 0 20px -7px rgba(224, 120, 64, 0.5);
-  --glow-danger: 0 0 24px -5px rgba(255, 64, 56, 0.65);
+  --glow-danger: 0 0 32px -3px rgba(255, 72, 60, 0.95);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -183,6 +183,20 @@ html, body { height: 100%; background: var(--bg); overflow: hidden; }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.65; } }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* Danger KPI breathes — a pulsing halo so an alarm card is the thing your eye
+   lands on first at 2am. Implemented as a non-interactive ::after overlay so it
+   never disturbs the card's own elevation/active ring and never blocks taps. */
+@keyframes dangerPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+.kpi-card { position: relative; }
+.kpi-card--danger::after {
+  content: ""; position: absolute; inset: 0; border-radius: 14px;
+  box-shadow: var(--glow-danger); pointer-events: none;
+  animation: dangerPulse 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kpi-card--danger::after { animation: none; opacity: 0.85; }
+}
 
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-thumb { background: var(--border-lt); border-radius: 2px; }

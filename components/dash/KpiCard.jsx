@@ -4,18 +4,22 @@ import { statusColor, statusBorder, statusGlow } from "./status";
 
 // One KPI status card — the one-glance answer for a focus area. The whole card
 // is the hit target. Elevation (two-layer shadow + a 1px top inset highlight)
-// lifts it off the bg; caution/danger add a soft halo so an alarm state reads
-// from across the cabin while calm cards stay flat. Active shows brighter
-// chrome, an accent ring, and a flipped chevron.
+// lifts it off the bg. Caution gets a soft static halo; danger gets a brighter
+// PULSING halo (via .kpi-card--danger::after in globals.css) so an alarm card
+// is the first thing the eye lands on. Active shows brighter chrome, an accent
+// ring, and a flipped chevron.
 export default function KpiCard({ name, status, value, sub, active, onClick }) {
   const glow = statusGlow(status);
+  const isDanger = status === "danger";
+  // Danger's halo is owned by the pulsing ::after; caution's is static inline.
+  const inlineGlow = isDanger ? "" : glow ? `, ${glow}` : "";
   const boxShadow =
-    `${C.cardInset}, ${C.cardShadow}` +
-    (glow ? `, ${glow}` : "") +
+    `${C.cardInset}, ${C.cardShadow}${inlineGlow}` +
     (active ? `, 0 0 0 1px ${C.own}` : "");
   return (
     <button
       onClick={onClick}
+      className={`kpi-card${isDanger ? " kpi-card--danger" : ""}`}
       style={{
         textAlign: "left", width: "100%", display: "block",
         background: active ? C.raised : C.surface,

@@ -14,7 +14,7 @@ export function Hw({ tag, sys }) {
 // hardware tag instead of a value — never a placeholder number.
 export default function Tile({ label, hw, value, unit, sub, off, big }) {
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderStyle: off ? "dashed" : "solid", borderRadius: 10, padding: "11px 12px", minHeight: 58, opacity: off ? 0.6 : 1 }}>
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderStyle: off ? "dashed" : "solid", borderRadius: 10, padding: "11px 12px", minHeight: 58, opacity: off ? 0.6 : 1, boxShadow: off ? "none" : C.cardInset }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: "0.12em", color: C.label, textTransform: "uppercase" }}>
         {label}
         {hw && <Hw tag={hw} />}
