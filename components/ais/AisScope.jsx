@@ -37,11 +37,11 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
       </defs>
 
       {ringNm.map((r) => <circle key={r} cx={CX} cy={CY} r={nm2px(r)} fill="none" strokeWidth="0.9" style={{ stroke: C.ring }} />)}
-      {ringNm.map((r) => <text key={`l${r}`} x={CX + 4} y={CY - nm2px(r) + 11} fontFamily="IBM Plex Mono" fontSize="8" style={{ fill: C.ringLabel }}>{fmtNm(r)}</text>)}
+      {ringNm.map((r) => <text key={`l${r}`} x={CX + 4} y={CY - nm2px(r) + 11} fontFamily="JetBrains Mono" fontSize="8" style={{ fill: C.ringLabel }}>{fmtNm(r)}</text>)}
 
       {/* Target count — "how many AIS targets around me" (vessels + nav marks). */}
       <g>
-        <text x={18} y={30} fontFamily="IBM Plex Mono" fontSize="24" fontWeight="700" style={{ fill: countColor }}>{visible.length}</text>
+        <text x={18} y={30} fontFamily="JetBrains Mono" fontSize="24" fontWeight="700" style={{ fill: countColor }}>{visible.length}</text>
         <text x={19} y={43} fontFamily="IBM Plex Sans" fontSize="9" fontWeight="600" letterSpacing="0.08em" style={{ fill: C.label }}>TARGET{visible.length === 1 ? "" : "S"}</text>
         {dangerCount > 0 && <text x={19} y={55} fontFamily="IBM Plex Sans" fontSize="8" fontWeight="600" style={{ fill: C.danger }}>{dangerCount} DANGER</text>}
       </g>
@@ -94,7 +94,7 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
                 <line x1={ax} y1={ay} x2={tgtFut[0]} y2={tgtFut[1]} strokeWidth="1.7" strokeDasharray="7 4" opacity="0.85" style={{ stroke: col }} />
                 <circle cx={tgtFut[0]} cy={tgtFut[1]} r={5} fill="none" strokeWidth="1.3" style={{ stroke: col }} />
                 <line x1={ownFut[0]} y1={ownFut[1]} x2={tgtFut[0]} y2={tgtFut[1]} strokeWidth="1.4" strokeDasharray="2 3" opacity="0.95" style={{ stroke: col }} />
-                <text x={(ownFut[0] + tgtFut[0]) / 2 + 6} y={(ownFut[1] + tgtFut[1]) / 2 - 4} fontFamily="IBM Plex Mono" fontSize="9" fontWeight="600" opacity="0.95" style={{ fill: col }}>{t.cpa.toFixed(2)} nm</text>
+                <text x={(ownFut[0] + tgtFut[0]) / 2 + 6} y={(ownFut[1] + tgtFut[1]) / 2 - 4} fontFamily="JetBrains Mono" fontSize="9" fontWeight="600" opacity="0.95" style={{ fill: col }}>{t.cpa.toFixed(2)} nm</text>
               </>
             )}
 
@@ -126,7 +126,7 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
               <g>
                 <rect x={ax + 16} y={ay - 16} width={125} height={26} rx={3} strokeWidth={0.4} style={{ fill: C.labelBg, stroke: col }} />
                 <text x={ax + 22} y={ay - 2} fontFamily="IBM Plex Sans" fontSize={9} fontWeight={600} style={{ fill: col }}>{t.name || t.id}</text>
-                <text x={ax + 22} y={ay + 7} fontFamily="IBM Plex Mono" fontSize={8} opacity="0.8" style={{ fill: col }}>CPA {t.cpa.toFixed(1)} · {isFinite(t.tcpa) && t.tcpa < 999 ? Math.round(t.tcpa) + "m" : "\u2014"}</text>
+                <text x={ax + 22} y={ay + 7} fontFamily="JetBrains Mono" fontSize={8} opacity="0.8" style={{ fill: col }}>CPA {t.cpa.toFixed(1)} · {isFinite(t.tcpa) && t.tcpa < 999 ? Math.round(t.tcpa) + "m" : "\u2014"}</text>
               </g>
             )}
           </g>
