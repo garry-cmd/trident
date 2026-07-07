@@ -7,6 +7,7 @@
   "scripts": {
     "start": "tsx index.ts",
     "sim": "tsx index.ts --sim",
+    "replay": "tsx replay.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

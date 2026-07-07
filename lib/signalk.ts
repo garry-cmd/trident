@@ -5,6 +5,7 @@
 // connect(piUrl); deriveTargets and everything downstream are unchanged.
 import type { BoatState, Contact, SelfState, Telemetry, PiTelemetry } from "./types";
 import { EMPTY_TELEMETRY } from "./types";
+import { applySnapshot, type SkRestModel } from "./snapshot";
 
 const R2D = 180 / Math.PI;
 const MS_TO_KT = 1.943844;
@@ -117,12 +118,27 @@ export function applyDelta(state: BoatState, delta: SKDelta, selfId?: string): B
   return { ...state, contacts, ts: Date.now() };
 }
 
+// ws stream url → REST api url on the same SK server, for the snapshot prefill.
+export function restUrlFor(wsUrl: string): string {
+  return wsUrl.replace(/^ws(s?):\/\//, "http$1://").replace(/\/stream.*$/, "/api/");
+}
+
 // Thin I/O shell. Accumulates deltas into state and pushes each update out.
 // Returns a disconnect function. Browser-only (guards for SSR).
+//
+// On connect we also fetch the SK REST model once and fold it in as an
+// underlay (see snapshot.ts): AIS statics only transmit every ~6 min, so
+// without this a page (re)load shows nameless targets until each one's next
+// static — the SK server already knows the names. Failure is silently ignored;
+// the stream alone is the same behavior we had before.
 export function connect(url: string, onState: (s: BoatState) => void, onError?: (e: unknown) => void): () => void {
   if (typeof WebSocket === "undefined") return () => {};
   let state = emptyLiveState();
   let selfId: string | undefined; // self's MMSI URN, learned from the hello frame
+  fetch(restUrlFor(url))
+    .then((r) => r.json())
+    .then((model) => { state = applySnapshot(state, model as SkRestModel); onState(state); })
+    .catch(() => {});
   const ws = new WebSocket(url);
   ws.onmessage = (ev) => {
     try {
