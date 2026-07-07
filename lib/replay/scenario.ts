@@ -67,10 +67,17 @@ const due = (t: number, first: number, period: number) =>
 // never waits out a static cycle (real radios make you wait up to 6 min —
 // that lossy join phase is exactly why lib/snapshot.ts exists; use the
 // server's --strict-timing to reproduce it deliberately).
-export function greetingAt(t: number): string[] {
+//
+// ownMmsi: the MMSI own-ship VDO transmits. Signal K only routes VDO to SELF
+// when it matches the MMSI configured in SK's vessel settings — any mismatch
+// creates a phantom own-ship contact trailing ~45 m astern (VDO is 30 s data
+// chasing 1 Hz GPS). Found on the bench 2026-07-06; the same failure awaits
+// dockside if the Pi's SK ever lacks Irene's real MMSI. Bench rule: SK vessel
+// MMSI and `npm run replay -- --own-mmsi <n>` must agree.
+export function greetingAt(t: number, ownMmsi: number = MMSI.own): string[] {
   return [
-    ...msg18({ mmsi: MMSI.own, ...advance(OWN, t), sogKt: OWN.sogKt, cogT: OWN.cogT, heading: OWN.cogT }, true),
-    ...msg24({ mmsi: MMSI.own, name: "IRENE", callsign: "SIM0001", shipType: 36 }, true),
+    ...msg18({ mmsi: ownMmsi, ...advance(OWN, t), sogKt: OWN.sogKt, cogT: OWN.cogT, heading: OWN.cogT }, true),
+    ...msg24({ mmsi: ownMmsi, name: "IRENE", callsign: "SIM0001", shipType: 36 }, true),
     ...msg1({ mmsi: MMSI.cargo, ...advance(CARGO, t), sogKt: CARGO.sogKt, cogT: CARGO.cogT, heading: CARGO.cogT }),
     ...msg5({ mmsi: MMSI.cargo, name: "PACIFIC HARMONY", callsign: "D5SIM2", shipType: 70 }, "MANZANILLO"),
     ...msg18({ mmsi: MMSI.sailboat, ...advance(SAILBOAT, t), sogKt: SAILBOAT.sogKt, cogT: SAILBOAT.cogT }),
@@ -82,7 +89,7 @@ export function greetingAt(t: number): string[] {
 }
 
 // All sentences the Vesper would emit during second `t`. Deterministic.
-export function sentencesAt(t: number): string[] {
+export function sentencesAt(t: number, ownMmsi: number = MMSI.own): string[] {
   const out: string[] = [];
   const ownPos = advance(OWN, t);
   const fix: GpsFix = { ...ownPos, cogT: OWN.cogT, sogKt: OWN.sogKt };
@@ -92,8 +99,8 @@ export function sentencesAt(t: number): string[] {
   if (t % 2 === 0) out.push(dpt(Math.min(60, 12 + t * 0.02)));
 
   // Own ship AIS (VDO)
-  if (due(t, 0, 30)) out.push(...msg18({ mmsi: MMSI.own, ...ownPos, sogKt: OWN.sogKt, cogT: OWN.cogT, heading: OWN.cogT }, true));
-  if (due(t, 5, 360)) out.push(...msg24({ mmsi: MMSI.own, name: "IRENE", callsign: "SIM0001", shipType: 36 }, true));
+  if (due(t, 0, 30)) out.push(...msg18({ mmsi: ownMmsi, ...ownPos, sogKt: OWN.sogKt, cogT: OWN.cogT, heading: OWN.cogT }, true));
+  if (due(t, 5, 360)) out.push(...msg24({ mmsi: ownMmsi, name: "IRENE", callsign: "SIM0001", shipType: 36 }, true));
 
   // PACIFIC HARMONY — Class A, converging
   if (due(t, 1, 6)) out.push(...msg1({ mmsi: MMSI.cargo, ...advance(CARGO, t), sogKt: CARGO.sogKt, cogT: CARGO.cogT, heading: CARGO.cogT }));

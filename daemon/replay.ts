@@ -9,6 +9,11 @@
 //   npm run replay -- --strict-timing no greeting burst: joiners wait out real
 //                                     static cycles (up to 6 min per name),
 //                                     like a real radio — the lossy join phase
+//   npm run replay -- --own-mmsi N    MMSI own-ship VDO transmits. MUST match
+//                                     the MMSI in Signal K's vessel settings,
+//                                     or SK files own-ship as a separate vessel
+//                                     and the scope grows a phantom Irene
+//                                     trailing astern
 //
 // Bench: run on the Mac, point the Pi's SK connection at <mac-ip>:39150.
 // Dockside rehearsal: identical, before ever touching the real radio at
@@ -16,7 +21,7 @@
 //   nc 192.168.15.1 39150 > vesper-$(date +%Y%m%d).nmea
 import net from "node:net";
 import { readFileSync } from "node:fs";
-import { sentencesAt, greetingAt } from "../lib/replay/scenario";
+import { sentencesAt, greetingAt, MMSI } from "../lib/replay/scenario";
 
 const args = process.argv.slice(2);
 const argOf = (flag: string) => {
@@ -26,6 +31,7 @@ const argOf = (flag: string) => {
 const PORT = Number(argOf("--port") ?? 39150);
 const FILE = argOf("--file");
 const STRICT = args.includes("--strict-timing");
+const OWN_MMSI = Number(argOf("--own-mmsi") ?? MMSI.own);
 
 // A recorded log replays in 1-second frames split on RMC sentences (each RMC
 // marks a new GPS second on the wire), looping when it runs out.
@@ -56,7 +62,7 @@ const server = net.createServer((sock) => {
   // bytes landing in that gap are silently dropped (observed against
   // signalk-server 2.30.0 — the periodic stream was unaffected).
   if (!STRICT && !logFrames) {
-    const greet = greetingAt(t).map((s) => s + "\r\n").join("");
+    const greet = greetingAt(t, OWN_MMSI).map((s) => s + "\r\n").join("");
     setTimeout(() => { if (!sock.destroyed) sock.write(greet); }, 500);
   }
   sock.on("close", () => {
@@ -68,7 +74,7 @@ const server = net.createServer((sock) => {
 
 let t = 0;
 setInterval(() => {
-  const sentences = logFrames ? logFrames[t % logFrames.length] : sentencesAt(t);
+  const sentences = logFrames ? logFrames[t % logFrames.length] : sentencesAt(t, OWN_MMSI);
   const chunk = sentences.map((s) => s + "\r\n").join("");
   for (const c of clients) c.write(chunk);
   t++;
@@ -77,5 +83,6 @@ setInterval(() => {
 server.listen(PORT, () => {
   console.log(`[replay] Vesper XB-8000 impersonator on tcp :${PORT}`);
   console.log(`[replay] source: ${FILE ? `recorded log ${FILE} (${logFrames!.length} frames, looping)` : "scripted Bahía de Banderas scenario"}`);
+  if (!FILE) console.log(`[replay] own-ship MMSI ${OWN_MMSI} — Signal K's vessel MMSI must match or the scope grows a phantom own-ship`);
   console.log(`[replay] point a Signal K TCP-client connection here and watch the scope.`);
 });

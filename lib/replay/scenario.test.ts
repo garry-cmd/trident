@@ -76,3 +76,27 @@ describe("scenario → CPA threat escalation", () => {
     expect(byId[MMSI.buoy].level).toBe("safe"); // AtoN never threatens
   });
 });
+
+describe("own-ship MMSI override (--own-mmsi)", () => {
+  it("VDO transmits the override, and a selfId mismatch produces a phantom own-ship", () => {
+    const REAL = 367000001;
+    const p = new Parser();
+    // Correctly configured: selfId matches what own-ship transmits → no phantom.
+    let good = emptyLiveState();
+    for (const s of sentencesAt(0, REAL)) {
+      const d = p.parse(s) as SKDelta | null;
+      if (d) good = applyDelta(good, d, `vessels.urn:mrn:imo:mmsi:${REAL}`);
+    }
+    expect(good.contacts.find((c) => c.id === String(REAL))).toBeUndefined();
+
+    // Misconfigured SK (vessel MMSI unset/mismatched): own VDO becomes a
+    // contact shadowing own position — the bug seen on the bench 2026-07-06.
+    const p2 = new Parser();
+    let bad = emptyLiveState();
+    for (const s of sentencesAt(0, REAL)) {
+      const d = p2.parse(s) as SKDelta | null;
+      if (d) bad = applyDelta(bad, d, "vessels.urn:mrn:signalk:uuid:something-else");
+    }
+    expect(bad.contacts.find((c) => c.id === String(REAL))).toBeDefined();
+  });
+});
