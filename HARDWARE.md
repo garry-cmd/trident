@@ -21,16 +21,22 @@ to `CONTEXT.md` (which owns the software/app state). Read both at session start.
 | microSD | SanDisk High Endurance 256GB | in hand, **flashed & running** | do NOT re-image on reassembly |
 | Enclosure | **KKSB Tall Aluminum Enclosure for Dual HATs & NVMe HATs** | **in hand, assembled** | stack built & cased up (session 9); ships the tall 40-pin stackable header + 18/20mm M2.5 spacers |
 | Boat power | PlusRoc 12V→5V 25W USB-C converter | in hand | boat 12V → Pi 5V (bench uses any USB-C PD charger) |
-| Alarm horn | 12V marine horn | **not ordered** | one relay channel drives it; order before wiring the relay |
+| Bench sounder | **Icstation 12V active piezo buzzer (100 dB)** | **in hand** | bench alarm on relay CH1 — wiring below. Continuous-tone active piezo (the relay does the switching) |
+| Boat sounder | Splash-resistant 12V marine **panel-mount** buzzer | **not ordered** | replaces the bench piezo at boat install; order before the Mexico trip |
+| Display | **iPad (base, WiFi)** | **in hand** | the watch surface at the helm/nav station; kiosk PWA setup pending (What's Next #5) |
 
 **Retired / spare**
 - **Argon NEO 5 M.2 case** — original enclosure, retired for this build. Its cooling
   lives in the *removable top cover*, which has to come off for the HAT, leaving no
   cooling — and it can't close over a HAT anyway. Keep as a spare bare-Pi case.
 
-**Boat-install parts (order closer to the Mexico trip)**
-Actisense NGX-1-USB, Victron Cerbo GX MK2, 3× VE.Direct cables, N2K T-connector + drop,
-Peplink BR1 Mini LTE, wire / fuses / terminals.
+**Boat-install parts (order NOW — trip is ~6 weeks out; Actisense stock is the long pole)**
+Splash-resistant marine panel-mount buzzer, 12V wire / inline fuse holders + fuses / spade
+terminals for the horn run. DECIDE this trip vs next: Actisense NGX-1-USB, Victron Cerbo GX
+MK2, 3× VE.Direct cables, N2K T-connector + drop. Later: Peplink BR1 Mini LTE.
+
+**Bench shopping (for the sounder chain, this week)**
+12V wall adapter ≥1A, inline fuse holder + 2A fuse, hookup wire, spade terminals.
 
 ---
 
@@ -133,3 +139,36 @@ Pinout (BCM), opto-isolated:
 2. **Order the 12V horn** + wire / fuses / terminals before any relay wiring. The horn
    *software* layer is built & bench-proven — only the physical horn + 12V wiring remain.
 3. **Boat install:** NGX-1, Cerbo, Peplink, and the relay → horn wiring (CH1 / BCM26, active-low).
+
+---
+
+## Bench Sounder Wiring — CH1 (session 11 plan; wire + prove this week)
+
+The Icstation piezo is an *active* buzzer: give it 12 V and it screams; the relay
+does the switching. CH1 = BCM26, already bench-proven active-low + boot-safe.
+
+```
+12V+ (wall adapter) ──> inline fuse (2A) ──> CH1 COM
+CH1 NO  ──> buzzer +  (red)
+buzzer − (black) ──> 12V ground (adapter −)
+```
+
+Test: `cd ~/trident/daemon && npm run sim` — the sim's seeded CPA danger closes the
+relay → buzzer sounds; releases as the target opens; Ctrl-C de-energizes. The boat
+install swaps in the marine panel-mount buzzer on the same run (12V+ from the panel
+via its own fuse).
+
+---
+
+## Box Access & Identity (settled 2026-07-06)
+
+- **SSH:** passwordless from the Mac — ed25519 key installed via `ssh-copy-id`
+  (`ssh garry@trident.local`). Claude Code drives the Pi non-interactively with it
+  (pull/rebuild/restart are one instruction).
+- **Signal K admin:** user recreated 2026-07-06 (the old `security.json` was reset —
+  original credentials were lost). Credentials are Garry's; needed for the admin UI
+  (Server → Data Connections / Settings).
+- **Vessel MMSI:** Irene's real MMSI is set in SK's vessel settings (kept out of this
+  public repo). **Invariant:** anything transmitting own-ship VDO at Signal K — the
+  real Vesper or the replay harness (`--own-mmsi`) — must use that same MMSI, or SK
+  files own-ship as a separate vessel and the scope grows a phantom Irene.
