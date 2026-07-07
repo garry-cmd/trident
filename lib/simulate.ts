@@ -37,6 +37,7 @@ const SEEDS: Seed[] = [
 const spawn = (s: Seed, from: LatLon): Contact => ({
   id: s.id, name: s.name, type: s.type, aton: s.aton,
   position: project(from, s.brg0, s.dist0), cog: s.cog, sog: s.sog,
+  lastSeen: Date.now(),
 });
 
 export function initState(): BoatState {
@@ -53,15 +54,17 @@ export function initState(): BoatState {
 // respawns at its seed bearing/range from the CURRENT own position.
 export function advanceState(prev: BoatState): BoatState {
   const self = { ...prev.self, position: project(prev.self.position, prev.self.cog, nmPerTick(prev.self.sog)) };
+  // Every sim contact "reports" each tick, so lastSeen stays fresh — the sim
+  // never shows LOST targets (that behavior is exercised by the replay bench).
   const contacts = prev.contacts.map((c) => {
-    if (c.aton) return c;
+    if (c.aton) return { ...c, lastSeen: Date.now() };
     const next = project(c.position, c.cog, nmPerTick(c.sog));
     const d = distanceNm(self.position, next);
     if (d > RESPAWN_NM || d < 0.03) {
       const seed = SEEDS.find((s) => s.id === c.id);
       if (seed) return spawn(seed, self.position);
     }
-    return { ...c, position: next };
+    return { ...c, position: next, lastSeen: Date.now() };
   });
   return { self, contacts, source: "sim", ts: Date.now() };
 }

@@ -49,7 +49,7 @@ describe("advanceState", () => {
   it("respawns a contact that has drifted beyond the off-screen bound", () => {
     const base = initState();
     // Place contact id "1" ~100nm from own, barely moving, so it trips respawn.
-    const far = { ...base, contacts: [{ id: "1", name: "GHOST", type: "Cargo", aton: false, position: project(base.self.position, 0, 100), cog: 0, sog: 0.0001 }] };
+    const far = { ...base, contacts: [{ id: "1", name: "GHOST", type: "Cargo", aton: false, position: project(base.self.position, 0, 100), cog: 0, sog: 0.0001, lastSeen: Date.now() }] };
     const after = advanceState(far);
     const c = after.contacts[0];
     const { targets } = deriveTargets(after);

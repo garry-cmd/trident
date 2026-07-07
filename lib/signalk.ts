@@ -6,6 +6,7 @@
 import type { BoatState, Contact, SelfState, Telemetry, PiTelemetry } from "./types";
 import { EMPTY_TELEMETRY } from "./types";
 import { applySnapshot, type SkRestModel } from "./snapshot";
+import { TARGET_DROP_SEC } from "./settings";
 
 const R2D = 180 / Math.PI;
 const MS_TO_KT = 1.943844;
@@ -97,6 +98,16 @@ export function applyDelta(state: BoatState, delta: SKDelta, selfId?: string): B
   const who = idOf(delta.context, selfId);
   const pairs = (delta.updates ?? []).flatMap((u) => u.values ?? []);
   if (pairs.length === 0) return state;
+  const now = Date.now();
+
+  // Age off targets silent past the drop window. Pruning here — inside the
+  // delta path — means it only runs while the feed is alive; if the whole
+  // feed dies nothing is dropped, the picture freezes, and the FEED indicator
+  // owns that failure instead of targets quietly vanishing one by one.
+  const dropBefore = now - TARGET_DROP_SEC * 1000;
+  const live = state.contacts.some((c) => c.lastSeen < dropBefore)
+    ? state.contacts.filter((c) => c.lastSeen >= dropBefore)
+    : state.contacts;
 
   if (who.self) {
     let self = state.self;
@@ -105,17 +116,18 @@ export function applyDelta(state: BoatState, delta: SKDelta, selfId?: string): B
       if (path.startsWith("environment.rpi.")) telemetry = applyRpi(telemetry, path, value);
       else self = applySelf(self, path, value);
     }
-    return { ...state, self, telemetry, ts: Date.now() };
+    return { ...state, self, telemetry, contacts: live, ts: now };
   }
 
-  const contacts = state.contacts.slice();
+  const contacts = live.slice();
   let i = contacts.findIndex((c) => c.id === who.id);
   if (i === -1) {
-    contacts.push({ id: who.id, name: "", type: who.aton ? "Nav Aid" : "Vessel", aton: who.aton, position: { lat: 0, lon: 0 }, cog: 0, sog: 0 });
+    contacts.push({ id: who.id, name: "", type: who.aton ? "Nav Aid" : "Vessel", aton: who.aton, position: { lat: 0, lon: 0 }, cog: 0, sog: 0, lastSeen: now });
     i = contacts.length - 1;
   }
   for (const { path, value } of pairs) contacts[i] = applyContact(contacts[i], path, value);
-  return { ...state, contacts, ts: Date.now() };
+  contacts[i] = { ...contacts[i], lastSeen: now };
+  return { ...state, contacts, ts: now };
 }
 
 // ws stream url → REST api url on the same SK server, for the snapshot prefill.

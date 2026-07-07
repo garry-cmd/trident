@@ -121,7 +121,7 @@ describe("CPA danger crossings", () => {
   // A contact 0.4 nm ahead closing head-on is inside the 0.5 nm danger band.
   const closer: Contact = {
     id: "316999", name: "MAERSK", type: "Cargo", aton: false,
-    position: project(ORIGIN, 0, 0.4), cog: 180, sog: 8,
+    position: project(ORIGIN, 0, 0.4), cog: 180, sog: 8, lastSeen: 0,
   };
   const movingWith = (ts: number, contacts: Contact[]) =>
     boat({ ts, sog: 6, cog: 0, contacts }); // own heading north toward the contact

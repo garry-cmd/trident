@@ -2,7 +2,7 @@
 // deltas into BoatState. SK is SI: radians for angles, m/s for speed. These
 // guard the unit conversions and the self-vs-contact routing.
 import { describe, it, expect } from "vitest";
-import { applyDelta, emptyLiveState } from "./signalk";
+import { applyDelta, emptyLiveState, type SKDelta } from "./signalk";
 
 const d = (context: string | undefined, values: { path: string; value: unknown }[]) => ({ context, updates: [{ values }] });
 
@@ -155,5 +155,41 @@ describe("applyDelta — self via MMSI URN (rpi-monitor / own transponder)", () 
   it("without selfId, an MMSI-URN context is still a contact (back-compat)", () => {
     const s = applyDelta(emptyLiveState(), d(SELF, [{ path: "navigation.position", value: { latitude: 1, longitude: 2 } }]));
     expect(s.contacts.length).toBe(1);
+  });
+});
+
+describe("target aging (lastSeen + drop)", () => {
+  const vdelta = (mmsi: string): SKDelta => ({
+    context: `vessels.urn:mrn:imo:mmsi:${mmsi}`,
+    updates: [{ values: [{ path: "navigation.position", value: { latitude: 20.7, longitude: -105.4 } }] }],
+  });
+
+  it("stamps lastSeen when a contact reports", () => {
+    const before = Date.now();
+    const s = applyDelta(emptyLiveState(), vdelta("111000111"));
+    expect(s.contacts[0].lastSeen).toBeGreaterThanOrEqual(before);
+  });
+
+  it("refreshes lastSeen on every subsequent report", async () => {
+    let s = applyDelta(emptyLiveState(), vdelta("111000111"));
+    const first = s.contacts[0].lastSeen;
+    await new Promise((r) => setTimeout(r, 5));
+    s = applyDelta(s, vdelta("111000111"));
+    expect(s.contacts[0].lastSeen).toBeGreaterThan(first);
+  });
+
+  it("drops a contact silent past TARGET_DROP_SEC when any fresh delta arrives", () => {
+    let s = applyDelta(emptyLiveState(), vdelta("111000111"));
+    // Backdate the ghost past the drop window, then let live traffic arrive.
+    s = { ...s, contacts: [{ ...s.contacts[0], lastSeen: Date.now() - 16 * 60 * 1000 }] };
+    s = applyDelta(s, vdelta("222000222"));
+    expect(s.contacts.map((c) => c.id)).toEqual(["222000222"]);
+  });
+
+  it("prunes on self deltas too, so a lone GPS feed still ages ghosts off", () => {
+    let s = applyDelta(emptyLiveState(), vdelta("111000111"));
+    s = { ...s, contacts: [{ ...s.contacts[0], lastSeen: Date.now() - 16 * 60 * 1000 }] };
+    s = applyDelta(s, { updates: [{ values: [{ path: "navigation.speedOverGround", value: 2.5 }] }] });
+    expect(s.contacts).toEqual([]);
   });
 });

@@ -9,6 +9,14 @@ export const DEFAULT_RANGE = 3; // nm
 export const FEED_STALE_SEC = 15;
 export const FEED_LOST_SEC = 60;
 
+// Target aging. AIS has no sign-off message — a target that stops reporting
+// just goes silent — so staleness is the only honest signal. LOST at 6 min
+// (the slowest normal cycle: anchored Class A and AtoN report every 3 min,
+// statics every 6) marks the target dim with a LOST tag at its last position;
+// DROP removes it entirely so hour-old ghosts can't masquerade as traffic.
+export const TARGET_LOST_SEC = 360;
+export const TARGET_DROP_SEC = 900;
+
 // Anchor watch — drag-alarm radius default + stepper bounds (metres).
 export const DEFAULT_ANCHOR_RADIUS_M = 40;
 export const ANCHOR_RADIUS_BOUNDS = { min: 10, max: 150, step: 5 };

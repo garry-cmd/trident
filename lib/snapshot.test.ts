@@ -29,7 +29,7 @@ const FIXTURE: SkRestModel = {
     },
     "urn:mrn:imo:mmsi:636014222": {
       name: "CORONADO TRADER",
-      navigation: { position: { value: { latitude: 20.735, longitude: -105.365 } } },
+      navigation: { position: { value: { latitude: 20.735, longitude: -105.365 }, timestamp: "2026-07-06T18:00:00.000Z" } },
     },
   },
   atons: {
@@ -70,6 +70,7 @@ describe("applySnapshot", () => {
       position: { lat: 20.7, lon: -105.41 }, // live position — fresher than snapshot
       cog: 351,
       sog: 12.1,
+      lastSeen: Date.now(),
     });
     const s = applySnapshot(live, FIXTURE);
     const cargo = s.contacts.find((c) => c.id === "636014001")!;
@@ -81,7 +82,7 @@ describe("applySnapshot", () => {
 
   it("null-island position on a known contact is treated as missing", () => {
     const live = emptyLiveState();
-    live.contacts.push({ id: "636014222", name: "", type: "Vessel", aton: false, position: { lat: 0, lon: 0 }, cog: 0, sog: 0 });
+    live.contacts.push({ id: "636014222", name: "", type: "Vessel", aton: false, position: { lat: 0, lon: 0 }, cog: 0, sog: 0, lastSeen: Date.now() });
     const s = applySnapshot(live, FIXTURE);
     expect(s.contacts.find((c) => c.id === "636014222")!.position.lat).toBeCloseTo(20.735, 3);
   });
@@ -89,5 +90,14 @@ describe("applySnapshot", () => {
   it("tolerates an empty model", () => {
     const s = applySnapshot(emptyLiveState(), {});
     expect(s.contacts).toEqual([]);
+  });
+
+  it("takes lastSeen from the REST position timestamp so stale vessels arrive old", () => {
+    const s = applySnapshot(emptyLiveState(), FIXTURE);
+    const anchored = s.contacts.find((c) => c.id === "636014222")!;
+    expect(anchored.lastSeen).toBe(Date.parse("2026-07-06T18:00:00.000Z"));
+    // No timestamp in the fixture for the cargo vessel → falls back to now.
+    const cargo = s.contacts.find((c) => c.id === "636014001")!;
+    expect(Math.abs(cargo.lastSeen - Date.now())).toBeLessThan(2000);
   });
 });

@@ -5,7 +5,7 @@
 // pre-computed relative vector.
 import type { Target, OwnVessel, EnrichedTarget, ThreatLevel, LevelFilter, Thresholds } from "./types";
 import { C } from "./theme";
-import { DEFAULT_THRESHOLDS } from "./settings";
+import { DEFAULT_THRESHOLDS, TARGET_LOST_SEC } from "./settings";
 
 // Legacy constant exports, now derived from the single default source so older
 // imports (and tests) keep working. Live values come through the `th` param.
@@ -71,3 +71,8 @@ export function enrichTarget(t: Target, own: OwnVessel, th: Thresholds = DEFAULT
 
 export const enrichTargets = (arr: Target[], own: OwnVessel, th: Thresholds = DEFAULT_THRESHOLDS): EnrichedTarget[] =>
   arr.map((t) => enrichTarget(t, own, th));
+
+// A target silent past the LOST window. One predicate so the scope, list, and
+// detail all agree on what stale means; its CPA/velocity are extrapolations of
+// old data, so displays dim it and skip motion prediction.
+export const isLost = (t: { ageSec: number }): boolean => t.ageSec > TARGET_LOST_SEC;

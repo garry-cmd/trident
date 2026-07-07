@@ -13,8 +13,8 @@ describe("deriveTargets", () => {
     const state: BoatState = {
       self,
       contacts: [
-        { id: "a", name: "A", type: "Cargo", aton: false, position: project(self.position, 128, 1.4), cog: 223, sog: 6.6 },
-        { id: "b", name: "BUOY", type: "Nav Aid", aton: true, position: project(self.position, 95, 2.1), cog: 0, sog: 0 },
+        { id: "a", name: "A", type: "Cargo", aton: false, position: project(self.position, 128, 1.4), cog: 223, sog: 6.6, lastSeen: 0 },
+        { id: "b", name: "BUOY", type: "Nav Aid", aton: true, position: project(self.position, 95, 2.1), cog: 0, sog: 0, lastSeen: 0 },
       ],
       source: "sim",
       ts: 0,
@@ -24,6 +24,19 @@ describe("deriveTargets", () => {
     expect(targets[0].dist).toBeCloseTo(1.4, 3);
     expect(targets[0].cog).toBe(223);
     expect(targets[1].aton).toBe(true);
+  });
+
+  it("derives target age from the state clock, not the wall clock", () => {
+    // ageSec = state.ts - lastSeen: if the feed dies, ts freezes and ages
+    // freeze with it — the FEED indicator owns whole-feed failure.
+    const state: BoatState = {
+      self,
+      contacts: [{ id: "a", name: "A", type: "Cargo", aton: false, position: project(self.position, 90, 1), cog: 0, sog: 0, lastSeen: 1_000_000 }],
+      source: "live",
+      ts: 1_000_000 + 400_000, // 400 s later
+    };
+    const { targets } = deriveTargets(state);
+    expect(targets[0].ageSec).toBeCloseTo(400, 5);
   });
 
   it("passes own vessel through unchanged", () => {

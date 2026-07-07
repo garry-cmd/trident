@@ -1,6 +1,6 @@
 "use client";
 import { C } from "@/lib/theme";
-import { tColor, passesLevel } from "@/lib/ais";
+import { tColor, passesLevel, isLost } from "@/lib/ais";
 
 const CX = 350, CY = 280, RR = 230;
 
@@ -59,11 +59,14 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
         const [tx, ty] = brg2xy(t.brg, t.dist);
         const ax = CX + tx, ay = CY + ty;
         if (ax < -50 || ax > 750 || ay < -50 || ay > 630) return null;
+        // A silent target's velocity is history, not prediction: dim the whole
+        // mark, tag it LOST, and draw no motion lines from stale data.
+        const lost = isLost(t);
         const col = tColor(t.level);
         const cogR = (rotBrg(t.cog) * Math.PI) / 180;
         const predPx = nm2px((t.sog * 30) / 60);
 
-        const closing = !t.aton && isFinite(t.tcpa) && t.tcpa > 0 && t.tcpa < 200;
+        const closing = !lost && !t.aton && isFinite(t.tcpa) && t.tcpa > 0 && t.tcpa < 200;
 
         // True-motion projection to the CPA time: where BOTH vessels will be when
         // closest. Own from the centre along its COG; the target from its mark
@@ -80,7 +83,7 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
         }
 
         return (
-          <g key={t.id} onClick={(e) => { e.stopPropagation(); onSelect(t.id); }} style={{ cursor: "pointer" }}>
+          <g key={t.id} onClick={(e) => { e.stopPropagation(); onSelect(t.id); }} style={{ cursor: "pointer" }} opacity={lost ? 0.35 : 1}>
             {/* Invisible ~48px tap target — cold hands on a rolling boat. */}
             <circle cx={ax} cy={ay} r={24} fill="transparent" style={{ pointerEvents: "all" }} />
             {/* SELECTED + closing: TRUE-MOTION projection. My boat's line and the
@@ -104,8 +107,8 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
               <line x1={ax} y1={ay} x2={ax + Math.sin(cogR) * predPx * 0.8} y2={ay - Math.cos(cogR) * predPx * 0.8} strokeWidth="1.2" strokeDasharray="8 5" opacity="0.4" style={{ stroke: col }} />
             )}
 
-            {/* Every vessel: short true-heading tick (unless selected). */}
-            {!isSel && !t.aton && <line x1={ax} y1={ay} x2={ax + Math.sin(cogR) * Math.min(nm2px((t.sog * 4) / 60), 16)} y2={ay - Math.cos(cogR) * Math.min(nm2px((t.sog * 4) / 60), 16)} strokeWidth="1.2" opacity="0.5" style={{ stroke: col }} />}
+            {/* Every vessel: short true-heading tick (unless selected or lost). */}
+            {!isSel && !lost && !t.aton && <line x1={ax} y1={ay} x2={ax + Math.sin(cogR) * Math.min(nm2px((t.sog * 4) / 60), 16)} y2={ay - Math.cos(cogR) * Math.min(nm2px((t.sog * 4) / 60), 16)} strokeWidth="1.2" opacity="0.5" style={{ stroke: col }} />}
 
             {t.aton ? (
               <g transform={`translate(${ax},${ay})`}><polygon points="0,-11 11,0 0,11 -11,0" fill="none" strokeWidth="1.5" style={{ stroke: C.aton }} /><circle r="2.5" style={{ fill: C.aton }} /></g>
@@ -119,14 +122,18 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
 
             {isSel && <circle cx={ax} cy={ay} r={22} fill="none" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.6" style={{ stroke: col }} />}
 
-            {!t.aton && t.level !== "safe" && !isSel && t.name && (
+            {/* LOST always labels — a stale mark must never read as live. */}
+            {lost && !isSel && (
+              <text x={ax + 12} y={ay + 3} fontFamily="JetBrains Mono" fontSize={9} fontWeight={700} letterSpacing="0.08em" style={{ fill: C.dim }}>LOST</text>
+            )}
+            {!lost && !t.aton && t.level !== "safe" && !isSel && t.name && (
               <text x={ax + 12} y={ay + 3} fontFamily="IBM Plex Sans" fontSize={9} fontWeight={600} opacity="0.8" style={{ fill: col }}>{t.name}</text>
             )}
             {isSel && !t.aton && (
               <g>
                 <rect x={ax + 16} y={ay - 16} width={125} height={26} rx={3} strokeWidth={0.4} style={{ fill: C.labelBg, stroke: col }} />
                 <text x={ax + 22} y={ay - 2} fontFamily="IBM Plex Sans" fontSize={9} fontWeight={600} style={{ fill: col }}>{t.name || t.id}</text>
-                <text x={ax + 22} y={ay + 7} fontFamily="JetBrains Mono" fontSize={8} opacity="0.8" style={{ fill: col }}>CPA {t.cpa.toFixed(1)} · {isFinite(t.tcpa) && t.tcpa < 999 ? Math.round(t.tcpa) + "m" : "\u2014"}</text>
+                <text x={ax + 22} y={ay + 7} fontFamily="JetBrains Mono" fontSize={8} opacity="0.8" style={{ fill: col }}>{lost ? `LOST ${Math.round(t.ageSec / 60)}m ago` : `CPA ${t.cpa.toFixed(1)} · ${isFinite(t.tcpa) && t.tcpa < 999 ? Math.round(t.tcpa) + "m" : "\u2014"}`}</text>
               </g>
             )}
           </g>

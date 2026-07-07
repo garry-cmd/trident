@@ -18,6 +18,7 @@ export function deriveTargets(state: BoatState): { targets: Target[]; own: OwnVe
     dist: distanceNm(self.position, c.position),
     cog: c.cog,
     sog: c.sog,
+    ageSec: Math.max(0, (state.ts - c.lastSeen) / 1000),
   }));
   return { targets, own };
 }

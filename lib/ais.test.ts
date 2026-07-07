@@ -154,6 +154,7 @@ describe("enrichTarget — screen-frame position + CPA + threat", () => {
     id: "T",
     name: "TEST",
     type: "Cargo",
+    ageSec: 0,
   };
 
   it("places a target due north 'up' (ry negative) and due east to the right (rx positive)", () => {
@@ -192,8 +193,8 @@ describe("enrichTarget — screen-frame position + CPA + threat", () => {
 describe("enrichTargets — batch", () => {
   it("enriches every target and preserves order + ids", () => {
     const arr: Target[] = [
-      { id: "a", name: "", type: "Class B", brg: 10, dist: 1, cog: 200, sog: 5, aton: false },
-      { id: "b", name: "BUOY", type: "Nav Aid", brg: 80, dist: 2, cog: 0, sog: 0, aton: true },
+      { id: "a", name: "", type: "Class B", brg: 10, dist: 1, cog: 200, sog: 5, aton: false, ageSec: 0 },
+      { id: "b", name: "BUOY", type: "Nav Aid", brg: 80, dist: 2, cog: 0, sog: 0, aton: true, ageSec: 0 },
     ];
     const out = enrichTargets(arr, STILL);
     expect(out.map((t) => t.id)).toEqual(["a", "b"]);

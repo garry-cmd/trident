@@ -32,6 +32,10 @@ export interface Contact {
   position: LatLon;
   cog: number; // deg true
   sog: number; // kt
+  lastSeen: number; // ms epoch of the last report from this target. AIS gives
+  // no "gone" signal — silence is the only signal — so every source of
+  // contacts must stamp this, and the UI ages targets from it (LOST, then
+  // dropped). A scope that paints silent targets as live is lying at 2am.
 }
 
 export interface BoatState {
@@ -69,6 +73,9 @@ export interface Target {
   cog: number; // course over ground (deg true)
   sog: number; // speed over ground (kt)
   aton: boolean; // Aid to Navigation (stationary)
+  ageSec: number; // seconds since this target last reported, measured at the
+  // state's own timestamp — so if the whole feed dies, ages freeze with it
+  // (the FEED indicator owns that failure, not per-target LOST markers)
 }
 
 // A target enriched for display: relative position + velocity (screen frame:

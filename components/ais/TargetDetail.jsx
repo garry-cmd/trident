@@ -1,6 +1,6 @@
 "use client";
 import { C, FONT_MONO } from "@/lib/theme";
-import { tColor } from "@/lib/ais";
+import { tColor, isLost } from "@/lib/ais";
 
 // Big, glanceable readout for the selected target. The list collapses to just
 // this card when something is selected, so it owns the sidebar — every value is
@@ -21,7 +21,8 @@ function Tile({ label, value, unit, color, big }) {
 
 export default function TargetDetail({ target, onClose }) {
   if (!target) return null;
-  const col = tColor(target.level);
+  const lost = isLost(target);
+  const col = lost ? C.dim : tColor(target.level);
   const tcpa = isFinite(target.tcpa) && target.tcpa < 999 ? Math.round(target.tcpa) : "\u2014";
 
   return (
@@ -29,7 +30,7 @@ export default function TargetDetail({ target, onClose }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
           <span style={{ fontSize: 17, fontWeight: 700, color: C.bright, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{target.name || target.id}</span>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: col }}>{LEVEL_WORD[target.level] || ""}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: col }}>{lost ? `LOST \u00B7 LAST SEEN ${Math.round(target.ageSec / 60)} MIN AGO` : LEVEL_WORD[target.level] || ""}</span>
         </div>
         <span onClick={onClose} style={{ flexShrink: 0, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: C.dim, cursor: "pointer", border: `1px solid ${C.border}`, borderRadius: 6 }}>{"\u2715"}</span>
       </div>

@@ -18,7 +18,7 @@ const MS_TO_KT = 1.943844;
 interface SkNode {
   name?: string;
   navigation?: {
-    position?: { value?: { latitude: number; longitude: number } };
+    position?: { value?: { latitude: number; longitude: number }; timestamp?: string };
     courseOverGroundTrue?: { value?: number };
     speedOverGround?: { value?: number };
   };
@@ -33,6 +33,10 @@ export interface SkRestModel {
 
 function toContact(id: string, n: SkNode, aton: boolean): Contact {
   const pos = n.navigation?.position?.value;
+  // The REST model stamps each value; use the position's timestamp as
+  // lastSeen so a vessel that went silent an hour ago arrives already old
+  // (and ages straight to LOST/dropped) instead of resurrected as fresh.
+  const ts = Date.parse(n.navigation?.position?.timestamp ?? "");
   return {
     id,
     name: n.name ?? "",
@@ -41,6 +45,7 @@ function toContact(id: string, n: SkNode, aton: boolean): Contact {
     position: pos ? { lat: pos.latitude, lon: pos.longitude } : { lat: 0, lon: 0 },
     cog: ((n.navigation?.courseOverGroundTrue?.value ?? 0) * R2D + 360) % 360,
     sog: (n.navigation?.speedOverGround?.value ?? 0) * MS_TO_KT,
+    lastSeen: Number.isFinite(ts) ? ts : Date.now(),
   };
 }
 
