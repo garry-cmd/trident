@@ -14,7 +14,7 @@ const norm = (d: number) => ((d % 360) + 360) % 360;
 
 export interface SKDelta {
   context?: string;
-  updates?: { values?: { path: string; value: unknown }[] }[];
+  updates?: { timestamp?: string; values?: { path: string; value: unknown }[] }[];
 }
 
 export function emptyLiveState(): BoatState {
@@ -119,14 +119,29 @@ export function applyDelta(state: BoatState, delta: SKDelta, selfId?: string): B
     return { ...state, self, telemetry, contacts: live, ts: now };
   }
 
+  // When was this target actually heard? Signal K REPLAYS its cached deltas to
+  // every new ws subscriber, carrying each value's ORIGINAL timestamp — so a
+  // vessel that went silent an hour ago arrives on page load looking like
+  // fresh traffic. Trust the delta's own timestamp when present (capped at
+  // now; a future stamp is clock skew, not prophecy) so cached replays arrive
+  // already old and age out honestly, while live reports stamp fresh.
+  // Assumption: the Pi's clock is sane (NTP dockside, GPS time at sea) —
+  // a badly slow Pi clock would false-LOST live targets, visibly.
+  const stamped = (delta.updates ?? [])
+    .map((u) => Date.parse(u.timestamp ?? ""))
+    .filter((t) => Number.isFinite(t));
+  const seen = stamped.length > 0 ? Math.min(Math.max(...stamped), now) : now;
+
   const contacts = live.slice();
   let i = contacts.findIndex((c) => c.id === who.id);
   if (i === -1) {
-    contacts.push({ id: who.id, name: "", type: who.aton ? "Nav Aid" : "Vessel", aton: who.aton, position: { lat: 0, lon: 0 }, cog: 0, sog: 0, lastSeen: now });
+    contacts.push({ id: who.id, name: "", type: who.aton ? "Nav Aid" : "Vessel", aton: who.aton, position: { lat: 0, lon: 0 }, cog: 0, sog: 0, lastSeen: seen });
     i = contacts.length - 1;
   }
   for (const { path, value } of pairs) contacts[i] = applyContact(contacts[i], path, value);
-  contacts[i] = { ...contacts[i], lastSeen: now };
+  // Never move lastSeen backwards: a late-arriving cached replay must not
+  // un-freshen a target the live stream has already reported.
+  contacts[i] = { ...contacts[i], lastSeen: Math.max(contacts[i].lastSeen, seen) };
   return { ...state, contacts, ts: now };
 }
 

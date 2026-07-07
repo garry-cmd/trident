@@ -193,3 +193,47 @@ describe("target aging (lastSeen + drop)", () => {
     expect(s.contacts).toEqual([]);
   });
 });
+
+describe("cached-delta replay (SK re-sends old deltas to new subscribers)", () => {
+  it("stamps lastSeen from the delta's own timestamp, so cached ghosts arrive stale", () => {
+    const old = "2026-07-07T02:34:46.823Z";
+    const s = applyDelta(emptyLiveState(), {
+      context: "vessels.urn:mrn:imo:mmsi:338999999",
+      updates: [{ timestamp: old, values: [{ path: "navigation.position", value: { latitude: 20.7, longitude: -105.4 } }] }],
+    });
+    expect(s.contacts[0].lastSeen).toBe(Date.parse(old));
+  });
+
+  it("drops a cached ghost as soon as live traffic flows", () => {
+    const stale = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1 h silent
+    let s = applyDelta(emptyLiveState(), {
+      context: "vessels.urn:mrn:imo:mmsi:338999999",
+      updates: [{ timestamp: stale, values: [{ path: "", value: { name: "IRENE" } }] }],
+    });
+    s = applyDelta(s, { updates: [{ values: [{ path: "navigation.speedOverGround", value: 2.5 }] }] });
+    expect(s.contacts).toEqual([]);
+  });
+
+  it("caps future timestamps at now (clock skew is not prophecy)", () => {
+    const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const s = applyDelta(emptyLiveState(), {
+      context: "vessels.urn:mrn:imo:mmsi:222000222",
+      updates: [{ timestamp: future, values: [{ path: "navigation.speedOverGround", value: 1 }] }],
+    });
+    expect(s.contacts[0].lastSeen).toBeLessThanOrEqual(Date.now());
+  });
+
+  it("never moves lastSeen backwards when a cached replay arrives after live data", () => {
+    let s = applyDelta(emptyLiveState(), {
+      context: "vessels.urn:mrn:imo:mmsi:333000333",
+      updates: [{ values: [{ path: "navigation.speedOverGround", value: 3 }] }], // live, no ts → now
+    });
+    const fresh = s.contacts[0].lastSeen;
+    const old = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    s = applyDelta(s, {
+      context: "vessels.urn:mrn:imo:mmsi:333000333",
+      updates: [{ timestamp: old, values: [{ path: "", value: { name: "LATE CACHE" } }] }],
+    });
+    expect(s.contacts[0].lastSeen).toBeGreaterThanOrEqual(fresh);
+  });
+});
