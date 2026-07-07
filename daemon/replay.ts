@@ -77,6 +77,9 @@ setInterval(() => {
   const sentences = logFrames ? logFrames[t % logFrames.length] : sentencesAt(t, OWN_MMSI);
   const chunk = sentences.map((s) => s + "\r\n").join("");
   for (const c of clients) c.write(chunk);
+  // Heartbeat: a silent terminal reads as a dead one on the bench. Every 30 s,
+  // prove the stream is flowing and show where the scenario clock is.
+  if (t % 30 === 0) console.log(`[replay] t=${t}s · ${clients.size} client(s) · ${sentences.length} sentences this second`);
   t++;
 }, 1000);
 
