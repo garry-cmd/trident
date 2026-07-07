@@ -46,7 +46,9 @@ const CARGO: Mover = { lat0: CARGO_START.lat, lon0: CARGO_START.lon, cogT: 350, 
 
 const SAILBOAT: Mover = { lat0: 20.75, lon0: -105.42, cogT: 60, sogKt: 4 };
 const ANCHORED = { lat: 20.735, lon: -105.365 };
-const BUOY = { lat: 20.77, lon: -105.53 };
+// ~2.3 nm off the bow at start (own course 242) — the scope's max range is
+// 6 nm, so the mark must live inside the action, not out at sea-buoy distance.
+const BUOY = { lat: 20.695, lon: -105.43 };
 
 export const MMSI = {
   own: 338999999,
