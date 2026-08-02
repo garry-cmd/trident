@@ -18,8 +18,14 @@ export const TARGET_LOST_SEC = 360;
 export const TARGET_DROP_SEC = 900;
 
 // Anchor watch — drag-alarm radius default + stepper bounds (metres).
-export const DEFAULT_ANCHOR_RADIUS_M = 40;
+export const DEFAULT_ANCHOR_RADIUS_M = 55; // 35 m rode + Irene's 11.6 m bow offset + margin
 export const ANCHOR_RADIUS_BOUNDS = { min: 10, max: 150, step: 5 };
+
+// Rode paid out — the one number you enter when arming the watch. You know it
+// from the marks on the chain; everything else (anchor position, alarm radius)
+// derives from it plus the boat's fixed geometry (lib/anchor.ts IRENE).
+export const DEFAULT_RODE_M = 35;
+export const RODE_BOUNDS = { min: 5, max: 150, step: 5 };
 
 export const DISPLAY_MODES: { v: DisplayMode; l: string }[] = [
   { v: "head-up", l: "HDG UP" },

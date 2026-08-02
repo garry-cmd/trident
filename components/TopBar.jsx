@@ -8,8 +8,12 @@ import { useSettings } from "@/hooks/useSettings";
 import { useAlerts } from "@/hooks/useAlerts";
 import Timer from "./Timer";
 
+// ANCHOR is always present, not conditional on a hook being set. Hiding it
+// until armed meant the only route to arming was Dash -> Boat -> button, which
+// is a hunt at exactly the moment you're busy on the foredeck.
 const TABS = [
   { label: "AIS", href: "/" },
+  { label: "Anchor", href: "/anchor" },
   { label: "Dash", href: "/dash" },
   { label: "Settings", href: "/settings" },
 ];

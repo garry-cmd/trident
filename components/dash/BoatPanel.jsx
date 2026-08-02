@@ -1,24 +1,25 @@
 "use client";
+import Link from "next/link";
 import { C, FONT_MONO } from "@/lib/theme";
 import { Panel, PanelHead } from "./Panel";
 import Tile from "./Tile";
 import AnchorScope from "./AnchorScope";
-import { ANCHOR_RADIUS_BOUNDS } from "@/lib/settings";
 import { formatLatLon } from "@/lib/units";
 
 const round = (n) => Math.round(n);
 
-// Boat detail. Mode follows the anchor: a set hook shows the anchor watch, no
-// set hook shows underway motion. Position / COG / SOG / heading and the whole
-// anchor watch are live today (GPS only). Depth, wind and autopilot are gated
-// on the NGX-1 / N2K and show "not connected".
+// Boat detail. Mode follows the anchor: a set hook shows an anchor-watch
+// SUMMARY, no set hook shows underway motion. The watch itself — arming, the
+// trail, drag confirmation, the ring — lives on /anchor. This card links there
+// rather than duplicating the controls: two places to set a hook is two places
+// to get it wrong, and the drawer is too small for the trail anyway.
 export default function BoatPanel({ dash }) {
   const { mode } = dash;
   return mode === "anchor" ? <AnchorFace dash={dash} /> : <UnderwayFace dash={dash} />;
 }
 
 function AnchorFace({ dash }) {
-  const { anchor, anchorRadiusM, setAt, maxSwing, clearAnchor, setRadius, telemetry } = dash;
+  const { anchor, anchorRadiusM, setAt, telemetry } = dash;
   const dragging = anchor.dragging;
   const noFix = anchor.noFix;
   const depth = telemetry.depthM;
@@ -34,27 +35,25 @@ function AnchorFace({ dash }) {
       <div style={{ display: "flex", gap: 22, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
         <AnchorScope fraction={anchor.fraction} bearingToSetDeg={anchor.bearingToSetDeg} dragging={dragging} set />
         <div style={{ minWidth: 160 }}>
-          <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 32, color: headColor }}>
-            {headText}
-          </div>
+          <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 32, color: headColor }}>{headText}</div>
           <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 46, color: C.value, lineHeight: 1, marginTop: 8 }}>
-            {noFix ? "\u2014" : round(anchor.distanceM)}<span style={{ fontSize: 18, color: C.label }}> m</span>
+            {noFix ? "\u2014" : round(anchor.distanceM)}
+            <span style={{ fontSize: 18, color: C.label }}> m</span>
           </div>
           <div style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.text, marginTop: 4 }}>
-            {noFix ? `no GPS fix · alarm at ${anchorRadiusM} m · at anchor ${elapsed}` : `from set point · alarm at ${anchorRadiusM} m · at anchor ${elapsed}`}
+            {noFix ? "no GPS fix" : "from anchor"} {"\u00b7"} alarm at {anchorRadiusM} m {"\u00b7"} at anchor {elapsed}
           </div>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 14 }}>
-        <Tile label="Max swing" value={round(maxSwing)} unit="m" />
-        <Tile label="Bearing to set" value={noFix ? "\u2014" : `${round(anchor.bearingToSetDeg)}\u00B0`} />
+        <Tile label="Room left" value={noFix ? "\u2014" : round(anchor.roomM)} unit="m" />
+        <Tile label="Bearing to anchor" value={noFix ? "\u2014" : `${round(anchor.bearingToSetDeg)}\u00B0`} />
         {depth != null ? <Tile label="Depth" value={depth} unit="m" /> : <Tile label="Depth" hw="NGX-1" off />}
         {wind ? <Tile label="Wind" value={`${wind.speedKt} kt`} sub={`${wind.dirDeg}\u00B0`} /> : <Tile label="Wind" hw="NGX-1" off />}
       </div>
 
-      <RadiusStepper value={anchorRadiusM} onChange={setRadius} />
-      <button onClick={clearAnchor} style={btn(false)}>WEIGH ANCHOR — CLEAR WATCH</button>
+      <Link href="/anchor" style={btn}>{"\u2693"} OPEN ANCHOR WATCH</Link>
     </Panel>
   );
 }
@@ -81,32 +80,14 @@ function UnderwayFace({ dash }) {
         {ap ? <Tile label="Autopilot" value={ap.engaged ? `AUTO ${ap.targetHdg}\u00B0` : "STANDBY"} sub={ap.engaged ? `rudder ${Math.abs(ap.rudderDeg)}\u00B0${ap.rudderDeg < 0 ? "P" : ap.rudderDeg > 0 ? "S" : ""}` : undefined} /> : <Tile label="Autopilot" hw="N2K" off />}
         <Tile label="Position" value={lat} sub={lon} />
       </div>
-      <button onClick={dash.setAnchorHere} style={btn(true)}>{"\u2693"} DROP ANCHOR HERE — START WATCH</button>
+      <Link href="/anchor" style={btn}>{"\u2693"} ANCHOR WATCH {"\u2014"} SET THE HOOK</Link>
     </Panel>
   );
 }
 
-function RadiusStepper({ value, onChange }) {
-  const { min, max, step } = ANCHOR_RADIUS_BOUNDS;
-  const dec = () => onChange(Math.max(min, value - step));
-  const inc = () => onChange(Math.min(max, value + step));
-  const sbtn = { width: 52, height: 52, background: C.surface, color: C.bright, border: `1px solid ${C.borderLt}`, fontSize: 24, cursor: "pointer" };
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: "0.12em", color: C.label, textTransform: "uppercase", marginBottom: 6 }}>Alarm radius</div>
-      <div style={{ display: "flex", alignItems: "center", border: `1px solid ${C.borderLt}`, borderRadius: 9, overflow: "hidden", maxWidth: 240 }}>
-        <button onClick={dec} style={{ ...sbtn, borderRight: `1px solid ${C.borderLt}` }}>{"\u2212"}</button>
-        <div style={{ flex: 1, textAlign: "center", fontFamily: FONT_MONO, fontSize: 18, color: C.value }}>{value} m</div>
-        <button onClick={inc} style={{ ...sbtn, borderLeft: `1px solid ${C.borderLt}` }}>+</button>
-      </div>
-    </div>
-  );
-}
-
-const btn = (primary) => ({
+const btn = {
+  display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none",
   width: "100%", fontFamily: FONT_MONO, fontSize: 13, letterSpacing: "0.08em", minHeight: 52,
-  background: primary ? "rgba(196,146,48,0.12)" : C.surface,
-  color: primary ? C.cautionBr : C.text,
-  border: `1px solid ${primary ? C.caution : C.borderLt}`,
+  background: "rgba(196,146,48,0.12)", color: C.cautionBr, border: `1px solid ${C.caution}`,
   borderRadius: 10, padding: 15, cursor: "pointer",
-});
+};
