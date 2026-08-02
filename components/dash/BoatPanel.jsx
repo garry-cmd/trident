@@ -4,7 +4,8 @@ import { C, FONT_MONO } from "@/lib/theme";
 import { Panel, PanelHead } from "./Panel";
 import Tile from "./Tile";
 import AnchorScope from "./AnchorScope";
-import { formatLatLon } from "@/lib/units";
+import { formatLatLon, distValue, distLabel } from "@/lib/units";
+import { useSettings } from "@/hooks/useSettings";
 
 const round = (n) => Math.round(n);
 
@@ -20,6 +21,8 @@ export default function BoatPanel({ dash }) {
 
 function AnchorFace({ dash }) {
   const { anchor, anchorRadiusM, setAt, telemetry } = dash;
+  const { anchorUnit } = useSettings();
+  const u = distLabel(anchorUnit);
   const dragging = anchor.dragging;
   const noFix = anchor.noFix;
   const depth = telemetry.depthM;
@@ -37,17 +40,17 @@ function AnchorFace({ dash }) {
         <div style={{ minWidth: 160 }}>
           <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 32, color: headColor }}>{headText}</div>
           <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 46, color: C.value, lineHeight: 1, marginTop: 8 }}>
-            {noFix ? "\u2014" : round(anchor.distanceM)}
-            <span style={{ fontSize: 18, color: C.label }}> m</span>
+            {noFix ? "\u2014" : distValue(anchor.distanceM, anchorUnit)}
+            <span style={{ fontSize: 18, color: C.label }}> {u}</span>
           </div>
           <div style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.text, marginTop: 4 }}>
-            {noFix ? "no GPS fix" : "from anchor"} {"\u00b7"} alarm at {anchorRadiusM} m {"\u00b7"} at anchor {elapsed}
+            {noFix ? "no GPS fix" : "from anchor"} {"\u00b7"} alarm at {distValue(anchorRadiusM, anchorUnit)} {u} {"\u00b7"} at anchor {elapsed}
           </div>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 14 }}>
-        <Tile label="Room left" value={noFix ? "\u2014" : round(anchor.roomM)} unit="m" />
+        <Tile label="Room left" value={noFix ? "\u2014" : distValue(anchor.roomM, anchorUnit)} unit={u} />
         <Tile label="Bearing to anchor" value={noFix ? "\u2014" : `${round(anchor.bearingToSetDeg)}\u00B0`} />
         {depth != null ? <Tile label="Depth" value={depth} unit="m" /> : <Tile label="Depth" hw="NGX-1" off />}
         {wind ? <Tile label="Wind" value={`${wind.speedKt} kt`} sub={`${wind.dirDeg}\u00B0`} /> : <Tile label="Wind" hw="NGX-1" off />}

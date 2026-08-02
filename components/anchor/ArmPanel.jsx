@@ -1,48 +1,50 @@
 "use client";
 import { C, FONT_MONO } from "@/lib/theme";
-import { RODE_BOUNDS } from "@/lib/settings";
-import { IRENE } from "@/lib/anchor";
+import { RODE_BOUNDS, ANCHOR_RADIUS_BOUNDS } from "@/lib/settings";
+import { IRENE, radiusForRode } from "@/lib/anchor";
+import { distValue, distLabel, snapDist, distStep, toDist } from "@/lib/units";
 
-// Arming the watch. ONE number to enter — rode out — because that's the only
-// thing you actually know. Everything else derives from it and the boat's fixed
-// geometry. Two buttons, labelled by where the hook is, so neither requires
-// remembering which one means what.
-export default function ArmPanel({ rodeM, setRode, plannedRadiusM, hdg, onArm }) {
-  const { min, max, step } = RODE_BOUNDS;
+// Arming the watch. Rode out is the number you actually know (you counted the
+// marks); the hook position and the alarm ring derive from it plus the boat's
+// fixed geometry. The radius is editable here because arming is setup, not 2am
+// — and it is also in Settings > Anchor for adjusting a live watch.
+export default function ArmPanel({ rodeM, setRode, radiusM, setRadius, hdg, onArm, unit = "ft" }) {
+  const u = distLabel(unit);
+  const stepU = distStep(unit);
+  const derived = radiusForRode(rodeM, IRENE);
+  const overridden = Math.abs(radiusM - derived) > 0.5;
+
+  const bumpRode = (n) => {
+    const next = snapDist(rodeM, unit, n);
+    if (next < RODE_BOUNDS.min || next > RODE_BOUNDS.max) return;
+    setRode(next);
+    if (!overridden) setRadius(radiusForRode(next, IRENE)); // keep the ring in step
+  };
+  const bumpRadius = (n) => {
+    const next = snapDist(radiusM, unit, n);
+    if (next < ANCHOR_RADIUS_BOUNDS.min || next > ANCHOR_RADIUS_BOUNDS.max) return;
+    setRadius(next);
+  };
+
   return (
     <>
       <div>
         <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 26, lineHeight: 1.15, color: C.cautionBr }}>SET THE HOOK</div>
         <div style={{ fontFamily: FONT_MONO, fontSize: 11.5, color: C.label, marginTop: 8 }}>
-          {hdg == null ? "no heading \u2014 nudge the hook after setting" : `heading ${Math.round(hdg)}\u00b0 T \u00b7 bow offset ${IRENE.bowOffsetM} m`}
+          {hdg == null
+            ? "no heading \u2014 nudge the hook after setting"
+            : `heading ${Math.round(hdg)}\u00b0 T \u00b7 bow offset ${distValue(IRENE.bowOffsetM, unit)} ${u}`}
         </div>
       </div>
 
-      <div style={{ background: C.raised, border: `1px solid ${C.borderLt}`, borderRadius: 10, padding: "13px 15px", boxShadow: C.cardInset }}>
-        <div style={lab}>Rode out</div>
-        <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 46, lineHeight: 1, color: C.value, marginTop: 6 }}>
-          {rodeM}<span style={{ fontSize: 17, color: C.label, fontWeight: 500 }}> m</span>
-        </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button onClick={() => setRode(Math.max(min, rodeM - step))} style={step48}>{"\u2212"}</button>
-          <button onClick={() => setRode(Math.min(max, rodeM + step))} style={step48}>+</button>
-        </div>
-      </div>
+      <Stepper label="Rode out" value={distValue(rodeM, unit)} unit={u} big
+        onDec={() => bumpRode(-1)} onInc={() => bumpRode(1)} step={stepU} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
-        <div style={tile}>
-          <div style={lab}>Alarm radius</div>
-          <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 24, color: C.value, marginTop: 6 }}>
-            {plannedRadiusM}<span style={{ fontSize: 12, color: C.label, fontWeight: 500 }}> m</span>
-          </div>
-        </div>
-        <div style={tile}>
-          <div style={lab}>Derived from</div>
-          <div style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.dim, marginTop: 7, lineHeight: 1.5 }}>
-            rode + {IRENE.bowOffsetM} m to bow<br />+ {IRENE.gpsMarginM} m margin
-          </div>
-        </div>
-      </div>
+      <Stepper label="Alarm radius" value={distValue(radiusM, unit)} unit={u}
+        onDec={() => bumpRadius(-1)} onInc={() => bumpRadius(1)} step={stepU}
+        note={overridden
+          ? `set by hand \u00b7 derived would be ${distValue(derived, unit)} ${u}`
+          : `rode + ${Math.round(toDist(IRENE.bowOffsetM, unit))} ${u} to bow + ${Math.round(toDist(IRENE.gpsMarginM, unit))} ${u} margin`} />
 
       <div style={{ flex: 1 }} />
 
@@ -60,9 +62,28 @@ export default function ArmPanel({ rodeM, setRode, plannedRadiusM, hdg, onArm })
   );
 }
 
+function Stepper({ label, value, unit, onDec, onInc, step, note, big }) {
+  return (
+    <div style={{ background: C.raised, border: `1px solid ${C.borderLt}`, borderRadius: 10, padding: "12px 14px", boxShadow: C.cardInset }}>
+      <div style={lab}>{label}</div>
+      <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: big ? 44 : 34, lineHeight: 1, color: C.value, marginTop: 6 }}>
+        {value}<span style={{ fontSize: big ? 17 : 14, color: C.label, fontWeight: 500 }}> {unit}</span>
+      </div>
+      {note && <div style={{ fontFamily: FONT_MONO, fontSize: 10, color: C.dim, marginTop: 6, lineHeight: 1.45 }}>{note}</div>}
+      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        <button onClick={onDec} style={key}>{"\u2212"} {step}</button>
+        <button onClick={onInc} style={key}>+ {step}</button>
+      </div>
+    </div>
+  );
+}
+
 const lab = { fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: "0.14em", textTransform: "uppercase", color: C.label };
-const tile = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 9, padding: "11px 12px", minHeight: 66 };
-const step48 = { flex: 1, minHeight: 52, background: C.surface, color: C.bright, border: `1px solid ${C.borderLt}`, borderRadius: 8, fontFamily: FONT_MONO, fontSize: 22, cursor: "pointer" };
+const key = {
+  flex: 1, minHeight: 50, background: C.surface, color: C.bright,
+  border: `1px solid ${C.borderLt}`, borderRadius: 8, fontFamily: FONT_MONO,
+  fontSize: 17, fontWeight: 700, cursor: "pointer",
+};
 const btn = {
   width: "100%", fontFamily: FONT_MONO, fontSize: 12, letterSpacing: "0.08em", minHeight: 52,
   background: C.surface, color: C.text, border: `1px solid ${C.borderLt}`, borderRadius: 10, cursor: "pointer",

@@ -27,6 +27,23 @@ export const ANCHOR_RADIUS_BOUNDS = { min: 10, max: 150, step: 5 };
 export const DEFAULT_RODE_M = 35;
 export const RODE_BOUNDS = { min: 5, max: 150, step: 5 };
 
+// Anchor-watch display preferences. Distances read in feet by default (Irene's
+// rode is marked in feet); the model stays metric throughout — units convert at
+// the display edge only (lib/units.ts).
+export const ANCHOR_UNITS: { v: "ft" | "m"; l: string }[] = [
+  { v: "ft", l: "FEET" },
+  { v: "m", l: "METRES" },
+];
+
+// Scope orientation. HEAD-UP matches the AIS scope and the view over the bow.
+// NORTH-UP holds the frame still, which is the only way the swing trail keeps a
+// readable SHAPE — a fan means holding, a path that walks means dragging — so
+// it stays available for reading the night's evidence.
+export const ANCHOR_ORIENTATIONS: { v: "head" | "north"; l: string }[] = [
+  { v: "head", l: "HEAD-UP" },
+  { v: "north", l: "NORTH-UP" },
+];
+
 export const DISPLAY_MODES: { v: DisplayMode; l: string }[] = [
   { v: "head-up", l: "HDG UP" },
   { v: "course-up", l: "CRS UP" },
@@ -161,6 +178,8 @@ export const DEFAULT_SETTINGS = {
   theme: "day" as "day" | "dusk" | "night",
   alarmEnabled: true,
   depthUnit: "ft" as "ft" | "m",
+  anchorUnit: "ft" as "ft" | "m",
+  anchorOrient: "head" as "head" | "north",
   thresholds: DEFAULT_THRESHOLDS,
   alarms: DEFAULT_ALARMS,
 };

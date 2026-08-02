@@ -9,6 +9,8 @@ import {
   DEFAULT_ALARMS,
   THEME_OPTIONS,
   DEPTH_UNITS,
+  ANCHOR_UNITS,
+  ANCHOR_ORIENTATIONS,
   DISPLAY_MODES,
   THRESHOLD_FIELDS,
   ALARM_FIELDS,
@@ -26,6 +28,8 @@ export interface PersistedSettings {
   theme: "day" | "dusk" | "night";
   alarmEnabled: boolean;
   depthUnit: "ft" | "m";
+  anchorUnit: "ft" | "m";
+  anchorOrient: "head" | "north";
   thresholds: Thresholds;
   alarms: Alarms;
 }
@@ -44,6 +48,8 @@ export function sanitize(raw: unknown): Partial<PersistedSettings> {
   if (has(DISPLAY_MODES, r.displayMode)) out.displayMode = r.displayMode as DisplayMode;
   if (has(THEME_OPTIONS, r.theme)) out.theme = r.theme as PersistedSettings["theme"];
   if (has(DEPTH_UNITS, r.depthUnit)) out.depthUnit = r.depthUnit as "ft" | "m";
+  if (has(ANCHOR_UNITS, r.anchorUnit)) out.anchorUnit = r.anchorUnit as "ft" | "m";
+  if (has(ANCHOR_ORIENTATIONS, r.anchorOrient)) out.anchorOrient = r.anchorOrient as "head" | "north";
   if (typeof r.alarmEnabled === "boolean") out.alarmEnabled = r.alarmEnabled;
   if (typeof r.filterRange === "number" && Number.isFinite(r.filterRange)) out.filterRange = r.filterRange;
 
@@ -94,6 +100,8 @@ export function saveSettings(s: PersistedSettings): void {
       theme: s.theme,
       alarmEnabled: s.alarmEnabled,
       depthUnit: s.depthUnit,
+      anchorUnit: s.anchorUnit,
+      anchorOrient: s.anchorOrient,
       thresholds: s.thresholds,
       alarms: s.alarms,
     };

@@ -21,6 +21,8 @@ export function SettingsProvider({ children }) {
   const [theme, setTheme] = useState(DEFAULT_SETTINGS.theme);
   const [alarmEnabled, setAlarmEnabled] = useState(DEFAULT_SETTINGS.alarmEnabled);
   const [depthUnit, setDepthUnit] = useState(DEFAULT_SETTINGS.depthUnit);
+  const [anchorUnit, setAnchorUnit] = useState(DEFAULT_SETTINGS.anchorUnit);
+  const [anchorOrient, setAnchorOrient] = useState(DEFAULT_SETTINGS.anchorOrient);
   const [thresholds, setThresholds] = useState(DEFAULT_SETTINGS.thresholds);
   const [alarms, setAlarms] = useState(DEFAULT_SETTINGS.alarms);
 
@@ -43,6 +45,8 @@ export function SettingsProvider({ children }) {
     if (s.theme !== undefined) setTheme(s.theme);
     if (s.alarmEnabled !== undefined) setAlarmEnabled(s.alarmEnabled);
     if (s.depthUnit !== undefined) setDepthUnit(s.depthUnit);
+    if (s.anchorUnit !== undefined) setAnchorUnit(s.anchorUnit);
+    if (s.anchorOrient !== undefined) setAnchorOrient(s.anchorOrient);
     if (s.thresholds !== undefined) setThresholds(s.thresholds);
     if (s.alarms !== undefined) setAlarms(s.alarms);
   }, []);
@@ -52,8 +56,8 @@ export function SettingsProvider({ children }) {
   const firstSave = useRef(true);
   useEffect(() => {
     if (firstSave.current) { firstSave.current = false; return; }
-    saveSettings({ displayMode, filterRange, levelFilter, theme, alarmEnabled, depthUnit, thresholds, alarms });
-  }, [displayMode, filterRange, levelFilter, theme, alarmEnabled, depthUnit, thresholds, alarms]);
+    saveSettings({ displayMode, filterRange, levelFilter, theme, alarmEnabled, depthUnit, anchorUnit, anchorOrient, thresholds, alarms });
+  }, [displayMode, filterRange, levelFilter, theme, alarmEnabled, depthUnit, anchorUnit, anchorOrient, thresholds, alarms]);
 
   // Set one threshold, clamped to its bounds. The danger band must stay inside
   // the caution band, so the two CPA fields fence each other — you can't set a
@@ -85,6 +89,8 @@ export function SettingsProvider({ children }) {
     theme, setTheme,
     alarmEnabled, setAlarmEnabled,
     depthUnit, setDepthUnit,
+    anchorUnit, setAnchorUnit,
+    anchorOrient, setAnchorOrient,
     thresholds, setThreshold,
     alarms, setAlarm,
   };

@@ -6,7 +6,9 @@ import {
 } from "@/lib/anchor";
 import { appendCrumb, sanitizeTrail, pruneTrail } from "@/lib/track";
 import { project } from "@/lib/geo";
-import { DEFAULT_RODE_M, DEFAULT_ANCHOR_RADIUS_M } from "@/lib/settings";
+import { DEFAULT_RODE_M, DEFAULT_ANCHOR_RADIUS_M, ANCHOR_RADIUS_BOUNDS, RODE_BOUNDS } from "@/lib/settings";
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 // The anchor watch is operational state (a hook on the bottom), not a UI
 // preference, so it persists under its own keys — reloading the tab at 2am must
@@ -113,12 +115,16 @@ export function useAnchorWatch(position, headingDeg, ts) {
   // resulting placement needs a nudge.
   const hdg = Number.isFinite(headingDeg) ? headingDeg : null;
 
-  const arm = useCallback((where, rodeM) => {
+  // Arming keeps whatever radius is currently set: it tracks the rode by default
+  // (ArmPanel steps them together) but a hand-set ring must survive the tap.
+  const arm = useCallback((where) => {
     const h = hdg ?? 0;
-    const setPoint = where === "bow"
-      ? anchorAtBow(position, h, IRENE)
-      : anchorAhead(position, h, rodeM, IRENE);
-    setAnchor({ setPoint, setAt: Date.now(), rodeM, alarmRadiusM: radiusForRode(rodeM, IRENE) });
+    setAnchor((a) => {
+      const setPoint = where === "bow"
+        ? anchorAtBow(position, h, IRENE)
+        : anchorAhead(position, h, a.rodeM, IRENE);
+      return { ...a, setPoint, setAt: Date.now() };
+    });
     drag.current = DRAG_INIT;
     setDragTick((n) => n + 1);
     setTrail([]);
@@ -133,8 +139,12 @@ export function useAnchorWatch(position, headingDeg, ts) {
     save(TRAIL_KEY, []);
   }, []);
 
-  const setRadius = useCallback((m) => setAnchor((a) => ({ ...a, alarmRadiusM: m })), []);
-  const setRode = useCallback((m) => setAnchor((a) => ({ ...a, rodeM: m })), []);
+  const setRadius = useCallback((m) => setAnchor((a) => (
+    { ...a, alarmRadiusM: clamp(m, ANCHOR_RADIUS_BOUNDS.min, ANCHOR_RADIUS_BOUNDS.max) }
+  )), []);
+  const setRode = useCallback((m) => setAnchor((a) => (
+    { ...a, rodeM: clamp(m, RODE_BOUNDS.min, RODE_BOUNDS.max) }
+  )), []);
 
   // Nudge the hook 2 m at a time. The boring fallback for a missing heading, and
   // the way you correct a placement once the trail shows where the hook really is.
@@ -149,7 +159,7 @@ export function useAnchorWatch(position, headingDeg, ts) {
     hdg,
     headingSource: Number.isFinite(headingDeg) ? "heading" : "none",
     breachSec: Math.floor(breachMs(drag.current, ts) / 1000),
-    plannedRadiusM: radiusForRode(anchor.rodeM, IRENE),
+    derivedRadiusM: radiusForRode(anchor.rodeM, IRENE),
     arm, weigh, setRadius, setRode, nudge,
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useTargets } from "@/hooks/useTargets";
+import { useSettings } from "@/hooks/useSettings";
 import { useAnchorWatch } from "@/hooks/useAnchorWatch";
 import { EMPTY_TELEMETRY } from "@/lib/types";
 import { C, FONT_MONO } from "@/lib/theme";
@@ -16,6 +17,7 @@ import NudgePad from "@/components/anchor/NudgePad";
 // a hunt through Dash at exactly the moment you're busy on the foredeck.
 export default function AnchorPage() {
   const { self, telemetry: live, ts } = useTargets();
+  const { anchorUnit, anchorOrient } = useSettings();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const iv = setInterval(() => setNow(Date.now()), 1000);
@@ -41,11 +43,13 @@ export default function AnchorPage() {
           anchorPos={w.anchor.setPoint}
           boatPos={armed && !w.status.noFix ? self.position : null}
           headingDeg={self.heading}
-          radiusM={armed ? w.anchor.alarmRadiusM : w.plannedRadiusM}
+          radiusM={w.anchor.alarmRadiusM}
           level={w.status.level}
           trail={w.trail}
+          orient={anchorOrient}
+          unit={anchorUnit}
         />
-        <div style={chip}>NORTH-UP</div>
+        <div style={chip}>{anchorOrient === "head" ? "HEAD-UP" : "NORTH-UP"}</div>
         {armed && (
           <div style={{ ...chip, left: "auto", right: 14 }}>
             TRAIL 12 h {"\u00b7"} {w.trail.length} pts
@@ -64,7 +68,7 @@ export default function AnchorPage() {
               color: C.cautionBr,
             }}
           >
-            NO WATCH SET {"\u2014"} PREVIEWING {w.plannedRadiusM} m RING
+            NO WATCH SET {"\u2014"} PREVIEWING THE RING
           </div>
         )}
       </div>
@@ -92,6 +96,7 @@ export default function AnchorPage() {
               self={self}
               telemetry={telemetry}
               now={now}
+              unit={anchorUnit}
             />
             <div style={{ flex: 1 }} />
             <button onClick={w.weigh} style={weighBtn}>
@@ -102,9 +107,11 @@ export default function AnchorPage() {
           <ArmPanel
             rodeM={w.anchor.rodeM}
             setRode={w.setRode}
-            plannedRadiusM={w.plannedRadiusM}
+            radiusM={w.anchor.alarmRadiusM}
+            setRadius={w.setRadius}
             hdg={w.hdg}
             onArm={(where) => w.arm(where, w.anchor.rodeM)}
+            unit={anchorUnit}
           />
         )}
       </div>
