@@ -15,25 +15,39 @@ to `CONTEXT.md` (which owns the software/app state). Read both at session start.
 
 | Part | Exact model | Status | Notes |
 |------|-------------|--------|-------|
-| SBC | Raspberry Pi 5, 8GB | in hand, running | headless, `trident.local`; SK + `signalk-rpi-monitor` running — **verified serving live system-health** (CPU/GPU temp, CPU/mem/SD utilisation) to the Dash |
+| SBC | Raspberry Pi 5, 8GB | **aboard Irene, running** (Nov 2026) | headless; on the Vesper WiFi at 192.168.15.67 + fixed .200 (`trident.local` doesn't resolve there); SK + `signalk-rpi-monitor` running — **verified serving live system-health** (CPU/GPU temp, CPU/mem/SD utilisation) to the Dash |
 | Cooling | **Official Raspberry Pi 5 Active Cooler** | in hand, **stays ON** | clips to the SoC, 4-pin fan header. This *is* the cooling. |
 | Relay | **Seengreat 3-CH Relay HAT** | in hand, **mounted** | HF3FF/005-1ZS relays (15.5mm tall), board 65 × 56mm, opto-isolated (LTV-357T-B-IN). Drives the horn. Bench-verified active-low + boot-safe (session 9). |
-| microSD | SanDisk High Endurance 256GB | in hand, **flashed & running** | do NOT re-image on reassembly |
+| microSD | SanDisk High Endurance 256GB | **running Debian 13 (trixie)** | do NOT re-image. Its boot partition is also the access channel aboard (card hook — `pi/card/README.md`). Pull it with the Pi powered off |
 | Enclosure | **KKSB Tall Aluminum Enclosure for Dual HATs & NVMe HATs** | **in hand, assembled** | stack built & cased up (session 9); ships the tall 40-pin stackable header + 18/20mm M2.5 spacers |
 | Boat power | PlusRoc 12V→5V 25W USB-C converter | in hand | boat 12V → Pi 5V (bench uses any USB-C PD charger) |
-| Bench sounder | **Icstation 12V active piezo buzzer (100 dB)** | **in hand** | bench alarm on relay CH1 — wiring below. Continuous-tone active piezo (the relay does the switching) |
+| Bench sounder | **Icstation 12V active piezo buzzer (100 dB)** | **in hand, NOT wired** (Nov 6) | bench alarm on relay CH1 — wiring below. Continuous-tone active piezo (the relay does the switching) |
 | Boat sounder | Splash-resistant 12V marine **panel-mount** buzzer | **not ordered** | replaces the bench piezo at boat install; order before the Mexico trip |
-| Display | **iPad (base, WiFi)** | **in hand** | the watch surface at the helm/nav station; kiosk PWA setup pending (What's Next #5) |
+| Display | **iPad (base, WiFi)** | **in use aboard** | on the Vesper WiFi; Trident added to the home screen from Safari (`http://192.168.15.200`), opens full-screen. Guided Access / offline still pending |
 
 **Retired / spare**
 - **Argon NEO 5 M.2 case** — original enclosure, retired for this build. Its cooling
   lives in the *removable top cover*, which has to come off for the HAT, leaving no
   cooling — and it can't close over a HAT anyway. Keep as a spare bare-Pi case.
 
-**Boat-install parts (order NOW — trip is ~6 weeks out; Actisense stock is the long pole)**
-Splash-resistant marine panel-mount buzzer, 12V wire / inline fuse holders + fuses / spade
-terminals for the horn run. DECIDE this trip vs next: Actisense NGX-1-USB, Victron Cerbo GX
-MK2, 3× VE.Direct cables, N2K T-connector + drop. Later: Peplink BR1 Mini LTE.
+**Boat-install parts (Nov 6, 2026 — Irene is in Mexico, go-live Jan 1, 2027)**
+Still to order: splash-resistant marine panel-mount buzzer, 12V wire / inline fuse holders + fuses /
+spade terminals for the horn run. **Depth already flows via the Vesper's N2K bridge**, so the
+**Actisense NGX-1-USB is optional** for go-live (wind / heading / baro / autopilot / DSC only).
+**Decide by Nov 13: Victron Cerbo GX MK2 + VE.Direct cables** — the only purchase left on the
+go-live path (battery via the owned BMV-712). Later: a boat LAN router (e.g. Peplink BR1) would
+restore direct Mac→Pi access aboard.
+
+**Network aboard (as built, Nov 6, 2026)**
+The Pi is a WiFi client of the **Vesper XB-8000's access point** (`VesperXB-YF87180`, gateway
+192.168.15.1, NMEA on TCP :39150). The Vesper AP has no internet and blocks mDNS. The Mac stays on
+Starlink, so there is no network path Mac→Pi: the SD card is the channel. Pi WiFi power-save is OFF
+(it throttled iPad↔Pi to ~5 KB/s).
+
+**Depth reference (found Nov 6)**
+The Triton/Vesper depth is **below the transducer**; Irene's keel bottom is **4 ft below it**.
+Trident subtracts it (Settings › Display › Keel below depth sensor, default 4 ft). To fix the Triton 2
+itself, set its Depth offset to **−4.0 ft** (Triton 2 manual: negative = below keel).
 
 **Bench shopping (for the sounder chain, this week)**
 12V wall adapter ≥1A, inline fuse holder + 2A fuse, hookup wire, spade terminals.
@@ -134,11 +148,13 @@ Pinout (BCM), opto-isolated:
 
 ## Physical Build — What's Next
 
-1. ~~KKSB Tall case arrives → assemble the stack~~ **DONE (session 9)** — stack assembled,
-   cased up. (Wall-mount through the bottom keyholes still pending a mounting spot.)
+1. ~~KKSB Tall case arrives → assemble the stack~~ **DONE (session 9).** **Aboard and running
+   (Nov 2026)**, not yet wall-mounted (pick a dry spot with WiFi reach to the Vesper).
 2. **Order the 12V horn** + wire / fuses / terminals before any relay wiring. The horn
    *software* layer is built & bench-proven — only the physical horn + 12V wiring remain.
-3. **Boat install:** NGX-1, Cerbo, Peplink, and the relay → horn wiring (CH1 / BCM26, active-low).
+3. **Wire the bench piezo to CH1 now** (wiring below) so the horn service can be proven aboard;
+   swap to the marine buzzer later. The horn *service* is not yet installed on the Pi (Todoist Now).
+4. **Boat install:** Cerbo + BMV-712 (if ordered by Nov 13), wall-mount, marine buzzer.
 
 ---
 
