@@ -24,7 +24,7 @@ export default function AnchorPage() {
     return () => clearInterval(iv);
   }, []);
 
-  const w = useAnchorWatch(self.position, self.heading, ts);
+  const w = useAnchorWatch();
   const telemetry = live ?? EMPTY_TELEMETRY;
   const armed = w.status.set;
   const dragging = w.status.dragging;

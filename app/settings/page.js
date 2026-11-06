@@ -42,7 +42,7 @@ export default function SettingsPage() {
   // hook, not with preferences), so Settings reaches the same shared watch the
   // /anchor route uses rather than keeping a second copy.
   const { self, ts } = useTargets();
-  const w = useAnchorWatch(self.position, self.heading, ts);
+  const w = useAnchorWatch();
   const aU = distLabel(anchorUnit);
 
   const cards = [

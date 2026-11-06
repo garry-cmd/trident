@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useTargets } from "./useTargets";
 import {
   anchorStatus, anchorAhead, anchorAtBow, radiusForRode,
   evalDrag, breachMs, DRAG_INIT, IRENE, NM_TO_M,
@@ -55,10 +56,9 @@ function save(key, v) {
 }
 
 // Owns the anchor set point, the rolling trail, and the drag state machine.
-// Takes position/heading/ts from whatever already owns the BoatState (the page
-// or useDash) rather than opening a second data source — useBoatState is not
-// context-backed, so calling it again would mint a second WebSocket.
-export function useAnchorWatch(position, headingDeg, ts) {
+// Runs ONCE for the whole app (AnchorWatchProvider in AppShell), so the drag
+// timer keeps counting and the alarm can fire whichever screen is open.
+function useAnchorWatchEngine(position, headingDeg, ts) {
   const [anchor, setAnchor] = useState(loadAnchor);
   const [trail, setTrail] = useState(loadTrail);
   const drag = useRef(DRAG_INIT);
@@ -162,4 +162,19 @@ export function useAnchorWatch(position, headingDeg, ts) {
     derivedRadiusM: radiusForRode(anchor.rodeM, IRENE),
     arm, weigh, setRadius, setRode, nudge,
   };
+}
+
+const AnchorWatchContext = createContext(null);
+
+export function AnchorWatchProvider({ children }) {
+  const { self, ts } = useTargets();
+  const w = useAnchorWatchEngine(self.position, self.heading, ts);
+  return <AnchorWatchContext.Provider value={w}>{children}</AnchorWatchContext.Provider>;
+}
+
+// The shared watch. Every screen reads this one instance.
+export function useAnchorWatch() {
+  const w = useContext(AnchorWatchContext);
+  if (!w) throw new Error("useAnchorWatch must be used within AnchorWatchProvider");
+  return w;
 }

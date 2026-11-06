@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { initState, advanceState, TICK_MS } from "@/lib/simulate";
 import { connect, emptyLiveState } from "@/lib/signalk";
 import { useSettings } from "./useSettings";
@@ -33,7 +33,13 @@ function signalkUrl() {
   return `ws://${host}:3000/signalk/v1/stream?subscribe=all`;
 }
 
-export function useBoatState() {
+const BoatStateContext = createContext(null);
+
+// ONE data source for the whole app. Provided once in AppShell so every view,
+// the anchor watch and the collision alarm read the same BoatState from the same
+// WebSocket. (Each view used to open its own, so the alarms only ran while the
+// "right" screen was open.)
+export function BoatStateProvider({ children }) {
   const { paused } = useSettings();
   const [source] = useState(readSource);
   const [state, setState] = useState(() => (readSource() === "live" ? emptyLiveState() : initState()));
@@ -48,5 +54,11 @@ export function useBoatState() {
     return () => clearInterval(iv);
   }, [paused, source]);
 
+  return <BoatStateContext.Provider value={state}>{children}</BoatStateContext.Provider>;
+}
+
+export function useBoatState() {
+  const state = useContext(BoatStateContext);
+  if (!state) throw new Error("useBoatState must be used within BoatStateProvider");
   return { state };
 }

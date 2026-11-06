@@ -1,9 +1,8 @@
 "use client";
-import { useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { C } from "@/lib/theme";
 import { useSettings } from "@/hooks/useSettings";
-import { passesLevel, isConverging } from "@/lib/ais";
-import { useAlerts } from "@/hooks/useAlerts";
+import { passesLevel } from "@/lib/ais";
 import InstrumentStrip from "./InstrumentStrip";
 import SidebarHeading from "./ais/SidebarHeading";
 import TargetList from "./ais/TargetList";
@@ -13,13 +12,10 @@ import TargetList from "./ais/TargetList";
 // also owns the cross-cutting concerns:
 //   - range filter + CPA sort for the sidebar
 //   - resolving the selected target for the detail panel
-//   - danger -> alert registration, so the collision alarm fires from the shell
-//     rather than the page
 // (Previously shared with a chart view; that view was dropped — Trident is an
 // AIS + systems monitor, not a chartplotter.)
 export default function WatchLayout({ self, displayMode, targets, selId, onSelect, onClose, children }) {
   const { filterRange, levelFilter, depthUnit, keelOffsetM, thresholds } = useSettings();
-  const { setDangers } = useAlerts();
 
   const filtered = useMemo(
     () => targets.filter((t) => t.dist <= filterRange && passesLevel(t.level, levelFilter)),
@@ -31,19 +27,6 @@ export default function WatchLayout({ self, displayMode, targets, selId, onSelec
   );
   const selTarget = targets.find((t) => t.id === selId) || null;
 
-  const dangers = useMemo(
-    () =>
-      targets
-        .filter(
-          (t) =>
-            t.level === "danger" ||
-            (!t.aton && t.cpa < thresholds.cpaCaution && t.tcpa < thresholds.tcpaAlert && isConverging(t.tcpa, t.closingKt))
-        )
-        .map((t) => ({ id: t.id, name: t.name, tcpa: t.tcpa })),
-    [targets, thresholds.tcpaAlert, thresholds.cpaCaution]
-  );
-  const dangerKey = dangers.map((d) => d.id + ":" + Math.round(d.tcpa)).join(",");
-  useEffect(() => { setDangers(dangers); }, [dangerKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="watch-grid">

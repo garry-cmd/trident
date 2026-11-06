@@ -2,6 +2,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { playAlarm } from "@/lib/audio";
 import { useSettings } from "./useSettings";
+import { useAnchorWatch } from "./useAnchorWatch";
+import { anchorAlarmActive } from "@/lib/anchorAlarm";
 
 const AlertsContext = createContext(null);
 
@@ -42,15 +44,31 @@ export function AlertsProvider({ children }) {
   const unacked = dangers.find((d) => !acked[d.id]) || null;
   const anyDangerAcked = dangers.find((d) => acked[d.id]) || null;
 
-  // Alarm loop while an unacknowledged danger exists and the alarm is enabled.
+  // ── Anchor drag ─────────────────────────────────────────────────────────
+  // The shared anchor watch confirms the drag; this decides whether it is
+  // sounding. ACK records the distance acknowledged at (lib/anchorAlarm).
+  const { status: anchor, anchor: anchorCfg } = useAnchorWatch();
+  const [anchorAckM, setAnchorAckM] = useState(null);
   useEffect(() => {
-    if (!unacked || !alarmEnabled) return;
+    if (!anchor.dragging) setAnchorAckM(null); // drag released: a new one alarms from scratch
+  }, [anchor.dragging]);
+  const anchorAlarm = anchorAlarmActive(anchor, anchorAckM, anchorCfg.alarmRadiusM);
+  const ackAnchor = useCallback(() => setAnchorAckM(anchor.distanceM), [anchor.distanceM]);
+
+  // One alarm loop for every alert source, while any is unacknowledged and the
+  // master alarm is on.
+  const sounding = !!unacked || anchorAlarm;
+  useEffect(() => {
+    if (!sounding || !alarmEnabled) return;
     playAlarm();
     const iv = setInterval(playAlarm, 2000);
     return () => clearInterval(iv);
-  }, [unacked?.id, alarmEnabled]);
+  }, [sounding, unacked?.id, alarmEnabled]);
 
-  const value = { dangers, setDangers, acked, ack, unacked, anyDangerAcked, selectRequest, requestSelect, clearSelectRequest };
+  const value = {
+    dangers, setDangers, acked, ack, unacked, anyDangerAcked, selectRequest, requestSelect, clearSelectRequest,
+    anchorAlarm, ackAnchor, anchorDistanceM: anchor.distanceM, anchorRadiusM: anchorCfg.alarmRadiusM,
+  };
   return <AlertsContext.Provider value={value}>{children}</AlertsContext.Provider>;
 }
 

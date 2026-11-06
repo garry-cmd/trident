@@ -36,7 +36,7 @@ export function useDash() {
 
   // The anchor watch itself lives on /anchor; the Dash reads the same shared
   // (persisted) state so the Boat card can summarise it without a second brain.
-  const watch = useAnchorWatch(self.position, self.heading, ts);
+  const watch = useAnchorWatch();
 
   // Demo overlay wins (explicit ?demo=1); otherwise live telemetry from Signal K
   // (Pi health today; Cerbo/NGX-1 later); otherwise empty/gated.

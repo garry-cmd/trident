@@ -2,10 +2,14 @@
 import { useEffect } from "react";
 import { SettingsProvider } from "@/hooks/useSettings";
 import { AlertsProvider } from "@/hooks/useAlerts";
+import { BoatStateProvider } from "@/hooks/useBoatState";
+import { AnchorWatchProvider } from "@/hooks/useAnchorWatch";
 import { getAudioCtx } from "@/lib/audio";
 import { C, FONT_SANS } from "@/lib/theme";
 import TopBar from "./TopBar";
 import AlertModal from "./AlertModal";
+import AnchorAlarmModal from "./AnchorAlarmModal";
+import AlarmSources from "./AlarmSources";
 import SmallScreenNotice from "./SmallScreenNotice";
 
 // Client shell: provides global context, renders the persistent TopBar and the
@@ -16,18 +20,26 @@ export default function AppShell({ children }) {
   useEffect(() => { window.__tridentUp = true; }, []);
   return (
     <SettingsProvider>
+      {/* One data feed, one anchor watch, one alert system for the whole app,
+          so every alarm runs whichever screen is open. */}
+      <BoatStateProvider>
+      <AnchorWatchProvider>
       <AlertsProvider>
+        <AlarmSources />
         <div
           onPointerDown={() => getAudioCtx()}
           className="trd-shell"
           style={{ display: "flex", flexDirection: "column", width: "100%", background: C.bg, fontFamily: FONT_SANS, overflow: "hidden" }}
         >
           <AlertModal />
+          <AnchorAlarmModal />
           <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>{children}</main>
           <TopBar />
           <SmallScreenNotice />
         </div>
       </AlertsProvider>
+      </AnchorWatchProvider>
+      </BoatStateProvider>
     </SettingsProvider>
   );
 }
