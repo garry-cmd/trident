@@ -96,7 +96,7 @@
 <main>
 
 <div class="summary">
-  <div class="sum-card"><div class="sum-val amber">34%</div><div class="sum-label">Overall Progress</div></div>
+  <div class="sum-card"><div class="sum-val amber">38%</div><div class="sum-label">Overall Progress</div></div>
   <div class="sum-card"><div class="sum-val">8</div><div class="sum-label">Weeks to Go-Live</div></div>
   <div class="sum-card"><div class="sum-val blue">4</div><div class="sum-label">Key Results</div></div>
   <div class="sum-card"><div class="sum-val">1</div><div class="sum-label">Stretch Goal</div></div>
@@ -160,18 +160,18 @@
       <span class="kr-title">The boat data the alarms need is flowing</span>
       <span class="kr-date">Target: Dec 11</span>
     </div>
-    <div class="kr-desc">Signal K carries what Trident's alarms and Dash depend on. AIS and GPS are done; depth and battery are the remaining go-live items.</div>
-    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill warn" style="width:29%"></div></div><span class="progress-pct">29%</span></div>
+    <div class="kr-desc">Signal K carries what Trident's alarms and Dash depend on. AIS, GPS and depth are done; battery is the remaining go-live item.</div>
+    <div class="kr-progress"><div class="progress-bar"><div class="progress-fill warn" style="width:43%"></div></div><span class="progress-pct">43%</span></div>
     <div class="task-list">
       <div class="task done"><div class="task-check"></div><span class="task-text">Pi joins the Vesper's WiFi on every boot; Signal K reads the Vesper (AIS + GPS, no phantom own-ship)</span><span class="task-owner">config</span></div>
       <div class="task done"><div class="task-check"></div><span class="task-text">Pi clock set from the Vesper's GPS; WiFi power-save off; app files cached on the iPad</span><span class="task-owner">config</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Decide the NGX-1 + Cerbo GX order — by Nov 13 (shipping to Mexico is the long pole)</span><span class="task-owner">procurement</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Check whether the Vesper's N2K port already bridges Triton depth (may make the NGX-1 unnecessary for depth)</span><span class="task-owner">verification</span></div>
-      <div class="task"><div class="task-check"></div><span class="task-text">Depth into Signal K, and a shallow-water alarm</span><span class="task-owner">code</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Decide the Cerbo GX order (battery) — by Nov 13; the NGX-1 is optional for go-live (wind/heading/baro/autopilot/DSC only)</span><span class="task-owner">procurement</span></div>
+      <div class="task done"><div class="task-check"></div><span class="task-text">Depth into Signal K — confirmed Nov 6: the Vesper bridges the Triton's depth from N2K, no NGX-1 needed</span><span class="task-owner">verification</span></div>
+      <div class="task"><div class="task-check"></div><span class="task-text">Shallow-water alarm (depth is flowing)</span><span class="task-owner">code</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Install the BMV-712; battery into Signal K via the Cerbo; arm the low-battery alarm</span><span class="task-owner">boat work</span></div>
       <div class="task"><div class="task-check"></div><span class="task-text">Record 10 min of real Vesper output and bank it as the bench replay log</span><span class="task-owner">code</span></div>
     </div>
-    <div class="dep-note">Depth and battery depend on the order decision. If the parts can't arrive before mid-December, go-live proceeds with AIS + anchor only, and depth/battery move to the next milestone.</div>
+    <div class="dep-note">Battery depends on the Cerbo order. If it can't arrive before mid-December, go-live proceeds without battery data and it moves to the next milestone.</div>
   </div>
 </div>
 
