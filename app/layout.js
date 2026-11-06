@@ -5,6 +5,10 @@ export const metadata = {
   title: "Trident",
   description: "Marine navigation and AIS watch",
   manifest: "/manifest.json",
+  // Home-screen web app: added once from Safari (Share > Add to Home Screen),
+  // it opens full-screen with no address bar — one tap at 2am, nothing to type.
+  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Trident", statusBarStyle: "default" },
 };
 
 export const viewport = {
