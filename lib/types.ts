@@ -22,6 +22,7 @@ export interface SelfState {
   sog: number; // kt
   heading: number; // deg true
   depth: number; // depth below transducer (Signal K native unit)
+  depthKeel?: number; // depth below keel, m — only when Signal K provides it
 }
 
 export interface Contact {

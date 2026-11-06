@@ -18,7 +18,7 @@ import TargetList from "./ais/TargetList";
 // (Previously shared with a chart view; that view was dropped — Trident is an
 // AIS + systems monitor, not a chartplotter.)
 export default function WatchLayout({ self, displayMode, targets, selId, onSelect, onClose, children }) {
-  const { filterRange, levelFilter, depthUnit, thresholds } = useSettings();
+  const { filterRange, levelFilter, depthUnit, keelOffsetM, thresholds } = useSettings();
   const { setDangers } = useAlerts();
 
   const filtered = useMemo(
@@ -47,7 +47,7 @@ export default function WatchLayout({ self, displayMode, targets, selId, onSelec
 
   return (
     <div className="watch-grid">
-      <div className="watch-inst"><InstrumentStrip self={self} depthUnit={depthUnit} /></div>
+      <div className="watch-inst"><InstrumentStrip self={self} depthUnit={depthUnit} keelOffsetM={keelOffsetM} /></div>
       <div className="watch-slot">{children}</div>
       <aside className="watch-side" style={{ background: C.surface, borderLeft: `1px solid ${C.border}` }}>
         <TargetList targets={sorted} selId={selId} selTarget={selTarget} onSelect={onSelect} onClose={onClose} />

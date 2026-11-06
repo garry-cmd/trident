@@ -1,19 +1,23 @@
 "use client";
 import { C, FONT_MONO } from "@/lib/theme";
 import { formatDepth, formatLatLon } from "@/lib/units";
+import { keelDepth } from "@/lib/depth";
 
 // Always-visible nav read-out across the top of the watch layout. Dumb: renders
 // own-vessel state. Heading is NOT here — it lives in the sidebar heading panel.
 // Layout: every cell is label-on-top + a centered value zone of equal height, so
 // the big numbers share a baseline regardless of whether they carry a unit.
 // Position is stacked lat/lon (a full fix won't fit on one line at this size).
-export default function InstrumentStrip({ self, depthUnit }) {
-  const depth = formatDepth(self.depth, depthUnit);
+export default function InstrumentStrip({ self, depthUnit, keelOffsetM = 0 }) {
+  // Water under the KEEL when the offset is known; otherwise honestly labelled
+  // as below the sensor so a 4 ft keel never hides inside a raw reading.
+  const dr = keelDepth(self, keelOffsetM);
+  const depth = formatDepth(dr.m, depthUnit);
   const [latStr, lonStr] = formatLatLon(self.position.lat, self.position.lon).split(" ");
   const nums = [
     { l: "COG", v: `${Math.round(self.cog)}\u00B0` },
     { l: "SOG", v: self.sog.toFixed(1), u: "kt" },
-    { l: "Depth", v: depth.value, u: depth.unit },
+    { l: dr.ref === "keel" ? "Depth \u00B7 keel" : "Depth \u00B7 sensor", v: depth.value, u: depth.unit },
   ];
 
   const Label = ({ children }) => (

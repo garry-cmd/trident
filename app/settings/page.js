@@ -6,7 +6,8 @@ import { useSettings } from "@/hooks/useSettings";
 import { useTargets } from "@/hooks/useTargets";
 import { useAnchorWatch } from "@/hooks/useAnchorWatch";
 import { IRENE } from "@/lib/anchor";
-import { distValue, distLabel, distStep, snapDist } from "@/lib/units";
+import { distValue, distLabel, distStep, snapDist, toDist, fromDist } from "@/lib/units";
+import { KEEL_OFFSET_BOUNDS } from "@/lib/depth";
 import { playAlarm } from "@/lib/audio";
 import KpiCard from "@/components/dash/KpiCard";
 import { Panel, PanelHead } from "@/components/dash/Panel";
@@ -32,7 +33,7 @@ const Q = {
 export default function SettingsPage() {
   const {
     thresholds, setThreshold, alarms, setAlarm, theme, setTheme,
-    alarmEnabled, setAlarmEnabled, depthUnit, setDepthUnit,
+    alarmEnabled, setAlarmEnabled, depthUnit, setDepthUnit, keelOffsetM, setKeelOffsetM,
     anchorUnit, setAnchorUnit, anchorOrient, setAnchorOrient,
   } = useSettings();
   const [open, setOpen] = useState(null);
@@ -114,9 +115,19 @@ export default function SettingsPage() {
           <Row label="Theme" desc="Day for sun, Dusk for low light, Night to protect dark vision">
             <Segmented options={THEME_OPTIONS} value={theme} onChange={setTheme} />
           </Row>
-          <Row label="Depth units" desc="How depth reads out across the app" last>
+          <Row label="Depth units" desc="How depth reads out across the app">
             <Segmented options={DEPTH_UNITS} value={depthUnit} onChange={setDepthUnit} />
           </Row>
+          <ThresholdStepper
+            label="Keel below depth sensor"
+            desc="Transducer to bottom of keel. Depth then reads water under the keel; 0 shows the raw sensor depth"
+            value={+toDist(keelOffsetM, depthUnit).toFixed(1)}
+            unit={depthUnit}
+            min={0}
+            max={+toDist(KEEL_OFFSET_BOUNDS.max, depthUnit).toFixed(1)}
+            step={depthUnit === "ft" ? 0.5 : 0.1}
+            onChange={(v) => setKeelOffsetM(fromDist(v, depthUnit))}
+          />
         </Panel>
       );
     }

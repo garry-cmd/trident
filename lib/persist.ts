@@ -17,6 +17,7 @@ import {
   fenceAlarms,
 } from "./settings";
 import type { DisplayMode, Thresholds } from "./types";
+import { KEEL_OFFSET_BOUNDS } from "./depth";
 
 type Alarms = typeof DEFAULT_ALARMS;
 
@@ -28,6 +29,7 @@ export interface PersistedSettings {
   theme: "day" | "dusk" | "night";
   alarmEnabled: boolean;
   depthUnit: "ft" | "m";
+  keelOffsetM: number;
   anchorUnit: "ft" | "m";
   anchorOrient: "head" | "north";
   thresholds: Thresholds;
@@ -50,6 +52,7 @@ export function sanitize(raw: unknown): Partial<PersistedSettings> {
   if (has(DEPTH_UNITS, r.depthUnit)) out.depthUnit = r.depthUnit as "ft" | "m";
   if (has(ANCHOR_UNITS, r.anchorUnit)) out.anchorUnit = r.anchorUnit as "ft" | "m";
   if (has(ANCHOR_ORIENTATIONS, r.anchorOrient)) out.anchorOrient = r.anchorOrient as "head" | "north";
+  if (typeof r.keelOffsetM === "number" && Number.isFinite(r.keelOffsetM)) out.keelOffsetM = clamp(r.keelOffsetM, KEEL_OFFSET_BOUNDS.min, KEEL_OFFSET_BOUNDS.max);
   if (typeof r.alarmEnabled === "boolean") out.alarmEnabled = r.alarmEnabled;
   if (typeof r.filterRange === "number" && Number.isFinite(r.filterRange)) out.filterRange = r.filterRange;
 
@@ -100,6 +103,7 @@ export function saveSettings(s: PersistedSettings): void {
       theme: s.theme,
       alarmEnabled: s.alarmEnabled,
       depthUnit: s.depthUnit,
+      keelOffsetM: s.keelOffsetM,
       anchorUnit: s.anchorUnit,
       anchorOrient: s.anchorOrient,
       thresholds: s.thresholds,

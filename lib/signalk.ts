@@ -19,7 +19,7 @@ export interface SKDelta {
 
 export function emptyLiveState(): BoatState {
   return {
-    self: { position: { lat: 0, lon: 0 }, cog: 0, sog: 0, heading: 0, depth: 0 },
+    self: { position: { lat: 0, lon: 0 }, cog: 0, sog: 0, heading: 0, depth: NaN }, // NaN = no depth yet (never a fake 0)
     contacts: [],
     source: "live",
     ts: 0,
@@ -45,6 +45,7 @@ function applySelf(self: SelfState, path: string, value: unknown): SelfState {
     case "navigation.headingTrue": return { ...self, heading: norm((value as number) * R2D) };
     case "navigation.speedOverGround": return { ...self, sog: (value as number) * MS_TO_KT };
     case "environment.depth.belowTransducer": return { ...self, depth: value as number };
+    case "environment.depth.belowKeel": return { ...self, depthKeel: value as number };
     default: return self;
   }
 }

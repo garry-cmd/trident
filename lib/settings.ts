@@ -188,6 +188,7 @@ export const DEFAULT_SETTINGS = {
   theme: "day" as "day" | "dusk" | "night",
   alarmEnabled: true,
   depthUnit: "ft" as "ft" | "m",
+  keelOffsetM: 1.22, // Irene: keel bottom 4 ft below the depth transducer (0 = raw sensor depth)
   anchorUnit: "ft" as "ft" | "m",
   anchorOrient: "head" as "head" | "north",
   thresholds: DEFAULT_THRESHOLDS,
