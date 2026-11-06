@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { SettingsProvider } from "@/hooks/useSettings";
 import { AlertsProvider } from "@/hooks/useAlerts";
 import { getAudioCtx } from "@/lib/audio";
@@ -11,6 +12,8 @@ import SmallScreenNotice from "./SmallScreenNotice";
 // global alert modal, and unlocks audio on the first user interaction (browser
 // autoplay policy). layout.js (a server component) wraps this around children.
 export default function AppShell({ children }) {
+  // Tell the boot watchdog (layout.js) that React is running.
+  useEffect(() => { window.__tridentUp = true; }, []);
   return (
     <SettingsProvider>
       <AlertsProvider>
