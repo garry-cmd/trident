@@ -30,6 +30,28 @@ export function threat(cpa: number, th: Thresholds = DEFAULT_THRESHOLDS): Threat
   return cpa < th.cpaDanger ? "danger" : cpa < th.cpaCaution ? "caution" : "safe";
 }
 
+// Alarm gating. A target is only a collision threat if it is actually
+// converging: closest approach still ahead, within the look-ahead horizon, at a
+// real closing speed. Distance alone is not a threat — boats moored or anchored
+// near you have no closing speed (TCPA = infinity), and GPS jitter between two
+// tied-up boats yields a tiny relative velocity with a spurious finite TCPA.
+// Without this gate every boat within the danger radius alarms forever at the
+// dock, which trains the watchkeeper to ignore the alarm.
+export const ALARM_HORIZON_MIN = 30; // only CPAs within this many minutes count
+export const MIN_CLOSING_KT = 0.5; // relative speed below this = not converging
+
+export function isConverging(tcpa: number, closingKt: number): boolean {
+  return Number.isFinite(tcpa) && tcpa > 0 && tcpa <= ALARM_HORIZON_MIN && closingKt >= MIN_CLOSING_KT;
+}
+
+// Display + alarm level. Converging targets band by predicted CPA (threat()).
+// A non-converging target physically inside the danger radius shows CAUTION
+// (visible, never alarms); any other non-converging target is SAFE.
+export function classify(cpa: number, tcpa: number, closingKt: number, dist: number, th: Thresholds = DEFAULT_THRESHOLDS): ThreatLevel {
+  if (isConverging(tcpa, closingKt)) return threat(cpa, th);
+  return dist < th.cpaDanger ? "caution" : "safe";
+}
+
 export function tColor(level: ThreatLevel): string {
   return level === "danger" ? C.dangerBr : level === "caution" ? C.cautionBr : C.safeBr;
 }
@@ -60,13 +82,14 @@ export function enrichTarget(t: Target, own: OwnVessel, th: Thresholds = DEFAULT
   const rx = Math.sin(r) * t.dist; // East
   const ry = -Math.cos(r) * t.dist; // -North (screen)
   if (t.aton) {
-    return { ...t, rx, ry, vx: 0, vy: 0, cpa: t.dist, tcpa: Infinity, level: "safe" };
+    return { ...t, rx, ry, vx: 0, vy: 0, cpa: t.dist, tcpa: Infinity, closingKt: 0, level: "safe" };
   }
   const { e, n } = relativeVelocity(t, own);
   const vx = e; // East
   const vy = -n; // -North (screen)
   const { cpa, tcpa } = cpaTcpa(rx, ry, vx, vy);
-  return { ...t, rx, ry, vx, vy, cpa, tcpa, level: threat(cpa, th) };
+  const closingKt = Math.hypot(vx, vy) * 60; // nm/min -> kt
+  return { ...t, rx, ry, vx, vy, cpa, tcpa, closingKt, level: classify(cpa, tcpa, closingKt, t.dist, th) };
 }
 
 export const enrichTargets = (arr: Target[], own: OwnVessel, th: Thresholds = DEFAULT_THRESHOLDS): EnrichedTarget[] =>

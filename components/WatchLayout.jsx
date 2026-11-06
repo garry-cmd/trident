@@ -2,7 +2,7 @@
 import { useMemo, useEffect } from "react";
 import { C } from "@/lib/theme";
 import { useSettings } from "@/hooks/useSettings";
-import { passesLevel } from "@/lib/ais";
+import { passesLevel, isConverging } from "@/lib/ais";
 import { useAlerts } from "@/hooks/useAlerts";
 import InstrumentStrip from "./InstrumentStrip";
 import SidebarHeading from "./ais/SidebarHeading";
@@ -37,7 +37,7 @@ export default function WatchLayout({ self, displayMode, targets, selId, onSelec
         .filter(
           (t) =>
             t.level === "danger" ||
-            (!t.aton && t.tcpa > 0 && t.tcpa < thresholds.tcpaAlert && t.cpa < thresholds.cpaCaution)
+            (!t.aton && t.cpa < thresholds.cpaCaution && t.tcpa < thresholds.tcpaAlert && isConverging(t.tcpa, t.closingKt))
         )
         .map((t) => ({ id: t.id, name: t.name, tcpa: t.tcpa })),
     [targets, thresholds.tcpaAlert, thresholds.cpaCaution]

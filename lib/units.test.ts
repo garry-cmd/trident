@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { formatDepth, formatLatLon, toDist, fromDist, distValue, distLabel, distStep, snapDist } from "./units";
+import { formatDepth, formatLatLon, toDist, fromDist, distValue, distLabel, distStep, snapDist, formatRangeNm } from "./units";
+import { zoomStep, ZOOM_STEPS } from "./settings";
 
 describe("formatDepth", () => {
   it("passes metres through", () => {
@@ -58,5 +59,26 @@ describe("anchor distance units", () => {
   it("snaps with no delta without drifting the stored value off a clean step", () => {
     const a = snapDist(35, "ft", 0);
     expect(snapDist(a, "ft", 0)).toBeCloseTo(a, 6);
+  });
+});
+
+describe("scope zoom", () => {
+  it("steps down to 1/8 nm and up to 6 nm, clamped", () => {
+    expect(ZOOM_STEPS[0]).toBe(0.125);
+    expect(zoomStep(1, -1)).toBe(0.5);
+    expect(zoomStep(0.125, -1)).toBe(0.125);
+    expect(zoomStep(6, 1)).toBe(6);
+    expect(zoomStep(3, 1)).toBe(6);
+  });
+  it("snaps an off-step value toward the direction asked", () => {
+    expect(zoomStep(4, -1)).toBe(3);
+    expect(zoomStep(4, 1)).toBe(6);
+  });
+  it("labels sub-mile ranges as fractions", () => {
+    expect(formatRangeNm(0.0625)).toBe("1/16");
+    expect(formatRangeNm(0.125)).toBe("1/8");
+    expect(formatRangeNm(0.5)).toBe("1/2");
+    expect(formatRangeNm(1.5)).toBe("1.5");
+    expect(formatRangeNm(3)).toBe("3");
   });
 });

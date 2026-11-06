@@ -61,3 +61,12 @@ export function snapDist(meters: number, unit: DistUnit, deltaSteps = 0): number
   const cur = Math.round(toDist(meters, unit) / step) * step;
   return fromDist(cur + deltaSteps * step, unit);
 }
+
+// Range label in nm: common sub-mile fractions as fractions (1/8, 1/4, 1/2),
+// everything else as a trimmed decimal. Readable at a glance on the scope.
+const FRACTIONS: Record<string, string> = { "0.0625": "1/16", "0.125": "1/8", "0.25": "1/4", "0.5": "1/2", "0.75": "3/4" };
+export function formatRangeNm(nm: number): string {
+  const key = String(+nm.toFixed(4));
+  if (FRACTIONS[key]) return FRACTIONS[key];
+  return Number.isInteger(nm) ? String(nm) : String(+nm.toFixed(2));
+}

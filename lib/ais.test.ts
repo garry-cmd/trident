@@ -7,6 +7,7 @@
 //   enrichTarget emits the SCREEN frame: x = East, y = -North (north is up).
 import { describe, it, expect } from "vitest";
 import {
+  classify, isConverging, ALARM_HORIZON_MIN, MIN_CLOSING_KT,
   cpaTcpa,
   threat,
   tColor,
@@ -200,5 +201,41 @@ describe("enrichTargets — batch", () => {
     expect(out.map((t) => t.id)).toEqual(["a", "b"]);
     expect(out[1].level).toBe("safe"); // the AtoN
     out.forEach((t) => expect(typeof t.cpa).toBe("number"));
+  });
+});
+
+describe("classify — alarm only on converging targets", () => {
+  // own stationary at origin; target 0.2 nm north
+  const own = { cog: 0, sog: 0, hdg: 0 } as any;
+  const at = (over: any) => enrichTarget({ id: "x", name: "X", brg: 0, dist: 0.2, cog: 180, sog: 0, ...over } as any, own);
+
+  it("a moored boat inside the danger radius is caution, never danger", () => {
+    const t = at({ sog: 0 });
+    expect(t.tcpa).toBe(Infinity);
+    expect(t.level).toBe("caution");
+  });
+  it("a moored boat outside the danger radius is safe", () => {
+    expect(at({ dist: 0.8, sog: 0 }).level).toBe("safe");
+  });
+  it("GPS jitter (closing < 0.5 kt) is not converging", () => {
+    expect(at({ dist: 0.05, sog: 0.2, cog: 180 }).level).toBe("caution");
+  });
+  it("a boat heading straight at us at 6 kt is danger", () => {
+    const t = at({ dist: 1.0, sog: 6, cog: 180 });
+    expect(t.tcpa).toBeCloseTo(10, 0);
+    expect(t.level).toBe("danger");
+  });
+  it("a closing boat whose CPA is beyond 30 min is safe for now", () => {
+    expect(at({ dist: 4, sog: 6, cog: 180 }).level).toBe("safe"); // tcpa 40 min
+  });
+  it("a boat moving away from inside the danger radius is caution, not danger", () => {
+    expect(at({ dist: 0.2, sog: 6, cog: 0 }).level).toBe("caution");
+  });
+  it("exports the gate constants", () => {
+    expect(ALARM_HORIZON_MIN).toBe(30);
+    expect(MIN_CLOSING_KT).toBe(0.5);
+    expect(isConverging(10, 0.5)).toBe(true);
+    expect(isConverging(Infinity, 5)).toBe(false);
+    expect(isConverging(0, 5)).toBe(false);
   });
 });

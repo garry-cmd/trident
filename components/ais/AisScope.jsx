@@ -1,6 +1,7 @@
 "use client";
 import { C } from "@/lib/theme";
 import { tColor, passesLevel, isLost } from "@/lib/ais";
+import { formatRangeNm } from "@/lib/units";
 
 const CX = 350, CY = 280, RR = 230;
 
@@ -17,7 +18,7 @@ export default function AisScope({ targets, selId, viewRange, displayMode, own, 
   // Always exactly two distance rings, independent of zoom: outer on the scope
   // edge (= viewRange in nm), inner at half that. The nm labels move with zoom.
   const ringNm = [viewRange, viewRange / 2];
-  const fmtNm = (n) => (Number.isInteger(n) ? `${n}` : n.toFixed(1));
+  const fmtNm = formatRangeNm;
 
   // Count reflects the active filters — vessels AND nav marks that pass both the
   // range and threat-level filter. Coloured by the worst level present so the

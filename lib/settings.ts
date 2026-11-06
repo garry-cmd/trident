@@ -3,6 +3,16 @@
 import type { DisplayMode, LevelFilter, Thresholds } from "./types";
 
 export const DEFAULT_RANGE = 3; // nm
+// Scope zoom stops (outer ring, nm). Fine end for marinas, channels and
+// harbour entrances; coarse end for open water. +/- steps through these.
+export const ZOOM_STEPS = [0.125, 0.25, 0.5, 1, 2, 3, 6];
+export function zoomStep(current: number, dir: -1 | 1): number {
+  const i = ZOOM_STEPS.indexOf(current);
+  if (i >= 0) return ZOOM_STEPS[Math.min(ZOOM_STEPS.length - 1, Math.max(0, i + dir))];
+  // Off-step (e.g. an old value): snap to the nearest stop in the direction asked.
+  if (dir > 0) return ZOOM_STEPS.find((z) => z > current) ?? ZOOM_STEPS[ZOOM_STEPS.length - 1];
+  return [...ZOOM_STEPS].reverse().find((z) => z < current) ?? ZOOM_STEPS[0];
+}
 
 // Dash — AIS/nav feed freshness bands (seconds). A feed that stops updating
 // means the collision watch is blind, so this is a real live-today alarm signal.

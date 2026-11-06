@@ -2,6 +2,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { C, FONT_MONO } from "@/lib/theme";
 import { useSettings } from "@/hooks/useSettings";
+import { zoomStep } from "@/lib/settings";
+import { formatRangeNm } from "@/lib/units";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useTargets } from "@/hooks/useTargets";
 import AisScope from "@/components/ais/AisScope";
@@ -50,9 +52,9 @@ export default function AisPage() {
         onResetBackground={resetView}
       />
       <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 6, zIndex: 5 }}>
-        <div onClick={() => setViewRange((r) => Math.max(1, r - 1))} style={zoomBtn}>+</div>
-        <div style={{ minWidth: 36, textAlign: "center", fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: C.dim, lineHeight: "48px" }}>{viewRange}</div>
-        <div onClick={() => setViewRange((r) => Math.min(6, r + 1))} style={zoomBtn}>{"\u2212"}</div>
+        <div onClick={() => setViewRange((r) => zoomStep(r, -1))} style={zoomBtn}>+</div>
+        <div style={{ minWidth: 36, textAlign: "center", fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: C.dim, lineHeight: "48px" }}>{formatRangeNm(viewRange)}</div>
+        <div onClick={() => setViewRange((r) => zoomStep(r, 1))} style={zoomBtn}>{"\u2212"}</div>
       </div>
       <div style={{ position: "absolute", bottom: 12, left: 12, fontSize: 8, color: C.dim }}>tap background to deselect</div>
 

@@ -87,6 +87,7 @@ export interface EnrichedTarget extends Target {
   vy: number;
   cpa: number; // nm
   tcpa: number; // min
+  closingKt: number; // relative speed, kt
   level: ThreatLevel;
 }
 
